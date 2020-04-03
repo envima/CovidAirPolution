@@ -5,7 +5,13 @@ source(file.path(root_folder, "src/functions/000_setup.R"))
 
 
 # Air quality data -------------------------------------------------------------
-flist=Sys.glob(file.path(envrmt$`path_report-data-platform-16229-259611`,"*.csv"))
+flist=Sys.glob(file.path(envrmt$path_data,"lombardia/*.csv"))
+namelist<-list()
+for (i in 1:length(flist)) {
+  temp<-strsplit(flist,split = ".",fixed = T)[[i]][2]
+  namelist[[i]]=strsplit(temp,split = "---",fixed = T)[[1]][1]
+}
+namelist<-unlist(namelist)
 
 i=1
 aq=list()

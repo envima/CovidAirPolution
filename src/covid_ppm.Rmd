@@ -56,7 +56,7 @@ Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie
 
 fig = plot_ly() 
 for(l in seq_along(aq)){
-  fig = fig %>% add_trace(data = aq[[l]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", names(aq[1])), mode = 'lines+markers')
+  fig = fig %>% add_trace(data = aq[[l]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", names(aq[1]), namelist[l]),mode = 'lines+markers')
 }
 
 fig = fig %>% add_trace(data = cov_admin3[cov_admin3$denominazione_provincia == "Bergamo",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", mode = 'lines+markers')

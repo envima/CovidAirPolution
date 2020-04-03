@@ -1,11 +1,12 @@
 # Set environment for environmental information systems analysis
 
-root_folder = path.expand("~/plygrnd/CovidAirPolution/")
+#root_folder = path.expand("~/plygrnd/CovidAirPolution/")
 fcts_folder = file.path(root_folder, "CovidAirPolution/src/functions/")
 
 project_folders = c("data/",
                     "data/COVID-19/",
                     "data/report-data-platform-16133-94427/",
+                    "data/report-data-platform-16229-259611/",
                     "data/tmp/")
 
 libs = c("plotly", "ggplot2")
