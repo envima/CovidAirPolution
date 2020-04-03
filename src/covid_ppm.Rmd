@@ -8,27 +8,34 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Set up working environment and defaults --------------------------------------
 library(envimaR)
-root_folder = path.expand("~/plygrnd/CovidAirPolution/")
-source(file.path(root_folder, "CovidAirPolution/src/functions/000_setup.R"))
-
+root_folder = path.expand("~/project/CovidAirPolution/")
+source(file.path(root_folder, "src/functions/000_setup.R"))
+source(file.path(root_folder, "src/functions/parseHeaderWAQI.R"))
 
 # Air quality data -------------------------------------------------------------
+#flist=Sys.glob(file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`,"*.csv"))
 flist=list.files(file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`), pattern = "^.*\\.csv$", full.names = TRUE)
-
-aq = lapply(flist, function(f) {
-  latlon = parseHeaderWAQI(readLines(f, n=5))
-  latlon$latlon
   
+  aq = lapply(flist, function(f) {
+  latlon = parseHeaderWAQI(readLines(f, n=5))
   
   act = read.table(f, skip = 0, header = TRUE, sep = ",")
   act$date = as.Date(act$date)
   act$pm25 = as.numeric(as.character(act$pm25))
+  #act$lon=as.numeric(latlon[2])
+  #act$lat=as.numeric(latlon[1])
+  act$statname<-substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
   act = act[act$date >= as.Date("2020-02-01"), ]
-  act = list(act)
-  names(act) = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
+  p = sf::st_sfc(sf::st_point(c(as.numeric(latlon[2]),as.numeric(latlon[1]))))
+  act=(sf::st_sf(act,p,crs = 4326))
+  #act = list(act)
+  #names(act) = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
+  
   return(act)
 })
-
+     
+pm_stations=sf::st_as_sf(data.table::rbindlist(aq,fill = TRUE)) 
+mapview::mapview(pm_stations,zcol="pm25")     
 
 # Covid-19 ---------------------------------------------------------------------
 utils::download.file(url="https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-province/dpc-covid19-ita-province.csv",
