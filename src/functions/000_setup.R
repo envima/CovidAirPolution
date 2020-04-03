@@ -9,7 +9,7 @@ project_folders = c("data/",
                     "data/report-data-platform-16229-259611-lombardy",
                     "data/tmp/")
 
-libs = c("plotly", "ggplot2")
+libs = c("plotly", "ggplot2", "stringr")
 
 envrmt = createEnvi(root_folder = root_folder,
                     fcts_folder = fcts_folder,

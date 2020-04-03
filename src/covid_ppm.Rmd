@@ -16,7 +16,11 @@ source(file.path(root_folder, "CovidAirPolution/src/functions/000_setup.R"))
 flist=list.files(file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`), pattern = "^.*\\.csv$", full.names = TRUE)
 
 aq = lapply(flist, function(f) {
-  act = read.table(f, skip = 5, header = TRUE, sep = ",")
+  latlon = parseHeaderWAQI(readLines(f, n=5))
+  latlon$latlon
+  
+  
+  act = read.table(f, skip = 0, header = TRUE, sep = ",")
   act$date = as.Date(act$date)
   act$pm25 = as.numeric(as.character(act$pm25))
   act = act[act$date >= as.Date("2020-02-01"), ]
@@ -45,8 +49,6 @@ for(c in unique(cov_admin3$codice_provincia)){
 }
 
 ```
-
-
 
 
 Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie die neuen Fälle in der Region Lombardei bzw. 
