@@ -22,12 +22,12 @@ flist=list.files(file.path(envrmt$`path_report-data-platform-16229-259611-lombar
   act = read.table(f, skip = 0, header = TRUE, sep = ",")
   act$date = as.Date(act$date)
   act$pm25 = as.numeric(as.character(act$pm25))
-  #act$lon=as.numeric(latlon[2])
-  #act$lat=as.numeric(latlon[1])
+
   act$statname<-substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
   act = act[act$date >= as.Date("2020-02-01"), ]
   p = sf::st_sfc(sf::st_point(c(as.numeric(latlon[2]),as.numeric(latlon[1]))))
   act=(sf::st_sf(act,p,crs = 4326))
+  # it is more consisent to use an sf object and grab the content 
   #act = list(act)
   #names(act) = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
   
