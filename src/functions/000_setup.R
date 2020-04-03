@@ -5,11 +5,11 @@ fcts_folder = file.path(root_folder, "CovidAirPolution/src/functions/")
 
 project_folders = c("data/",
                     "data/COVID-19/",
-                    "data/report-data-platform-16133-94427/",
-                    "data/report-data-platform-16229-259611/",
+                    "data/report-data-platform-16133-94427-misc/",
+                    "data/report-data-platform-16229-259611-lombardy",
                     "data/tmp/")
 
-libs = c("plotly", "ggplot2")
+libs = c("plotly", "ggplot2", "stringr")
 
 envrmt = createEnvi(root_folder = root_folder,
                     fcts_folder = fcts_folder,
