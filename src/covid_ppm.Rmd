@@ -1,0 +1,69 @@
+---
+title: "COVID pm 2.5 playground"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Set up working environment and defaults --------------------------------------
+library(envimaR)
+root_folder = path.expand("~/plygrnd/CovidAirPolution/")
+source(file.path(root_folder, "CovidAirPolution/src/functions/000_setup.R"))
+
+
+# Air quality data -------------------------------------------------------------
+mil1 = read.table(file.path(envrmt$`path_report-data-platform-16133-94427`, "35.Milano-Senato--Lombardia.csv"), skip = 5, header = T, sep = ",")
+mil2 = read.table(file.path(envrmt$`path_report-data-platform-16133-94427`, "36.Milano-Pascal-Città-Studi--Lombardia.csv"), skip = 5, header = T, sep = ",")
+berg = read.table(file.path(envrmt$`path_report-data-platform-16133-94427`, "1.Bergamo-Via-Meucci--Lombardia.csv"), skip = 5, header = T, sep = ",")
+aq = list("Milano-Senato" = mil1, "Milano-Pascal" = mil2, "Bergamo" = berg)
+aq = lapply(aq, function(l) {
+    l$date = as.Date(l$date)
+    l$pm25 = as.numeric(as.character(l$pm25))
+    l = l[l$date >= as.Date("2020-02-01"), ]
+})
+
+
+# Covid-19 ---------------------------------------------------------------------
+cov_admin2 = read.delim(file.path(envrmt$`path_COVID-19`, "dati-regioni/dpc-covid19-ita-regioni.csv"), header = TRUE, sep = ",", dec=".")
+cov_admin2$data = as.Date(cov_admin2$data)
+
+cov_admin3 = read.delim(file.path(envrmt$`path_COVID-19`, "dati-province/dpc-covid19-ita-province.csv"), header = TRUE, sep = ",", dec=".")  
+cov_admin3$data = as.Date(cov_admin3$data)
+cov_admin3$new_cases = c(0, diff(cov_admin3$totale_casi))
+
+cov_admin3$new_cases = NA
+for(c in unique(cov_admin3$codice_provincia)){
+  cov_admin3[cov_admin3$codice_provincia == c, "new_cases"] = c(0, diff(cov_admin3[cov_admin3$codice_provincia == c, "totale_casi"]))
+}
+
+```
+
+
+
+
+Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie die neuen Fälle in der Region Lombardei bzw. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+# ggplot() + 
+#   geom_line(data = cmb, aes(x = date, y = pm25, colour = stat)) + 
+#   geom_line(data = cov_lombardia, aes(x = data, y = nuovi_positivi/10)) + 
+#   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases")) +
+#   geom_line(data = cov_Bergamo, aes(x = data, y = new_cases/10, colour = "Covid Bergamo")) + 
+#   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases")) +
+#   geom_line(data = cov_Milano, aes(x = data, y = new_cases/10, colour = "Covid Milano")) + 
+#   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
+
+fig = plot_ly() 
+for(l in seq_along(aq)){
+  fig = fig %>% add_trace(data = aq[[l]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", names(aq[1])), mode = 'lines+markers')
+}
+
+fig = fig %>% add_trace(data = cov_admin3[cov_admin3$denominazione_provincia == "Bergamo",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", mode = 'lines+markers')
+
+fig = fig %>% add_trace(data = cov_admin3[cov_admin3$denominazione_provincia == "Milano",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Milano", mode = 'lines+markers')
+
+fig = fig %>% layout(yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
+fig
+```
+
