@@ -8,9 +8,12 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Set up working environment and defaults --------------------------------------
 library(envimaR)
-root_folder = path.expand("~/plygrnd/CovidAirPolution/")
-source(file.path(root_folder, "CovidAirPolution/src/functions/000_setup.R"))
-
+library(htmlTable)
+root_folder = path.expand("~/project/cov/CovidAirPolution/")
+source(file.path(root_folder, "src/functions/000_setup.R"))
+source(file.path(root_folder, "src/functions/parseHeaderWAQI.R"))
+source(file.path(root_folder, "src/functions/makeSFPoints.R"))
+source(file.path(root_folder, "src/functions/getCovidIT.R"))
 
 # Air quality data -------------------------------------------------------------
 #flist = Sys.glob(file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`,"*.csv"))
@@ -18,8 +21,19 @@ flist = list.files(
   file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`), 
   pattern = "^.*\\.csv$", full.names = TRUE)
 
-pm_waqi = sfWAQI(flist)
+# get data tables
+pm_waqi<- sfWAQI(flist)
 
+# make corresponding points
+waqi_pts<- makeSFPoints(flist)
+
+# get corresponinding names
+statname <- getWAQINames(flist)
+
+# create mapview data
+pm25<-lapply(aq, function(x) x[,1:4])
+for (i in 1:length(pm25))names(pm25[[i]])<-c("date","pm25","pm25min","pm25max")
+pop = lapply(pm25, htmlTable)
 
 
 # Covid-19 ---------------------------------------------------------------------
@@ -27,13 +41,13 @@ cov_it = getCovidIT()
 ```
 
 
-Die Abbildung zeigt die räumliche Verteilung der Stationen für die Fallstudie Italien.
+Die Abbildung zeigt die räumliche Verteilung der Stationen und die verwendeten pm25 Datentabellen für die Fallstudie Italien.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-mapview(pm_waqi, zcol = "pm25")
+mapview(waqi_pts, popup = pop,legend = FALSE, ncol="pm25max")
 ```
 
 Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie die neuen Fälle in der Region Lombardei.
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
 # ggplot() + 
 #   geom_line(data = cmb, aes(x = date, y = pm25, colour = stat)) + 
 #   geom_line(data = cov_lombardia, aes(x = data, y = nuovi_positivi/10)) + 
@@ -50,25 +64,28 @@ Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie
 #   
 # }
 
-fig = plot_ly() %>% 
-  add_trace(data = pm_waqi, x = ~date, y = ~pm25, color = ~statname, 
-            type = 'scatter', mode = 'lines+markers')
+fig = plot_ly() 
 
-fig = fig %>% 
-  add_trace(
-    data = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",], 
-    x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", 
-    mode = 'lines+markers')
 
-fig = fig %>% 
-  add_trace(
-    data = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Milano",], 
-            x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Milano", 
-            mode = 'lines+markers')
+fig = fig %>% add_trace(data = cov_admin3[cov_admin3$denominazione_provincia == "Bergamo",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", line=list(color ="red", width = 5, dash = 'dot') ,mode = 'lines+markers')
 
-fig = fig %>% 
-  layout(yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
+fig = fig %>% add_trace(data = cov_admin3[cov_admin3$denominazione_provincia == "Milano",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Milano", line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot'),mode = 'lines+markers')
 
+fig = fig %>% layout(yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
+fig
+
+fig = plot_ly() 
+for(l in seq_along(pm25)){
+  
+  fig = fig %>% add_trace(data = pm25[[l]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5",waqnames[l]), mode = 'lines+markers')
+  
+}
+
+fig = fig %>% add_trace(data = cov_admin3[cov_admin3$denominazione_provincia == "Bergamo",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", line=list(color ="red", width = 5, dash = 'dot') ,mode = 'lines+markers')
+
+fig = fig %>% add_trace(data = cov_admin3[cov_admin3$denominazione_provincia == "Milano",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Milano", line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot'),mode = 'lines+markers')
+
+fig = fig %>% layout(yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
 fig
 ```
 
