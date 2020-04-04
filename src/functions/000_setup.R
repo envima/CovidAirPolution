@@ -1,7 +1,7 @@
 # Set environment for environmental information systems analysis
 
-root_folder = path.expand("~/plygrnd/CovidAirPolution/")
-fcts_folder = file.path(root_folder, "CovidAirPolution/src/functions/")
+
+fcts_folder = file.path(root_folder, "src/functions/")
 
 project_folders = c("data/",
                     "data/COVID-19/",
@@ -9,9 +9,8 @@ project_folders = c("data/",
                     "data/report-data-platform-16229-259611-lombardy",
                     "data/tmp/")
 
-libs = c("data.table", "plotly", "ggplot2", "mapview", "stringr", "sf", "wavelets", "wmtsa", "biwavelet")
-
-envrmt = createEnvi(root_folder = root_folder,
+libs = c("data.table", "plotly", "ggplot2", "mapview", "stringr", "sf", "wavelets", "wmtsa", "biwavelet", "tidiyverse","tidyquant","timetk","forcats","tidyr")
+         envrmt = createEnvi(root_folder = root_folder,
                     fcts_folder = fcts_folder,
                     folders = project_folders, 
                     path_prefix = "path_", libs = libs,
@@ -20,3 +19,4 @@ envrmt = createEnvi(root_folder = root_folder,
 
 # More settings
 
+2

@@ -7,10 +7,10 @@ getCovidIT = function(){
   download.file(url = "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
                 destfile=file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-regioni.csv"))
   
-  cov_admin2 = read.delim(file.path(envrmt$`path_COVID-19`, "dati-regioni/dpc-covid19-ita-regioni.csv"), header = TRUE, sep = ",", dec=".")
+  cov_admin2 = read.delim(file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-regioni.csv"), header = TRUE, sep = ",", dec=".")
   cov_admin2$data = as.Date(cov_admin2$data)
   
-  cov_admin3 = read.delim(file.path(envrmt$`path_COVID-19`, "dati-province/dpc-covid19-ita-province.csv"), header = TRUE, sep = ",", dec=".")  
+  cov_admin3 = read.delim(file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-province.csv"), header = TRUE, sep = ",", dec=".")  
   cov_admin3$data = as.Date(cov_admin3$data)
   cov_admin3$new_cases = c(0, diff(cov_admin3$totale_casi))
   

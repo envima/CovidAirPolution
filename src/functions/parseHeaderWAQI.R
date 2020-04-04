@@ -1,11 +1,19 @@
 # Parse header of WAQI data
 
-parseHeaderWAQI = function(header, getLatLon = TRUE){
+getWAQIpos = function(header){
   
-  if(getLatLon){
-    info = stringr::str_extract_all(string = str_subset(header, "latitude"), pattern = "\\d+\\.*\\d*")[[1]]
+
+    info = stringr::str_extract_all(string = stringr::str_subset(header, "latitude"), pattern = "\\d+\\.*\\d*")[[1]]
     latlon = data.frame(Latitude = as.numeric(info[1]),
-             Longitude = as.numeric(info[2]))
-  }
+                        Longitude = as.numeric(info[2]))
+    
+
   return(latlon)  
+}
+
+
+getWAQI_1 = function(header){
+  
+  
+  return(header[1])  
 }
