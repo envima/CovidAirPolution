@@ -72,3 +72,13 @@ fig = fig %>%
 fig
 ```
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+pm_bergamo = pm_waqi[pm_waqi$statname == "Bergamo-Via-Meucci",]
+
+cov_bergamo = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",]
+
+# https://rpubs.com/ibn_abdullah/rwcoher
+
+# https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-019-7607-2
+```
+
