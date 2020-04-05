@@ -5,7 +5,7 @@ makeSFPolygonsItaly = function(nuts){
     act = nuts[nuts$codice_provincia == p, ] 
     latlon = c(act[1, "long"], act[1, "lat"])
     p = st_sfc(st_point(latlon),crs = 4326)
-    st_sf(act ,p)
+    act<-st_sf(act ,p)
   })
   pts = do.call(rbind, p)
   it  = rnaturalearth::ne_states(country = "italy", returnclass = "sf")

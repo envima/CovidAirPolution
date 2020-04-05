@@ -23,12 +23,13 @@ cov_it = getCovidIT()
 cov_it_polygons = makeSFPolygonsItaly(cov_it$cov_nuts3)
 
 # Make SF point vector for map
-pm_waqi_points =makeSFPointsWAQI(pm_waqi)
+pm_waqi_points = makeSFPointsWAQI(pm_waqi)
 ```
 
 ## Räumliche Verteilung der verwendeten Luftqualitätsstationen in Norditalien.
 Die Abbildung zeigt die räumliche Verteilung der Stationen und die verwendeten pm25 Datentabellen für die Fallstudie Italien.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
 mapview(pm_waqi_points$pts, popup = pm_waqi_points$pop, legend = FALSE, ncol="pm25max")
 ```
 
