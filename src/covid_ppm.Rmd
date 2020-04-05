@@ -157,7 +157,8 @@ Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Berg
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 
-#http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
+# http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
+# https://ehjournal.biomedcentral.com/articles/10.1186/1476-069X-13-102
 
 # merge data colums
 pm_bergamo = pm25[[8]]
