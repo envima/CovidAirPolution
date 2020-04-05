@@ -9,45 +9,31 @@ output:
 # Set up working environment and defaults --------------------------------------
 library(envimaR)
 if(Sys.info()[["nodename"]] == "PC19616"){
-  source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setupm25[[8]]p.R")
+  source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")
 } else {
   source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
 }
 
 
 # Air quality data -------------------------------------------------------------
-#flist = Sys.glob(file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`,"*.csv"))
-flist = list.files(
-  file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`), 
-  pattern = "^.*\\.csv$", full.names = TRUE)
-
-# get data tables
-pm_waqi = sfWAQI(flist)
-
-# make corresponding points
-waqi_pts = makeSFPoints(flist)
-
-# get corresponinding names
-statname = getWAQINames(flist)
-
-# create mapview data
-pm25 = lapply(pm_waqi, function(x) x[,1:4])
-for (i in 1:length(pm25)){
-  names(pm25[[i]]) = c("date","pm25","pm25_min","pm25_max")
-}
-pop = lapply(pm25, htmlTable)
-
+pm_waqi = dfWAQI()
 
 # Covid-19 ---------------------------------------------------------------------
 cov_it = getCovidIT()
+cov_it_polygons = makeSFPolygonsItaly(cov_it$cov_nuts3)
+
+# Make SF point vector for map
+pm_waqi_points =makeSFPointsWAQI(pm_waqi)
 ```
 
-
+## Räumliche Verteilung der verwendeten Luftqualitätsstationen in Norditalien.
 Die Abbildung zeigt die räumliche Verteilung der Stationen und die verwendeten pm25 Datentabellen für die Fallstudie Italien.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-mapview(waqi_pts, popup = pop,legend = FALSE, ncol="pm25max")
+mapview(pm_waqi_points$pts, popup = pm_waqi_points$pop, legend = FALSE, ncol="pm25max")
 ```
 
+
+## Zeitliche Entwicklung in Norditalien
 Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie die neuen Fälle in der Region Lombardei.
 ```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
 # ggplot() + 
@@ -59,32 +45,25 @@ Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie
 #   geom_line(data = cov_Milano, aes(x = data, y = new_cases/10, colour = "Covid Milano")) + 
 #   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
 
-# fig = plot_ly() 
-# for(l in seq_along(aq)){
-#   
-#   fig = fig %>% add_trace(data = aq[[l]][[1]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", names(aq[1])), mode = 'lines+markers')
-#   
-# }
-
 fig = plot_ly() 
 
-fig = fig %>% add_trace(data = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", line=list(color ="red", width = 5, dash = 'dot') ,mode = 'lines+markers')
+fig = fig %>% add_trace(data = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Bergamo",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", line=list(color ="red", width = 5, dash = 'dot') ,mode = 'lines+markers')
 
-fig = fig %>% add_trace(data = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Milano",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Milano", line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot'),mode = 'lines+markers')
+fig = fig %>% add_trace(data = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Milano",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Milano", line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot'),mode = 'lines+markers')
 
 fig = fig %>% layout(yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
 
 for(l in seq_along(pm25)){
-  fig = fig %>% add_trace(data = pm25[[l]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", statname[l]), mode = 'lines+markers')
+  fig = fig %>% add_trace(data = pm25[[l]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", names(pm_waqi[l])), mode = 'lines+markers')
 }
 fig
 ```
 
 
-Test Bergamo
+## Test Bergamo
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-pm_bergamo = pm25[[8]]
-cov_bergamo = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",]
+pm_bergamo = pm_waqi[[8]]
+cov_bergamo = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Bergamo",]
 test = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
 test$date = as.POSIXct(test$date)
 
@@ -100,10 +79,10 @@ test_wc = analyze.coherency(test[, c("date", "pm25", "new_cases")], my.pair = c(
                             dt = 1, dj = 1/100,
                             make.pval = TRUE, n.sim = 100)
 
-wc.image(test_wc, which.image = "wp", 
-         n.levels = 250, 
-         siglvl.contour = 0.1, siglvl.arrow = 0.05,  
-         legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE)
+# wc.image(test_wc, which.image = "wp", 
+#          n.levels = 250, 
+#          siglvl.contour = 0.1, siglvl.arrow = 0.05,  
+#          legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE)
 
 # Strengere variante - beide Plots zeigen auf die "in phase" im letzten Drittel der Zeitreihe?
 wc.image(test_wc, which.image = "wp", 
@@ -127,7 +106,6 @@ wc.image(test_wc, which.image = "wc",
 wc.avg(test_wc, which.avg = "wc",
        exponent = 1,
        periodlab = "period (days)")
-
 
 
 # Hier mal die Darsetllung, wie die Periode von 7 Tagen sich verhält (hoffe, die 3.5 sind richtig...)
@@ -154,15 +132,14 @@ abline(h = 0)
 ```
 
 Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Bergamo
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 
 # http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
 # https://ehjournal.biomedcentral.com/articles/10.1186/1476-069X-13-102
 
 # merge data colums
-pm_bergamo = pm25[[8]]
-cov_bergamo = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",]
+pm_bergamo = pm_waqi[[8]]
+cov_bergamo = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Bergamo",]
 bergamo = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
 bergamo$data = as.POSIXct(bergamo$date)
 ggplot() + 
@@ -172,13 +149,13 @@ ggplot() +
 ```
 
 
-Die nachfolgenden Abbildung zeigen die wavelet Analyse der PEriodizität neuen Corona Fälle und des pm25 in Bergamo
-
+Die nachfolgenden Abbildung zeigen die wavelet Analyse der Periodizität neuen Corona Fälle und des pm25 in Bergamo
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 # convert date to factor
 #bergamo$data = as.factor(as.character(bergamo$data))
 
 # new_cases only is there a periodicy?
+par(mar = c(4, 4, 0.1, 0.1))
 bergamo.w  =  analyze.wavelet(bergamo, "new_cases",
                               loess.span = 0,dt = 1, dj = 1/50,
                               lowerPeriod = 1, upperPeriod = 14, make.pval = TRUE, 
@@ -200,39 +177,6 @@ wt.image(bergamo.w, color.key = "interval", n.levels = 250,
          legend.params = list(lab = "wavelet power levels"),
          periodlab = "period (days)",label.time.axis = TRUE, 
          show.date = TRUE, date.format = "%m%d")
-
-
 ```
 
-
-Die nachfolgenden Abbildung zeigen die cross-wavelet Analyse der Priodizität der neuen Corona Fälle in Bergamo gegen die Station Bergamo-Via-Meucci 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-
-#--------------------------------------------------------------------
-# cross wavelet anaklysis
-
-bergamo.wc  =  analyze.coherency(bergamo[, c("data", "pm25", "new_cases")], my.pair = c("pm25", "new_cases"),
-                                loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 14,
-                                make.pval = TRUE, n.sim = 10)
-
-max.power  =  max(bergamo.wc$Power.xy)  # for plotting
-#save(bergamo.wc, file = "cross_wavelet_transform_temperature_over_humidity")
-
-#load("cross_wavelet_transform_temperature_over_humidity")
-exponent  =  0.5
-wc.image(bergamo.wc, n.levels = 250,
-         legend.params = list(lab = "cross-wavelet power levels"),
-         color.key = "interval",
-         maximum.level = (1.001*max.power)^exponent, exponent = exponent,
-         # time axis:
-         label.time.axis = TRUE, 
-         show.date = TRUE,
-         spec.time.axis = list(at = paste(2020-02-01:2020-04-02, "-01-01", sep = ""),labels = 2020-02:2020-04),timetcl = -0.5, 
-         # outward ticks
-         # period axis:
-         periodlab = "period (days)",
-         spec.period.axis = list(at = c(3, 7, 14)),periodtck = 1, periodtcl = NULL)
-
-```
 

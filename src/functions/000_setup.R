@@ -16,7 +16,8 @@ project_folders = c("data/",
 
 libs = c("data.table", "ggplot2", "htmlTable", "plotly", "mapview", "stringr", 
          "sf", "wavelets", "wmtsa", "biwavelet", 
-         "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp")
+         "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp",
+         "rnaturalearth", "rnaturalearthhighres")
 
 envrmt = createEnvi(root_folder = root_folder,
                     fcts_folder = fcts_folder,
