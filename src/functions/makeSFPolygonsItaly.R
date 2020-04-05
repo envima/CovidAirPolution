@@ -8,7 +8,7 @@ makeSFPolygonsItaly = function(nuts){
     act<-st_sf(act ,p)
   })
   pts = do.call(rbind, p)
-  it  = rnaturalearth::ne_states(country = "italy", returnclass = "sf")
+  it  = ne_states(country = "italy", returnclass = "sf")
+  it = it[, "adm1_code"]
   return(st_join(it, pts))
-  
 }

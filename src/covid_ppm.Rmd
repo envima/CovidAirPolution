@@ -16,14 +16,35 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 
 
 # Air quality data -------------------------------------------------------------
-pm_waqi = dfWAQI()
+pm_waqi = makedfWAQI()
+# Make SF point vector for map
+pm_waqi_points = makeSFPointsWAQI(pm_waqi)
+
 
 # Covid-19 ---------------------------------------------------------------------
 cov_it = getCovidIT()
+
+# Merge air quality and COVID data ---------------------------------------------
 cov_it_polygons = makeSFPolygonsItaly(cov_it$cov_nuts3)
+
 
 # Make SF point vector for map
 pm_waqi_points = makeSFPointsWAQI(pm_waqi)
+
+
+it_nuts3 = st_join(cov_it_polygons, pm_waqi_points$pts)
+it_nuts3 = it_nuts3[!is.na(it_nuts3$aq_location), ]
+
+it_nuts3 = lapply(unique(it_nuts3$aq_location), function(l){
+  m = merge(it_nuts3,  pm_waqi[[l]], by.x = c("aq_location", "date"), by.y = c("statname", "date"))
+  
+  m = m[, c("aq_location", "date", "adm1_code", "data", "stato", "codice_regione", 
+        "denominazione_regione", "codice_provincia", "denominazione_provincia",
+        "sigla_provincia", "lat.x", "long", "totale_casi", "note_it", "note_en",
+        "new_cases", "pm25", "pm25_min", "pm25_max")]
+})
+it_nuts3 = do.call(rbind, it_nuts3)
+
 ```
 
 ## Räumliche Verteilung der verwendeten Luftqualitätsstationen in Norditalien.
@@ -49,14 +70,15 @@ Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie
 
 fig = plot_ly() 
 
-fig = fig %>% add_trace(data = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Bergamo",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", line=list(color ="red", width = 5, dash = 'dot') ,mode = 'lines+markers')
+fig = fig %>% add_trace(data = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",], x = ~date, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", line=list(color ="red", width = 5, dash = 'dot') ,mode = 'lines+markers')
 
-fig = fig %>% add_trace(data = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Milano",], x = ~data, y = ~new_cases, yaxis = "y2", name = "New cases Milano", line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot'),mode = 'lines+markers')
+
+fig = fig %>% add_trace(data = it_nuts3[it_nuts3$denominazione_provincia == "Milano",], x = ~date, y = ~new_cases, yaxis = "y2", name = "New cases Milano", line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot'),mode = 'lines+markers')
 
 fig = fig %>% layout(yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
 
-for(l in seq_along(pm25)){
-  fig = fig %>% add_trace(data = pm25[[l]], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", names(pm_waqi[l])), mode = 'lines+markers')
+for(l in unique(it_nuts3$aq_location)){
+  fig = fig %>% add_trace(data = it_nuts3[it_nuts3$aq_location == l, ], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", l), mode = 'lines+markers')
 }
 fig
 ```
@@ -64,19 +86,36 @@ fig
 
 ## Test Bergamo
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-pm_bergamo = pm_waqi[[8]]
-cov_bergamo = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Bergamo",]
-test = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
-test$date = as.POSIXct(test$date)
+# pm_bergamo = pm_waqi[[8]]
+# cov_bergamo = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
+# test = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
+# test$date = as.POSIXct(test$date)
+
+test = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
+
+pm25 = aggregate(test$pm25, by = list(test$date), FUN = mean, na.rm=TRUE)
+names(pm25) = c("date", "pm25_mean")
+
+test = merge(pm25, test[seq(nrow(test[test$aq_location == unique(test$aq_location)[1],])), ], by.x = "date", by.y = "date")
+
+
+# for(i in which(is.na(test$pm25))){
+#   test$pm25[i] = mean(test$pm25[i-1], test$pm25[i+1])
+# }
+# 
+# for(i in which(is.na(test$new_cases))){
+#   test$new_cases[i] = mean(test$new_cases[i-1], test$new_cases[i+1])
+# }
+
 
 ggplot() + 
-  geom_line(data = test, aes(x = date, y = pm25, color = "pm25")) + 
+  geom_line(data = test, aes(x = date, y = pm25, color = "pm25_mean")) + 
   geom_line(data = test, aes(x = date, y = new_cases/10, color = "Cases")) + 
   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
 
 
 # Was hat dj für einen Effekt?
-test_wc = analyze.coherency(test[, c("date", "pm25", "new_cases")], my.pair = c("pm25", "new_cases"), 
+test_wc = analyze.coherency(test[, c("date", "pm25_mean", "new_cases")], my.pair = c("pm25_mean", "new_cases"), 
                             loess.span = 0,
                             dt = 1, dj = 1/100,
                             make.pval = TRUE, n.sim = 100)
@@ -141,7 +180,7 @@ Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Berg
 
 # merge data colums
 pm_bergamo = pm_waqi[[8]]
-cov_bergamo = cov_it$cov_nuts3[cov_it$cov_nuts3$denominazione_provincia == "Bergamo",]
+cov_bergamo = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
 bergamo = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
 bergamo$data = as.POSIXct(bergamo$date)
 ggplot() + 
