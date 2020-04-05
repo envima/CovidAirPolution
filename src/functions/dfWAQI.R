@@ -1,6 +1,12 @@
 # Create geo objects from WAQI data
 
-sfWAQI = function(flist){
+dfWAQI = function(flist = NULL){
+  
+  if(is.null(flist)){
+    flist = list.files(
+      file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`), 
+      pattern = "^.*\\.csv$", full.names = TRUE)
+  }
   
   aq = lapply(flist, function(f) {
     latlon = getWAQIpos(readLines(f, n=5))
@@ -11,13 +17,14 @@ sfWAQI = function(flist){
     act$date = as.Date(act$date)
     act$pm25 = as.numeric(as.character(act$pm25))
     act$statname<-substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
-    act = act[act$date >= as.Date("2020-02-01"), ]
-    # it is more consisent to use an sf object and grab the content 
-    # act = list(act)
-    # names(act) = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
-    # act = as.data.frame(act)  
+    act = act[act$date >= as.Date("2020-01-01"), ]
     return(act)
   })
   
-}
+  names(aq) = sapply(aq, function(x) x[1, "statname"])
   
+  return(aq)
+  
+}
+
+
