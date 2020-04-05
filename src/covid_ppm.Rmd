@@ -180,7 +180,7 @@ Die nachfolgenden Abbildung zeigen die wavelet Analyse der PEriodizität neuen C
 # new_cases only is there a periodicy?
 bergamo.w  =  analyze.wavelet(bergamo, "new_cases",
                               loess.span = 0,dt = 1, dj = 1/50,
-                              lowerPeriod = 1, upperPeriod = 8, make.pval = TRUE, 
+                              lowerPeriod = 1, upperPeriod = 14, make.pval = TRUE, 
                               n.sim = 10)
 
 wt.image(bergamo.w, color.key = "interval", n.levels = 250,
@@ -192,8 +192,8 @@ wt.image(bergamo.w, color.key = "interval", n.levels = 250,
 # pm25 only is there a periodicy?
 bergamo.w  =  analyze.wavelet(bergamo, "pm25",
                               loess.span = 0,dt = 1, dj = 1/50,
-                              lowerPeriod = 1, upperPeriod = 8, make.pval = TRUE, 
-                              n.sim = 10)
+                              lowerPeriod = 1, upperPeriod = 14, make.pval = TRUE, 
+                              n.sim = 20)
 
 wt.image(bergamo.w, color.key = "interval", n.levels = 250,
          legend.params = list(lab = "wavelet power levels"),
@@ -212,7 +212,7 @@ Die nachfolgenden Abbildung zeigen die cross-wavelet Analyse der Priodizität de
 # cross wavelet anaklysis
 
 bergamo.wc  =  analyze.coherency(bergamo[, c("data", "pm25", "new_cases")], my.pair = c("pm25", "new_cases"),
-                                loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 28,
+                                loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 14,
                                 make.pval = TRUE, n.sim = 10)
 
 max.power  =  max(bergamo.wc$Power.xy)  # for plotting
@@ -231,7 +231,7 @@ wc.image(bergamo.wc, n.levels = 250,
          # outward ticks
          # period axis:
          periodlab = "period (days)",
-         spec.period.axis = list(at = c(3, 7, 14, 21, 28)),periodtck = 1, periodtcl = NULL)
+         spec.period.axis = list(at = c(3, 7, 14)),periodtck = 1, periodtcl = NULL)
 
 ```
 
