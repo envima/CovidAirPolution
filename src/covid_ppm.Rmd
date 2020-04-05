@@ -9,7 +9,7 @@ output:
 # Set up working environment and defaults --------------------------------------
 library(envimaR)
 if(Sys.info()[["nodename"]] == "PC19616"){
-  source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")
+  source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setupm25[[8]]p.R")
 } else {
   source("~/project/cov/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")  
 }
@@ -138,7 +138,7 @@ labels.ph = seq(-3.5, 3.5, by = 1)
 at.t = seq(from = as.POSIXct("2016-10-31 00:00:00", tz = "EST5EDT"),
            to = as.POSIXct("2016-11-06 00:00:00", tz = "EST5EDT"), by = "days")
 at.t = test[, c("date")]
-labels.t <- format(at.t, format = "%a")
+labels.t  =  format(at.t, format = "%a")
 wc.sel.phases(test_wc, sel.period = 7, 
               siglvl = 1, 
               spec.phase.axis = list(at = at.ph, labels = labels.ph), 
@@ -160,7 +160,9 @@ Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Berg
 #http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
 
 # merge data colums
-bergamo<-merge(x = cov_admin3[cov_admin3$denominazione_provincia == "Bergamo",], y = pm25[[8]], by = "data",sort = T)
+bergamo = merge(x = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo", ], 
+               y = pm25[[8]], 
+               by.x = "data", by.y = "date", sort = T)
 head(bergamo)
 plot(bergamo$new_cases,type = "l")
 plot(bergamo$pm25,type = "l")
@@ -171,17 +173,20 @@ Die nachfolgenden Abbildung zeigen die wavelet Analyse der PEriodizität der neu
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 # convert date to factor
-bergamo$data<-as.factor(as.character(bergamo$data))
+bergamo$data = as.factor(as.character(bergamo$data))
 
 # new_cases only is there a periodicy?
+bergamo.w  =  analyze.wavelet(bergamo, "new_cases",
+                              loess.span = 0,dt = 1, dj = 1/50,
+                              lowerPeriod = 1, upperPeriod = 28, make.pval = TRUE, 
+                              n.sim = 10)
 
-bergamo.w <- analyze.wavelet(bergamo, "new_cases",loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 28,make.pval = TRUE, n.sim = 10)
-
-wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels"),periodlab = "period (days)", timelab = "")
-wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels"),periodlab = "period (days)",label.time.axis = TRUE)
+wt.image(bergamo.w, color.key = "interval", n.levels = 250,
+         legend.params = list(lab = "wavelet power levels"),
+         periodlab = "period (days)",label.time.axis = TRUE)
 
 # - change scale 
-max.power <- max(bergamo.w$Power)
+max.power  =  max(bergamo.w$Power)
 
 wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels"),periodlab = "period (days)",maximum.level = 1.001*max.power,show.date = TRUE, date.format = "%F", timelab = "")
 wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels",
@@ -205,15 +210,15 @@ Die nachfolgenden Abbildung zeigen die cross-wavelet Analyse der Priodizität de
 #--------------------------------------------------------------------
 # cross wavelet anaklysis
 
-bergamo.wc <- analyze.coherency(bergamo,my.pair = c("new_cases", "pm25"),
+bergamo.wc  =  analyze.coherency(bergamo,my.pair = c("new_cases", "pm25"),
                                 loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 28,
                                 make.pval = TRUE, n.sim = 10)
 
-max.power <- max(bergamo.wc$Power.xy)  # for plotting
+max.power  =  max(bergamo.wc$Power.xy)  # for plotting
 #save(bergamo.wc, file = "cross_wavelet_transform_temperature_over_humidity")
 
 #load("cross_wavelet_transform_temperature_over_humidity")
-exponent <- 0.5
+exponent  =  0.5
 wc.image(bergamo.wc, n.levels = 250,
          legend.params = list(lab = "cross-wavelet power levels"),
          color.key = "interval",
