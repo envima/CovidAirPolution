@@ -1,8 +1,5 @@
 # Set up working environment and defaults --------------------------------------
 library(envimaR)
-library(htmlTable)
-library(wavelets)
-library(WaveletComp)
 root_folder = path.expand("~/project/cov/CovidAirPolution/")
 source(file.path(root_folder, "src/functions/000_setup.R"))
 source(file.path(root_folder, "src/functions/parseHeaderWAQI.R"))
@@ -178,7 +175,7 @@ tidyverse_count_autocorrelations %>%
   theme_tq() +
   labs(
     title = paste0("Tidyverse ACF Plot: Lags ", rlang::expr_text(k)),
-    subtitle = "Appears to be a weekly pattern",
+    subtitle = "In Lombardia it appears to be a weekly pattern",
     x = "Lags"
   ) +
   theme(
@@ -217,7 +214,7 @@ tidyverse_absolute_autocorrelations %>%
   theme_tq() +
   labs(
     title = paste0("Absolute Autocorrelations: Lags ", rlang::expr_text(k)),
-    subtitle = "Weekly pattern is consistently above outlier break point",
+    subtitle = "Weekly pattern is NOT above outlier break point",
     x = "Lags"
   ) +
   theme(
