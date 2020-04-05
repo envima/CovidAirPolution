@@ -15,42 +15,36 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 }
 
 
-# Air quality data -------------------------------------------------------------
-pm_waqi = makedfWAQI()
-# Make SF point vector for map
-pm_waqi_points = makeSFPointsWAQI(pm_waqi)
-
-
-# Covid-19 ---------------------------------------------------------------------
-cov_it = getCovidIT()
-
-# Merge air quality and COVID data ---------------------------------------------
-cov_it_polygons = makeSFPolygonsItaly(cov_it$cov_nuts3)
-
-
-it_nuts3 = st_join(cov_it_polygons, pm_waqi_points$pts)
-it_nuts3 = it_nuts3[!is.na(it_nuts3$aq_location), ]
-
-it_nuts3 = lapply(unique(it_nuts3$aq_location), function(l){
-  m = merge(it_nuts3,  pm_waqi[[l]], by.x = c("aq_location", "date"), by.y = c("statname", "date"))
-  
-  m = m[, c("aq_location", "date", "adm1_code", "data", "stato", "codice_regione", 
-        "denominazione_regione", "codice_provincia", "denominazione_provincia",
-        "sigla_provincia", "lat.x", "long", "totale_casi", "note_it", "note_en",
-        "new_cases", "pm25", "pm25_min", "pm25_max")]
-})
-it_nuts3 = do.call(rbind, it_nuts3)
+# Load Italy -------------------------------------------------------------------
+italy = compileDataItaly()
+it_nuts3_mean = italy$it_nuts3_mean
 ```
 
-## Räumliche Verteilung der verwendeten Luftqualitätsstationen in Norditalien.
-Die Abbildung zeigt die räumliche Verteilung der Stationen und die verwendeten pm25 Datentabellen für die Fallstudie Italien.
+
+## Übersicht über die verfügbaren Daten zur zeitlichen Entwicklung in Norditalien
+
+Die Abbildung zeigt die räumliche Verteilung der PM 2.5 Messungen.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-mapview(pm_waqi_points$pts, popup = pm_waqi_points$pop, legend = FALSE, ncol="pm25max")
+mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
+        legend = FALSE, ncol="pm25max")
 ```
 
 
-## Zeitliche Entwicklung in Norditalien
-Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie die neuen Fälle in der Region Lombardei.
+Die Abbildung zeigt die zeitliche Entwicklung der täglich PM 2.5 Konzentrationen in den Provinzen Norditaliens. Wenn mehr als ein Stationsdatensatz in der Provinz verfügbar ist, wurden alle Stationsdatensätze in der Provinz gemittelt.
+```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
+fig = plot_ly()
+for(l in seq(length(it_nuts3_mean))){
+  fig = fig %>% add_trace(data = it_nuts3_mean[[l]], 
+                          x = ~date, y = ~pm25_mean, type = 'scatter', 
+                          name = names(it_nuts3_mean[l]), mode = 'lines+markers')
+}
+fig = fig %>% layout(xaxis = list(title = "Date"), 
+                     yaxis = list(title = "PM 2.4 (mean)"))
+fig
+```
+
+
+Die Abbildung zeigt die zeitliche Entwicklung der täglich hinzukommenden COVID-19 Fälle in den Provinzen Norditaliens.
 ```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
 # ggplot() + 
 #   geom_line(data = cmb, aes(x = date, y = pm25, colour = stat)) + 
@@ -61,29 +55,54 @@ Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie
 #   geom_line(data = cov_Milano, aes(x = data, y = new_cases/10, colour = "Covid Milano")) + 
 #   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
 
-fig = plot_ly() 
-
-fig = fig %>% add_trace(data = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",], x = ~date, y = ~new_cases, yaxis = "y2", name = "New cases Bergamo", line=list(color ="red", width = 5, dash = 'dot') ,mode = 'lines+markers')
-
-
-fig = fig %>% add_trace(data = it_nuts3[it_nuts3$denominazione_provincia == "Milano",], x = ~date, y = ~new_cases, yaxis = "y2", name = "New cases Milano", line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot'),mode = 'lines+markers')
-
-fig = fig %>% layout(yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
-
-for(l in unique(it_nuts3$aq_location)){
-  fig = fig %>% add_trace(data = it_nuts3[it_nuts3$aq_location == l, ], x = ~date, y = ~pm25, type = 'scatter', name = paste("pm 2.5", l), mode = 'lines+markers')
+fig = plot_ly()
+for(l in seq(length(it_nuts3_mean))){
+  fig = fig %>% 
+    add_trace(data = it_nuts3_mean[[l]], x = ~date, y = ~new_cases, 
+              type = 'scatter', 
+              name = names(it_nuts3_mean[l]), 
+              mode = 'lines+markers')
 }
+fig = fig %>% layout(xaxis = list(title = "Date"), 
+                     yaxis = list(title = "New cases (daily)"))
 fig
 ```
 
 
-## Test Bergamo
+## Exemplarische Auswertung für Bergamo
+```{r, eval = FALSE, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+m1 = mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
+        legend = FALSE, ncol="pm25max")
+
+m2 = mapview(it_nuts3_mean$Bergamo)
+```
+
+Neue COVID-19 Fälle gegen die in der Provinz über 5 Stationen gemittelten PM 2.5 Werte.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+fig = plot_ly()
+
+fig = fig %>% 
+  add_trace(data = it_nuts3_mean$Bergamo, x = ~date, y = ~new_cases, 
+            yaxis = "y2", name = "New cases Bergamo", 
+            mode = 'lines+markers')
+
+fig = fig %>% 
+  add_trace(data = it_nuts3_mean$Bergamo, x = ~date, y = ~pm25_mean, 
+            name = "PM 2.5 region Bergamo", 
+            mode = 'lines+markers')
+
+fig = fig %>% layout(yaxis = list(title = "PM 2.5 mean"),
+                     yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
+
 # pm_bergamo = pm_waqi[[8]]
 # cov_bergamo = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
 # test = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
 # test$date = as.POSIXct(test$date)
+```
 
+
+Ergebnisse einer Wavelet-Analyse.
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 test = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
 
 pm25 = aggregate(test$pm25, by = list(test$date), FUN = mean, na.rm=TRUE)

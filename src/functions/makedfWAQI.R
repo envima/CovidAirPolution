@@ -1,12 +1,6 @@
 # Create geo objects from WAQI data
 
-makedfWAQI = function(flist = NULL){
-  
-  if(is.null(flist)){
-    flist = list.files(
-      file.path(envrmt$`path_report-data-platform-16229-259611-lombardy`), 
-      pattern = "^.*\\.csv$", full.names = TRUE)
-  }
+makedfWAQI = function(flist){
   
   aq = lapply(flist, function(f) {
     latlon = getWAQIpos(readLines(f, n=5))
@@ -15,7 +9,9 @@ makedfWAQI = function(flist = NULL){
     act$lat= latlon[2]
     act$lon= latlon[1]
     act$date = as.POSIXct(act$date)
-    act$pm25 = as.numeric(as.character(act$pm25))
+    for(i in seq(2, ncol(act))){
+      act[, i] = as.numeric(act[, i])
+    }
     act$statname = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
     act = act[act$date >= as.POSIXct("2020-01-01"), ]
     
