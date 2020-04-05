@@ -13,12 +13,11 @@ sfWAQI = function(flist){
     act$statname<-substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
     act = act[act$date >= as.Date("2020-02-01"), ]
     # it is more consisent to use an sf object and grab the content 
-    act = list(act)
-    names(act) = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
-    act<-as.data.frame(act)  
+    # act = list(act)
+    # names(act) = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
+    # act = as.data.frame(act)  
     return(act)
   })
-  
   
 }
   
