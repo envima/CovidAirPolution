@@ -23,10 +23,7 @@ mapview(pts, popup = pop,legend = FALSE, ncol="pm25max")
 
 res<-getCovidIT()
 cov_admin2<-res[[1]]
-cov_admin3 <-res[[2]]
-
-
-
+cov_admin3 <-res[[2]]pm25
 
 
 #---------------------------------------------------------

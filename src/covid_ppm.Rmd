@@ -49,6 +49,7 @@ mapview(waqi_pts, popup = pop,legend = FALSE, ncol="pm25max")
 ```
 
 Die Abbildung zeigt die zeitliche Entwicklung der PM 2.5 an drei Stationen sowie die neuen Fälle in der Region Lombardei.
+
 ```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
 # ggplot() + 
 #   geom_line(data = cmb, aes(x = date, y = pm25, colour = stat)) + 
@@ -200,6 +201,30 @@ wt.image(bergamo.w, color.key = "interval", n.levels = 250,
          legend.params = list(lab = "wavelet power levels"),
          periodlab = "period (days)",label.time.axis = TRUE, 
          show.date = TRUE, date.format = "%m%d")
+
+
+# Hier mal die Darsetllung, wie die Periode von 7 Tagen sich verhält (hoffe, die 3.5 sind richtig...)
+# wc.sel.phases(test_wc, sel.period = 7, siglvl = 1, only.coi = TRUE)
+
+at.ph = seq(-pi, pi, by = pi/7)
+labels.ph = seq(-7, 7, by = 1)
+at.t = seq(from = as.POSIXct("2016-10-31 00:00:00", tz = "EST5EDT"),
+           to = as.POSIXct("2016-11-06 00:00:00", tz = "EST5EDT"), by = "days")
+at.t = test[, c("date")]
+labels.t  =  format(at.t, format = "%a")
+wc.sel.phases(bergamo.wc, sel.period = 7, 
+              siglvl = 1, 
+              spec.phase.axis = list(at = at.ph, labels = labels.ph), 
+              timelab = "", phaselab = "phase (days)",
+              show.date = TRUE,  
+              spec.time.axis = list(at = at.t, labels = labels.t),only.coi = TRUE)
+abline(h = 0)
+
+# Und waveleght coherence - was machen wir mit diesem Resultat - hier nur dort wo beide signifikant - hier ist der 15. März (siehe ggplot) wahrscheinlich das Dominante.
+wc.image(bergamo.wc, which.image = "wc", 
+         n.levels = 250, color.key = "interval", 
+         siglvl.contour = 0.1, siglvl.arrow = 0.1, 
+         legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE)
 
 
 ```
