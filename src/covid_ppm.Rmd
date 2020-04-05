@@ -90,12 +90,80 @@ fig
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-pm_bergamo = pm_waqi[pm_waqi$statname == "Bergamo-Via-Meucci",]
+pm_bergamo = pm_waqi[pm_waqi$statname == "Bergamo-Via-Meucci"]
 
 cov_bergamo = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",]
 
 # https://rpubs.com/ibn_abdullah/rwcoher
 
 # https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-019-7607-2
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+# merge data colums
+bergamo<-merge(x = cov_admin3[cov_admin3$denominazione_provincia == "Bergamo",], y = pm25[[8]], by = "data",sort = T)
+head(bergamo)
+plot(bergamo$new_cases,type = "l")
+plot(bergamo$pm25,type = "l")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+# convert date to factor
+bergamo$data<-as.factor(as.character(bergamo$data))
+
+# new_cases only is there a periodicy?
+
+bergamo.w <- analyze.wavelet(bergamo, "new_cases",loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 28,make.pval = TRUE, n.sim = 10)
+
+wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels"),periodlab = "period (days)", timelab = "")
+wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels"),periodlab = "period (days)",label.time.axis = TRUE)
+
+# - change scale 
+max.power <- max(bergamo.w$Power)
+
+wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels"),periodlab = "period (days)",maximum.level = 1.001*max.power,show.date = TRUE, date.format = "%F", timelab = "")
+wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels",
+                                                                           label.digits = 2),
+           periodlab = "periods (days)", maximum.level = 1.25, 
+         # Concerning item 1 above --- plot the square root of power:
+         exponent = 0.5,
+         # Concerning item 2 above --- time axis:
+         show.date = FALSE, date.format = "%m%d", timelab = "", spec.time.axis = list(at = c(paste(2005:2014, "-01-01", sep = "")),labels = c(2005:2014)),timetcl = -0.5,  
+         # draws outward ticks# Concerning item 3 above --- period axis:
+         spec.period.axis = list(at = c(3, 7, 14, 21, 28)),periodtck = 1, periodtcl = NULL  )
+         # draws horizontal lines)
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+#--------------------------------------------------------------------
+# cross wavelet anaklysis
+
+bergamo.wc <- analyze.coherency(bergamo,my.pair = c("new_cases", "pm25"),
+                                loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 28,
+                                make.pval = TRUE, n.sim = 10)
+
+max.power <- max(bergamo.wc$Power.xy)  # for plotting
+#save(bergamo.wc, file = "cross_wavelet_transform_temperature_over_humidity")
+
+#load("cross_wavelet_transform_temperature_over_humidity")
+exponent <- 0.5
+wc.image(bergamo.wc, n.levels = 250,
+         legend.params = list(lab = "cross-wavelet power levels"),
+         color.key = "interval",
+         maximum.level = (1.001*max.power)^exponent, exponent = exponent,
+         # time axis:
+         label.time.axis = TRUE, 
+         show.date = TRUE,
+         spec.time.axis = list(at = paste(2020-02-01:2020-04-02, "-01-01", sep = ""),labels = 2020-02:2020-04),timetcl = -0.5, 
+         # outward ticks
+         # period axis:
+         periodlab = "period (days)",
+         spec.period.axis = list(at = c(3, 7, 14, 21, 28)),periodtck = 1, periodtcl = NULL)
+
 ```
 
