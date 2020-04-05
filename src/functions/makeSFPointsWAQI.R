@@ -4,7 +4,7 @@ makeSFPointsWAQI = function(pm_waqi){
   p = lapply(pm_waqi, function(x){
     latlon = c(x[1, "lon"],x[1, "lat"])
     class(latlon) = "numeric"
-    p = st_sfc(st_point(latlon),crs = 4326)
+    p = st_sfc(st_point(latlon), crs = 4326)
     st_sf(aq_location = x[1, "statname"],p)
   })
   pts = do.call(rbind, p)
