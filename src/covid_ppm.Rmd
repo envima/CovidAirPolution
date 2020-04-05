@@ -99,9 +99,11 @@ cov_bergamo = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Be
 # https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-019-7607-2
 ```
 
-
+Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Bergamo
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+#http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
 
 # merge data colums
 bergamo<-merge(x = cov_admin3[cov_admin3$denominazione_provincia == "Bergamo",], y = pm25[[8]], by = "data",sort = T)
@@ -109,6 +111,9 @@ head(bergamo)
 plot(bergamo$new_cases,type = "l")
 plot(bergamo$pm25,type = "l")
 ```
+
+
+Die nachfolgenden Abbildung zeigen die wavelet Analyse der PEriodizität der neuen Corona Fälle in Bergamo
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 # convert date to factor
@@ -137,6 +142,9 @@ wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(
          # draws horizontal lines)
 
 ```
+
+
+Die nachfolgenden Abbildung zeigen die cross-wavelet Analyse der Priodizität der neuen Corona Fälle in Bergamo gegen die Station Bergamo-Via-Meucci 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 
