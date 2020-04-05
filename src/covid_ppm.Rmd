@@ -11,7 +11,7 @@ library(envimaR)
 if(Sys.info()[["nodename"]] == "PC19616"){
   source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setupm25[[8]]p.R")
 } else {
-  source("~/project/cov/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")  
+  source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
 }
 
 
@@ -83,7 +83,7 @@ fig
 
 Test Bergamo
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-pm_bergamo = pm_waqi[[8]]
+pm_bergamo = pm25[[8]]
 cov_bergamo = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",]
 test = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
 test$date = as.POSIXct(test$date)
@@ -160,45 +160,46 @@ Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Berg
 #http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
 
 # merge data colums
-bergamo = merge(x = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo", ], 
-               y = pm25[[8]], 
-               by.x = "data", by.y = "date", sort = T)
-head(bergamo)
-plot(bergamo$new_cases,type = "l")
-plot(bergamo$pm25,type = "l")
+pm_bergamo = pm25[[8]]
+cov_bergamo = cov_it$cov_admin3[cov_it$cov_admin3$denominazione_provincia == "Bergamo",]
+bergamo = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
+bergamo$data = as.POSIXct(bergamo$date)
+ggplot() + 
+  geom_line(data = test, aes(x = date, y = pm25, color = "pm25")) + 
+  geom_line(data = test, aes(x = date, y = new_cases/10, color = "Cases")) + 
+  scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
 ```
 
 
-Die nachfolgenden Abbildung zeigen die wavelet Analyse der PEriodizität der neuen Corona Fälle in Bergamo
+Die nachfolgenden Abbildung zeigen die wavelet Analyse der PEriodizität neuen Corona Fälle und des pm25 in Bergamo
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 # convert date to factor
-bergamo$data = as.factor(as.character(bergamo$data))
+#bergamo$data = as.factor(as.character(bergamo$data))
 
 # new_cases only is there a periodicy?
 bergamo.w  =  analyze.wavelet(bergamo, "new_cases",
                               loess.span = 0,dt = 1, dj = 1/50,
-                              lowerPeriod = 1, upperPeriod = 28, make.pval = TRUE, 
+                              lowerPeriod = 1, upperPeriod = 8, make.pval = TRUE, 
                               n.sim = 10)
 
 wt.image(bergamo.w, color.key = "interval", n.levels = 250,
          legend.params = list(lab = "wavelet power levels"),
-         periodlab = "period (days)",label.time.axis = TRUE)
+         periodlab = "period (days)",label.time.axis = TRUE, 
+         show.date = TRUE, date.format = "%m%d")
 
-# - change scale 
-max.power  =  max(bergamo.w$Power)
 
-wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels"),periodlab = "period (days)",maximum.level = 1.001*max.power,show.date = TRUE, date.format = "%F", timelab = "")
-wt.image(bergamo.w, color.key = "interval", n.levels = 250,legend.params = list(lab = "wavelet power levels",
-                                                                           label.digits = 2),
-           periodlab = "periods (days)", maximum.level = 1.25, 
-         # Concerning item 1 above --- plot the square root of power:
-         exponent = 0.5,
-         # Concerning item 2 above --- time axis:
-         show.date = FALSE, date.format = "%m%d", timelab = "", spec.time.axis = list(at = c(paste(2005:2014, "-01-01", sep = "")),labels = c(2005:2014)),timetcl = -0.5,  
-         # draws outward ticks# Concerning item 3 above --- period axis:
-         spec.period.axis = list(at = c(3, 7, 14, 21, 28)),periodtck = 1, periodtcl = NULL  )
-         # draws horizontal lines)
+# pm25 only is there a periodicy?
+bergamo.w  =  analyze.wavelet(bergamo, "pm25",
+                              loess.span = 0,dt = 1, dj = 1/50,
+                              lowerPeriod = 1, upperPeriod = 8, make.pval = TRUE, 
+                              n.sim = 10)
+
+wt.image(bergamo.w, color.key = "interval", n.levels = 250,
+         legend.params = list(lab = "wavelet power levels"),
+         periodlab = "period (days)",label.time.axis = TRUE, 
+         show.date = TRUE, date.format = "%m%d")
+
 
 ```
 
@@ -210,7 +211,7 @@ Die nachfolgenden Abbildung zeigen die cross-wavelet Analyse der Priodizität de
 #--------------------------------------------------------------------
 # cross wavelet anaklysis
 
-bergamo.wc  =  analyze.coherency(bergamo,my.pair = c("new_cases", "pm25"),
+bergamo.wc  =  analyze.coherency(bergamo[, c("data", "pm25", "new_cases")], my.pair = c("pm25", "new_cases"),
                                 loess.span = 0,dt = 1, dj = 1/50,lowerPeriod = 1, upperPeriod = 28,
                                 make.pval = TRUE, n.sim = 10)
 
