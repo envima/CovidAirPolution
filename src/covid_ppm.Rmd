@@ -24,15 +24,14 @@ it_nuts3_mean = italy$it_nuts3_mean
 ## Übersicht über die verfügbaren Daten zur zeitlichen Entwicklung in Norditalien
 
 Die Abbildung zeigt die räumliche Verteilung der PM 2.5 Messungen.
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
         legend = FALSE, ncol="pm25max")
 ```
 
 
-Die Abbildung zeigt die zeitliche Entwicklung der täglich PM 2.5 Konzentrationen in den Provinzen Norditaliens. Wenn mehr als ein Stationsdatensatz in der Provinz verfügbar ist, wurden alle Stationsdatensätze in der Provinz gemittelt.
-```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
-fig = plot_ly()
+```{r eval= FALSE, echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
+# Die Abbildung zeigt die zeitliche Entwicklung der täglich PM 2.5 Konzentrationen in den Provinzen Norditaliens. Wenn mehr als ein Stationsdatensatz in der Provinz verfügbar ist, wurden alle Stationsdatensätze in der Provinz gemittelt.
 for(l in seq(length(it_nuts3_mean))){
   fig = fig %>% add_trace(data = it_nuts3_mean[[l]], 
                           x = ~date, y = ~pm25_mean, type = 'scatter', 
@@ -44,8 +43,8 @@ fig
 ```
 
 
-Die Abbildung zeigt die zeitliche Entwicklung der täglich hinzukommenden COVID-19 Fälle in den Provinzen Norditaliens.
-```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
+```{r eval= FALSE, echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
+#Die Abbildung zeigt die zeitliche Entwicklung der täglich hinzukommenden COVID-19 Fälle in den Provinzen Norditaliens.
 # ggplot() + 
 #   geom_line(data = cmb, aes(x = date, y = pm25, colour = stat)) + 
 #   geom_line(data = cov_lombardia, aes(x = data, y = nuovi_positivi/10)) + 
@@ -69,40 +68,75 @@ fig
 ```
 
 
-## Exemplarische Auswertung für Bergamo
+## Exemplarische Auswertung für die einzelnen Regionen
 ```{r, eval = FALSE, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-m1 = mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
-        legend = FALSE, ncol="pm25max")
-
-m2 = mapview(it_nuts3_mean$Bergamo)
+# m1 = mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
+#         legend = FALSE, ncol="pm25max")
+# 
+# m2 = mapview(it_nuts3_mean$Bergamo)
 ```
 
-Neue COVID-19 Fälle gegen die in der Provinz über 5 Stationen gemittelten PM 2.5 Werte.
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-fig = plot_ly()
+Die folgenden Abbildungen zeigen jeweils (i) die Zeitreihen PM 2.5 und neuen COVID-Fälle, (ii) die wavelet coherence, (iii) die Phasendifferenz zwischen den periodischen Komponenten (grün = Differenz nahe 0, Gelb-Grün = PM 2.5 früher als COVID, Türkis = Covid früher als PM 2.5, Blau = inverse Zusammenhang, PM 2.5 vor COVID, Rot = inverser Zusammenhang, Covid vor PM 2.5) und (iv) die Übersicht über wichtige Phasen.
+```{r, echo=FALSE, warning = FALSE, message = FALSE, results = FALSE}
 
-fig = fig %>% 
-  add_trace(data = it_nuts3_mean$Bergamo, x = ~date, y = ~new_cases, 
-            yaxis = "y2", name = "New cases Bergamo", 
-            mode = 'lines+markers')
+for(l in seq(length(it_nuts3_mean))){
 
-fig = fig %>% 
-  add_trace(data = it_nuts3_mean$Bergamo, x = ~date, y = ~pm25_mean, 
-            name = "PM 2.5 region Bergamo", 
-            mode = 'lines+markers')
+  # Plot of PM 2.5 and COVID time series
+  fig = plot_ly()
+  
+  fig = fig %>% 
+    add_trace(data = it_nuts3_mean[[l]], x = ~date, y = ~pm25_mean, 
+              name = paste("PM 2.5", names(it_nuts3_mean[l])), 
+              mode = 'lines+markers', line = list(color = "red"), marker = list(color = "red"))
+  
+  fig = fig %>% 
+    add_trace(data = it_nuts3_mean[[l]], x = ~date, y = ~new_cases, 
+              yaxis = "y2", name = paste("New cases", names(it_nuts3_mean[l])), 
+              mode = 'lines+markers', line = list(color = "blue"), marker = list(color = "blue"))
+  
+  fig = fig %>% layout(title= names(it_nuts3_mean[l]),
+                       yaxis = list(title = "PM 2.5 mean"),
+                       yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
+  
+  fig
+  
+  # Plot of PM 2.5 and COVID wavelet analysis
+  wc = analyze.coherency(as.data.frame(it_nuts3_mean[[l]][, c("date", "pm25_mean", "new_cases")])[, -4], 
+                         my.pair = c("pm25_mean", "new_cases"), 
+                         loess.span = 0,
+                         dt = 1, dj = 1/100,
+                         make.pval = TRUE, n.sim = 100)
+  
+  
+  # wc.image(wc, which.image = "wp", 
+  #        n.levels = 250, 
+  #        color.key = "interval", 
+  #        siglvl.contour = 0.1, siglvl.arrow = 0.1, 
+  #        legend.params = list(lab = "cross-wavelet power levels"), 
+  #        show.date = TRUE, main = paste("Cross-wavelet power", names(it_nuts3_mean[l])))
+  # 
+  # wc.avg(wc, which.avg = "wp", exponent = 1, 
+  #        main = paste("Main frequencies of cross-wavelet power", names(it_nuts3_mean[l])))
+  
+  wc.image(wc, which.image = "wc", 
+           n.levels = 250, color.key = "interval", 
+           siglvl.contour = 0.1, siglvl.arrow = 0.1, 
+           legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE,
+           main = paste("Wavelet coherence", names(it_nuts3_mean[l])))
+  
+  wc.phasediff.image(wc, which.contour = "wc",
+                     show.date = TRUE,
+                     main = paste("Main frequencies of wavelet coherence", names(it_nuts3_mean[l])))
+  
+  wc.avg(wc, which.avg = "wc", exponent = 1, periodlab = "period (days)",
+         main = paste("Main frequencies of wavelet coherence", names(it_nuts3_mean[l])))
+  
+}
 
-fig = fig %>% layout(yaxis = list(title = "PM 2.5 mean"),
-                     yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
-
-# pm_bergamo = pm_waqi[[8]]
-# cov_bergamo = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
-# test = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
-# test$date = as.POSIXct(test$date)
 ```
 
 
-Ergebnisse einer Wavelet-Analyse.
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+```{r, eval = FALSE, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 test = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
 
 pm25 = aggregate(test$pm25, by = list(test$date), FUN = mean, na.rm=TRUE)
@@ -178,14 +212,15 @@ wc.sel.phases(test_wc, sel.period = 7,
               spec.time.axis = list(at = at.t, labels = labels.t),only.coi = TRUE)
 abline(h = 0)
 
+wc.sel.phases(wc, sel.period = 7, siglvl = 1.0, which.sig = "wp")
 # https://rpubs.com/ibn_abdullah/rwcoher
 
 # https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-019-7607-2
 
 ```
 
-Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Bergamo
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+```{r, eval = FALSE, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 
 # http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
 # https://ehjournal.biomedcentral.com/articles/10.1186/1476-069X-13-102
@@ -202,8 +237,8 @@ ggplot() +
 ```
 
 
-Die nachfolgenden Abbildung zeigen die wavelet Analyse der Periodizität neuen Corona Fälle und des pm25 in Bergamo
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+```{r, eval = FALSE, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 # convert date to factor
 #bergamo$data = as.factor(as.character(bergamo$data))
 
