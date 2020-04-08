@@ -6,7 +6,7 @@ if(Sys.info()[["nodename"]] == "PC19616"){
   root_folder = path.expand("~/project/cov/CovidAirPolution/")
 }
 
-fcts_folder = file.path(root_folder, "src/functions/")
+fcts_folder = file.path(root_folder, "CovidAirPolution/src/functions/")
 
 project_folders = c("data/",
                     "data/COVID-19/",
@@ -14,7 +14,7 @@ project_folders = c("data/",
                     "data/report-data-platform-16229-259611-lombardy",
                     "data/tmp/")
 
-libs = c("data.table", "ggplot2", "htmlTable", "plotly", "mapview", "stringr", 
+libs = c("data.table", "ggplot2", "htmlTable", "htmltools", "plotly", "mapview", "stringr", 
          "sf", "wavelets", "wmtsa", "biwavelet", "rnaturalearth", "rnaturalearthhires",
          "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp")
 

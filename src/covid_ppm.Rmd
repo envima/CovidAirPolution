@@ -14,7 +14,9 @@ if(Sys.info()[["nodename"]] == "PC19616"){
   source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
 }
 # Load Italy -------------------------------------------------------------------
-italy = compileDataItaly()
+# italy = compileDataItaly()
+# saveRDS(italy, file.path(envrmt$path_tmp, "italy.RDS"))
+italy = readRDS(file.path(envrmt$path_tmp, "italy.RDS"))
 it_nuts3_mean = italy$it_nuts3_mean
 ```
 
@@ -22,28 +24,14 @@ it_nuts3_mean = italy$it_nuts3_mean
 ## Übersicht über die verfügbaren Daten zur zeitlichen Entwicklung in Norditalien
 
 Die Abbildung zeigt die räumliche Verteilung der PM 2.5 Messungen.
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
 mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
         legend = FALSE, ncol="pm25max")
 ```
 
 
-Die Abbildung zeigt die zeitliche Entwicklung der täglich PM 2.5 Konzentrationen in den Provinzen Norditaliens. Wenn mehr als ein Stationsdatensatz in der Provinz verfügbar ist, wurden alle Stationsdatensätze in der Provinz gemittelt.
-```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
-fig = plot_ly()
-for(l in seq(length(it_nuts3_mean))){
-  fig = fig %>% add_trace(data = it_nuts3_mean[[l]], 
-                          x = ~date, y = ~pm25_mean, type = 'scatter', 
-                          name = names(it_nuts3_mean[l]), mode = 'lines+markers')
-}
-fig = fig %>% layout(xaxis = list(title = "Date"), 
-                     yaxis = list(title = "PM 2.4 (mean)"))
-fig
-```
-
-
-Die Abbildung zeigt die zeitliche Entwicklung der täglich hinzukommenden COVID-19 Fälle in den Provinzen Norditaliens.
-```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
+```{r eval= FALSE, echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
+#Die Abbildung zeigt die zeitliche Entwicklung der täglich hinzukommenden COVID-19 Fälle in den Provinzen Norditaliens.
 # ggplot() + 
 #   geom_line(data = cmb, aes(x = date, y = pm25, colour = stat)) + 
 #   geom_line(data = cov_lombardia, aes(x = data, y = nuovi_positivi/10)) + 
@@ -52,147 +40,95 @@ Die Abbildung zeigt die zeitliche Entwicklung der täglich hinzukommenden COVID-
 #   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases")) +
 #   geom_line(data = cov_Milano, aes(x = data, y = new_cases/10, colour = "Covid Milano")) + 
 #   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
+
 fig = plot_ly()
 for(l in seq(length(it_nuts3_mean))){
-  fig = fig %>% 
-    add_trace(data = it_nuts3_mean[[l]], x = ~date, y = ~new_cases, 
-              type = 'scatter', 
-              name = names(it_nuts3_mean[l]), 
+  fig = fig %>%
+    add_trace(data = it_nuts3_mean[[l]], x = ~date, y = ~new_cases,
+              type = 'scatter',
+              name = names(it_nuts3_mean[l]),
               mode = 'lines+markers')
 }
-fig = fig %>% layout(xaxis = list(title = "Date"), 
+fig = fig %>% layout(xaxis = list(title = "Date"),
                      yaxis = list(title = "New cases (daily)"))
 fig
 ```
 
 
-## Exemplarische Auswertung für Bergamo
-```{r, eval = FALSE, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-m1 = mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
-        legend = FALSE, ncol="pm25max")
-m2 = mapview(it_nuts3_mean$Bergamo)
-```
+## Exemplarische Auswertung für die einzelnen Regionen
 
-Neue COVID-19 Fälle gegen die in der Provinz über 5 Stationen gemittelten PM 2.5 Werte.
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-fig = plot_ly()
-fig = fig %>% 
-  add_trace(data = it_nuts3_mean$Bergamo, x = ~date, y = ~new_cases, 
-            yaxis = "y2", name = "New cases Bergamo", 
-            mode = 'lines+markers')
-fig = fig %>% 
-  add_trace(data = it_nuts3_mean$Bergamo, x = ~date, y = ~pm25_mean, 
-            name = "PM 2.5 region Bergamo", 
-            mode = 'lines+markers')
-fig = fig %>% layout(yaxis = list(title = "PM 2.5 mean"),
-                     yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
-# pm_bergamo = pm_waqi[[8]]
-# cov_bergamo = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
-# test = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
-# test$date = as.POSIXct(test$date)
-```
+Die folgenden Abbildungen zeigen jeweils (i) die Zeitreihen PM 2.5 und neuen COVID-Fälle, (ii) die wavelet coherence, (iii) die Phasendifferenz zwischen den periodischen Komponenten (grün = Differenz nahe 0, Gelb-Grün = PM 2.5 früher als COVID, Türkis = Covid früher als PM 2.5, Blau = inverse Zusammenhang, PM 2.5 vor COVID, Rot = inverser Zusammenhang, Covid vor PM 2.5) und (iv) die Übersicht über wichtige Phasen.
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+for(l in seq(length(it_nuts3_mean))){
+
+  # Plot of PM 2.5 and COVID time series
+  # fig = plot_ly()
+  # fig = fig %>%
+  #   add_trace(data = it_nuts3_mean[[l]], x = ~date, y = ~pm25_mean,
+  #             name = paste("PM 2.5", names(it_nuts3_mean[l])),
+  #             mode = 'lines+markers', line = list(color = "red"), marker = list(color = "red"))
+  # 
+  # fig = fig %>%
+  #   add_trace(data = it_nuts3_mean[[l]], x = ~date, y = ~new_cases,
+  #             yaxis = "y2", name = paste("New cases", names(it_nuts3_mean[l])),
+  #             mode = 'lines+markers', line = list(color = "blue"), marker = list(color = "blue"))
+  # 
+  # fig = fig %>% layout(title= names(it_nuts3_mean[l]),
+  #                      yaxis = list(title = "PM 2.5 mean"),
+  #                      yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
+  # print(fig)
+  
+  g = ggplot() +
+    geom_line(data = it_nuts3_mean[[l]], aes(x = date, y = pm25_mean, colour  = "PM 2.5 mean")) +
+    geom_line(data = it_nuts3_mean[[l]], aes(x = date, y = new_cases/10, colour  = "New cases")) +
+    scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases")) +
+    labs(title = names(it_nuts3_mean[l]), x = "Date", y = "PM 25 mean") +
+    scale_colour_manual(name = NULL, values = c("blue", "red"))
+
+  print(g)
+  
+  # Plot of PM 2.5 and COVID wavelet analysis
+  wc = analyze.coherency(as.data.frame(it_nuts3_mean[[l]][, c("date", "pm25_mean", "new_cases")])[, -4],
+                         my.pair = c("pm25_mean", "new_cases"),
+                         loess.span = 0,
+                         dt = 1, dj = 1/100,
+                         make.pval = TRUE, n.sim = 100,
+                         verbose = FALSE)
 
 
-Ergebnisse einer Wavelet-Analyse.
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-test = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
-pm25 = aggregate(test$pm25, by = list(test$date), FUN = mean, na.rm=TRUE)
-names(pm25) = c("date", "pm25_mean")
-test = merge(pm25, test[seq(nrow(test[test$aq_location == unique(test$aq_location)[1],])), ], by.x = "date", by.y = "date")
-# for(i in which(is.na(test$pm25))){
-#   test$pm25[i] = mean(test$pm25[i-1], test$pm25[i+1])
-# }
-# 
-# for(i in which(is.na(test$new_cases))){
-#   test$new_cases[i] = mean(test$new_cases[i-1], test$new_cases[i+1])
-# }
-ggplot() + 
-  geom_line(data = test, aes(x = date, y = pm25, color = "pm25_mean")) + 
-  geom_line(data = test, aes(x = date, y = new_cases/10, color = "Cases")) + 
-  scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
-# Was hat dj für einen Effekt?
-test_wc = analyze.coherency(test[, c("date", "pm25_mean", "new_cases")], my.pair = c("pm25_mean", "new_cases"), 
-                            loess.span = 0,
-                            dt = 1, dj = 1/100,
-                            make.pval = TRUE, n.sim = 100)
-# wc.image(test_wc, which.image = "wp", 
-#          n.levels = 250, 
-#          siglvl.contour = 0.1, siglvl.arrow = 0.05,  
-#          legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE)
-# Strengere variante - beide Plots zeigen auf die "in phase" im letzten Drittel der Zeitreihe?
-wc.image(test_wc, which.image = "wp", 
-         n.levels = 250, 
-         color.key = "interval", 
-         siglvl.contour = 0.1, siglvl.arrow = 0.1, 
-         legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE)
-# Das hier identifiziert die wichtigen Frequenzen (der ersten beiden Abbildungen)
-wc.avg(test_wc, which.avg = "wp",
-       exponent = 1)
-# Und waveleght coherence - was machen wir mit diesem Resultat - hier nur dort wo beide signifikant - hier ist der 15. März (siehe ggplot) wahrscheinlich das Dominante.
-wc.image(test_wc, which.image = "wc", 
-         n.levels = 250, color.key = "interval", 
-         siglvl.contour = 0.1, siglvl.arrow = 0.1, 
-         legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE)
-# Das hier identifiziert die wichtigen Frequenzen der wavelength coherence
-wc.avg(test_wc, which.avg = "wc",
-       exponent = 1,
-       periodlab = "period (days)")
-# Hier mal die Darsetllung, wie die Periode von 7 Tagen sich verhält (hoffe, die 3.5 sind richtig...)
-# wc.sel.phases(test_wc, sel.period = 7, siglvl = 1, only.coi = TRUE)
-at.ph = seq(-pi, pi, by = pi/3.5)
-labels.ph = seq(-3.5, 3.5, by = 1)
-at.t = seq(from = as.POSIXct("2016-10-31 00:00:00", tz = "EST5EDT"),
-           to = as.POSIXct("2016-11-06 00:00:00", tz = "EST5EDT"), by = "days")
-at.t = test[, c("date")]
-labels.t  =  format(at.t, format = "%a")
-wc.sel.phases(test_wc, sel.period = 7, 
-              siglvl = 1, 
-              spec.phase.axis = list(at = at.ph, labels = labels.ph), 
-              timelab = "", phaselab = "phase (days)",
-              show.date = TRUE,  
-              spec.time.axis = list(at = at.t, labels = labels.t),only.coi = TRUE)
-abline(h = 0)
+  # wc.image(wc, which.image = "wp",
+  #        n.levels = 250,
+  #        color.key = "interval",
+  #        siglvl.contour = 0.1, siglvl.arrow = 0.1,
+  #        legend.params = list(lab = "cross-wavelet power levels"),
+  #        show.date = TRUE, main = paste("Cross-wavelet power", names(it_nuts3_mean[l])))
+  #
+  # wc.avg(wc, which.avg = "wp", exponent = 1,
+  #        main = paste("Main frequencies of cross-wavelet power", names(it_nuts3_mean[l])))
+
+  wc.image(wc, which.image = "wc",
+           n.levels = 250, color.key = "interval",
+           siglvl.contour = 0.1, siglvl.arrow = 0.1,
+           legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE,
+           main = paste("Wavelet coherence", names(it_nuts3_mean[l])))
+
+  wc.phasediff.image(wc, which.contour = "wc",
+                     show.date = TRUE,
+                     main = paste("Main frequencies of wavelet coherence", names(it_nuts3_mean[l])))
+
+  wc.avg(wc, which.avg = "wc", exponent = 1, periodlab = "period (days)",
+         main = paste("Main frequencies of wavelet coherence", names(it_nuts3_mean[l])))
+
+}
+
 # https://rpubs.com/ibn_abdullah/rwcoher
 # https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-019-7607-2
-```
-
-Der Verlauf der Station Bergamo-Via-Meucci gegen die neuen Corona Fälle in Bergamo
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 # http://www.hs-stat.com/projects/WaveletComp/WaveletComp_guided_tour.pdf
 # https://ehjournal.biomedcentral.com/articles/10.1186/1476-069X-13-102
-# merge data colums
-pm_bergamo = pm_waqi[[8]]
-cov_bergamo = it_nuts3[it_nuts3$denominazione_provincia == "Bergamo",]
-bergamo = merge(pm_bergamo, cov_bergamo, by.x = "date", by.y = "data")
-bergamo$data = as.POSIXct(bergamo$date)
-ggplot() + 
-  geom_line(data = test, aes(x = date, y = pm25, color = "pm25")) + 
-  geom_line(data = test, aes(x = date, y = new_cases/10, color = "Cases")) + 
-  scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
+
 ```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
-Die nachfolgenden Abbildung zeigen die wavelet Analyse der Periodizität neuen Corona Fälle und des pm25 in Bergamo
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
-# convert date to factor
-#bergamo$data = as.factor(as.character(bergamo$data))
-# new_cases only is there a periodicy?
-par(mar = c(4, 4, 0.1, 0.1))
-bergamo.w  =  analyze.wavelet(bergamo, "new_cases",
-                              loess.span = 0,dt = 1, dj = 1/50,
-                              lowerPeriod = 1, upperPeriod = 14, make.pval = TRUE, 
-                              n.sim = 10)
-wt.image(bergamo.w, color.key = "interval", n.levels = 250,
-         legend.params = list(lab = "wavelet power levels"),
-         periodlab = "period (days)",label.time.axis = TRUE, 
-         show.date = TRUE, date.format = "%m%d")
-# pm25 only is there a periodicy?
-bergamo.w  =  analyze.wavelet(bergamo, "pm25",
-                              loess.span = 0,dt = 1, dj = 1/50,
-                              lowerPeriod = 1, upperPeriod = 14, make.pval = TRUE, 
-                              n.sim = 20)
-wt.image(bergamo.w, color.key = "interval", n.levels = 250,
-         legend.params = list(lab = "wavelet power levels"),
-         periodlab = "period (days)",label.time.axis = TRUE, 
-         show.date = TRUE, date.format = "%m%d")
 ```
