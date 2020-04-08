@@ -7,42 +7,41 @@ compileDataDE = function(){
   
   
   # Air quality data -----------------------------------------------------------
-  
-  
-  flist = list.files(file.path(envrmt$path_data,"DE/"),
+  flist = list.files(file.path(envrmt$path_DE),
                      pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
-  flist =  flist[grepl(flist,pattern = "2020PM2_SMW")]
-  pm_waqi = makedfWAQI(flist)
-  pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
+  flist =  flist[grepl(flist, pattern = "2020PM2_1SMW")]
+  
+  
+  pm_uba = makedfUBA(flist)
+  pm_uba_points =  makeSFPointsUBA(pm_uba)
   
   
   # Merge air quality and COVID data -------------------------------------------
-  cov_de_polygons = makeSFPolygonsGermany(cov_de$cov_nuts3)
-  de_nuts3 = st_join(cov_de_polygons, pm_waqi_points$pts)
+  de_nuts3 = st_join(cov_de_polygons, pm_uba_points$pts)
   de_nuts3 = de_nuts3[!is.na(de_nuts3$aq_location), ]
   
   de_nuts3 = lapply(unique(de_nuts3$aq_location), function(l){
-    m = merge(de_nuts3,  pm_waqi[[l]],
-              by.x = c("aq_location", "date"), by.y = c("statname", "date"))
+    m = merge(de_nuts3,  pm_uba[[as.character(l)]],
+              by.x = c("aq_location", "date"), by.y = c("Stationsname", "date"))
     cn = names(de_nuts3)
-    cn[cn=="lat"] = "lat.x"
-    cn[cn=="lon"] = "lon.x"
-    
+    # cn[cn=="lat"] = "lat.x"
+    # cn[cn=="lon"] = "lon.x"
+    # 
     m = m[, c(cn,
-              "pm25", "pm25_min", "pm25_max",
-              "lat.y", "lon.y")]
+              "pm25",
+              "lat", "lon")]
   })
   
   de_nuts3 = do.call(rbind, de_nuts3)
   
   # Compute mean air quality within each nuts 3 region -------------------------
-  nuts3_names = sort(unique(de_nuts3$TODO))
+  nuts3_names = sort(unique(de_nuts3$aq_location))
   de_nuts3_mean = lapply(nuts3_names, function(p){
-    act = de_nuts3[de_nuts3$TODO == p,]
+    act = de_nuts3[de_nuts3$aq_location == p,]
     
-    pm = aggregate(list(act$pm25, act$pm25_min, act$pm25_max),
+    pm = aggregate(list(act$pm25),
                    by = list(act$date), FUN = mean, na.rm=TRUE)
-    names(pm) = c("date", "pm25_mean", "pm25_min_mean", "pm25_max_mean")
+    names(pm) = c("date", "pm25_mean")
     
     act = merge(
       pm, act[seq(nrow(act[act$aq_location == unique(act$aq_location)[1],])), ],
@@ -54,7 +53,7 @@ compileDataDE = function(){
   
   names(de_nuts3_mean) = nuts3_names
   
-  return(list(de_nuts3_mean = de_nuts3_mean, pm_waqi_points = pm_waqi_points))
+  return(list(de_nuts3_mean = de_nuts3_mean, pm_uba_points = pm_uba_points))
 }
 
 

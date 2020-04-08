@@ -23,3 +23,23 @@ makeSFPointsWAQI = function(pm_waqi){
 #   stat_name = do.call(rbind, n)
 #   return(stat_name)
 # }
+
+
+
+makeSFPointsUBA = function(pm_uba){
+  p = lapply(pm_uba, function(x){
+    latlon = c(x[1, "lon"],x[1, "lat"])
+    class(latlon) = "numeric"
+    p = st_sfc(st_point(latlon), crs = 4326)
+    st_sf(aq_location = x[1, "Stationsname"],p)
+  })
+  pts = do.call(rbind, p)
+  
+  pop = lapply(lapply(pm_uba, function(x) x[ ,c("date","pm25")]), htmlTable)
+  names(pop) = NULL
+  
+  return(list(pts = pts, pop = pop))
+}
+
+
+

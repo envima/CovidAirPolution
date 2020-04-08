@@ -14,9 +14,9 @@ if(Sys.info()[["nodename"]] == "PC19616"){
   source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
 }
 # Load Italy -------------------------------------------------------------------
-# italy = compileDataIT()
-# saveRDS(italy, file.path(envrmt$path_tmp, "italy.RDS"))
-italy = readRDS(file.path(envrmt$path_tmp, "italy.RDS"))
+italy = compileDataIT()
+saveRDS(italy, file.path(envrmt$path_tmp, "italy.RDS"))
+# italy = readRDS(file.path(envrmt$path_tmp, "italy.RDS"))
 it_nuts3_mean = italy$it_nuts3_mean
 
 # Load Germany -----------------------------------------------------------------

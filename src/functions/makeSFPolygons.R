@@ -7,22 +7,25 @@ makeSFPolygonsIT = function(nuts){
     p = st_sfc(st_point(latlon), crs = 4326)
     st_sf(act ,p)
   })
-  pts = do.call(rbind, p)
+  plgns = do.call(rbind, p)
   it  = ne_states(country = "italy", returnclass = "sf")
   it = it[, "adm1_code"]
-  return(st_join(it, pts))
+  return(st_join(it, plgns))
 }
 
 
 makeSFPolygonsDE = function(nuts){
-  p = lapply(unique(nuts$nuts3), function(p){
-    act = nuts[nuts$nuts3 == p, ] 
-    latlon = c(act[1, "lon"], act[1, "lat"])
-    p = st_sfc(st_point(latlon), crs = 4326)
-    st_sf(act ,p)
-  })
-  pts = do.call(rbind, p)
-  it  = ne_states(country = "italy", returnclass = "sf")
-  it = it[, "adm1_code"]
-  return(st_join(it, pts))
+  
+  rtyp3 = st_read(file.path(envrmt$path_data, "landkreise-in-germany/landkreise-in-germany.shp"))
+  rtyp3$cca_2 = as.numeric(as.character(rtyp3$cca_2))
+  rtyp3 = merge(rtyp3, nuts, by.x = "cca_2", by.y = "nuts3")
+  # 
+  # p = lapply(unique(nuts$nuts3), function(p){
+  #   act = nuts[nuts$nuts3 == p, ]
+  #   act = merge(rtyp3, act, by.x = "cca_2", by.y = "nuts3")
+  # })
+  # plgns = do.call(rbind, p)
+  # it  = ne_states(country = "italy", returnclass = "sf")
+  # it = it[, "adm1_code"]
+  return(rtyp3)
 }

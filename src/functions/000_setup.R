@@ -9,6 +9,7 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 fcts_folder = file.path(root_folder, "CovidAirPolution/src/functions/")
 
 project_folders = c("data/",
+                    "data/DE/",
                     "data/COVID-19/",
                     "data/covid-19-germany-gae/",
                     "data/report-data-platform-16133-94427-misc/",
