@@ -11,7 +11,7 @@ library(envimaR)
 if(Sys.info()[["nodename"]] == "PC19616"){
   source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")
 } else {
-  source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
+  source("~/project/CovidAirPolution/src/functions/000_setup.R")  
 }
 # Load Italy -------------------------------------------------------------------
 italy = compileDataIT()
