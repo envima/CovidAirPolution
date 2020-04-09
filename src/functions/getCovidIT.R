@@ -13,7 +13,6 @@ getCovidIT = function(){
   
   cov_nuts3 = read.delim(file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-province.csv"), header = TRUE, sep = ",", dec=".")  
   cov_nuts3$date = as.POSIXct(cov_nuts3$data)
-  cov_nuts3$new_cases = c(0, diff(cov_nuts3$totale_casi))
   names(cov_nuts3)[which(names(cov_nuts3) == "long")] = "lon"
   
   cov_nuts3$new_cases = NA

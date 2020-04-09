@@ -1,29 +1,25 @@
 # Compile dataset for Italy
 
-compileDataItaly = function(){
+compileDataIT = function(){
   # Covid-19 -------------------------------------------------------------------
   cov_it = getCovidIT()
-  cov_it_polygons = makeSFPolygonsItaly(cov_it$cov_nuts3)
-  
+  cov_it_polygons = makeSFPolygonsIT(cov_it$cov_nuts3)
   
   
   # Air quality data -----------------------------------------------------------
-
-
- flist = list.files(file.path(envrmt$path_data,"IT/"), 
-                              pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
+  flist = list.files(file.path(envrmt$path_data,"IT/"), 
+                     pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
   flist =  flist[grepl(flist,pattern = "report-data-platform")]   
   pm_waqi = makedfWAQI(flist)
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
-
-
+  
+  
   # Merge air quality and COVID data -------------------------------------------
-  cov_it_polygons = makeSFPolygonsItaly(cov_it$cov_nuts3)
   it_nuts3 = st_join(cov_it_polygons, pm_waqi_points$pts)
   it_nuts3 = it_nuts3[!is.na(it_nuts3$aq_location), ]
   
   it_nuts3 = lapply(unique(it_nuts3$aq_location), function(l){
-    m = merge(it_nuts3,  pm_waqi[[l]], 
+    m = merge(it_nuts3,  pm_waqi[[as.character(l)]], 
               by.x = c("aq_location", "date"), by.y = c("statname", "date"))
     cn = names(it_nuts3)
     cn[cn=="lat"] = "lat.x"
