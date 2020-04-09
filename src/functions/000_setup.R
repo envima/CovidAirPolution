@@ -9,6 +9,8 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 fcts_folder = file.path(root_folder, "src/functions/")
 
 project_folders = c("data/",
+                    "data/FR/",
+                    "data/IT/",
                     "data/DE/",
                     "data/COVID-19/",
                     "data/covid-19-germany-gae/",
