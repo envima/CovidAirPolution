@@ -90,8 +90,8 @@ for(l in seq(length(nuts3_mean))){
   
   g = ggplot() +
     geom_line(data = nuts3_mean[[l]], aes(x = date, y = pm25_mean, colour  = "PM 2.5 mean")) +
-    geom_line(data = nuts3_mean[[l]], aes(x = date, y = new_cases/10, colour  = "New cases")) +
-    scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases")) +
+    geom_line(data = nuts3_mean[[l]], aes(x = date, y = new_cases/5, colour  = "New cases")) +
+    scale_y_continuous(sec.axis = sec_axis(~.*5, name = "New cases")) +
     labs(title = paste(names(nuts3_mean[l]), " | Average PM2.5 = ", round(mean(nuts3_mean[[l]]$pm25_mean), 2)), x = "Date", y = "PM 25 mean") +
     scale_colour_manual(name = NULL, values = c("blue", "red"))
 
