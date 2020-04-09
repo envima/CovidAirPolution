@@ -18,9 +18,9 @@ compileDataDE = function(){
   
   # Merge air quality and COVID data -------------------------------------------
   de_nuts3 = st_join(cov_de_polygons, pm_uba_points$pts)
-  de_nuts3 = de_nuts3[!is.na(de_nuts3$aq_location), ]
+  de_nuts3 = de_nuts3[de_nuts3$aq_location, ]
   
-  de_nuts3 = lapply(unique(de_nuts3$aq_location), function(l){
+  de_nuts3 = lapply(levels(de_nuts3$aq_location), function(l){
     m = merge(de_nuts3,  pm_uba[[as.character(l)]],
               by.x = c("aq_location", "date"), by.y = c("Stationsname", "date"))
     cn = names(de_nuts3)
@@ -35,20 +35,20 @@ compileDataDE = function(){
   de_nuts3 = do.call(rbind, de_nuts3)
   
   # Compute mean air quality within each nuts 3 region -------------------------
-  nuts3_names = sort(unique(de_nuts3$aq_location))
+  nuts3_names = sort(levels(de_nuts3$aq_location))
   de_nuts3_mean = lapply(nuts3_names, function(p){
-    act = de_nuts3[de_nuts3$aq_location == p,]
-    
+    act = de_nuts3[levels(de_nuts3$aq_location) == p,]
+    if (!is.na(act$pm25)){
     pm = aggregate(list(act$pm25),
                    by = list(act$date), FUN = mean, na.rm=TRUE)
     names(pm) = c("date", "pm25_mean")
     
     act = merge(
-      pm, act[seq(nrow(act[act$aq_location == unique(act$aq_location)[1],])), ],
+      pm, act[seq(nrow(act[act$aq_location == levels(act$aq_location)[1],])), ],
       by.x = "date", by.y = "date")
     
     act = st_set_geometry(act, act$geometry)
-    act = st_transform(act, crs = 4326)
+    act = st_transform(act, crs = 4326)}
   })
   
   names(de_nuts3_mean) = nuts3_names

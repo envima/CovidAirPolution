@@ -3,10 +3,10 @@
 if(Sys.info()[["nodename"]] == "PC19616"){
   root_folder = path.expand("~/plygrnd/CovidAirPolution/")
 } else {
-  root_folder = path.expand("~/project/cov/CovidAirPolution/")
+  root_folder = path.expand("~/project/CovidAirPolution/")
 }
 
-fcts_folder = file.path(root_folder, "CovidAirPolution/src/functions/")
+fcts_folder = file.path(root_folder, "src/functions/")
 
 project_folders = c("data/",
                     "data/DE/",

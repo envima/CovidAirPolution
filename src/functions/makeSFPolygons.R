@@ -16,9 +16,9 @@ makeSFPolygonsIT = function(nuts){
 
 makeSFPolygonsDE = function(nuts){
   
-  rtyp3 = st_read(file.path(envrmt$path_data, "landkreise-in-germany/landkreise-in-germany.shp"))
+  rtyp3 = st_read(file.path(envrmt$path_data, "DE/landkreise-in-germany.geojson"))
   rtyp3$cca_2 = as.numeric(as.character(rtyp3$cca_2))
-  rtyp3 = merge(rtyp3, nuts, by.x = "cca_2", by.y = "nuts3")
+  rtyp3 = merge(rtyp3, nuts, by.x = "cca_2", by.y = "nuts3",all.X =TRUE)
   # 
   # p = lapply(unique(nuts$nuts3), function(p){
   #   act = nuts[nuts$nuts3 == p, ]
