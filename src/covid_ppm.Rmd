@@ -20,9 +20,9 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 # nuts3_mean = italy$it_nuts3_mean
 
 # Load Germany -----------------------------------------------------------------
-germany = compileDataDE()
-saveRDS(germany, file.path(envrmt$path_tmp, "germany.RDS"))
-# germany = readRDS(file.path(envrmt$path_tmp, "germany.RDS"))
+# germany = compileDataDE()
+# saveRDS(germany, file.path(envrmt$path_tmp, "germany.RDS"))
+germany = readRDS(file.path(envrmt$path_tmp, "germany.RDS"))
 nuts3_mean = germany$de_nuts3_mean
 ```
 
@@ -39,38 +39,57 @@ mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop,
 ```
 
 
-```{r eval= FALSE, echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
-#Die Abbildung zeigt die zeitliche Entwicklung der täglich hinzukommenden COVID-19 Fälle in den Provinzen Norditaliens.
-# ggplot() + 
-#   geom_line(data = cmb, aes(x = date, y = pm25, colour = stat)) + 
-#   geom_line(data = cov_lombardia, aes(x = data, y = nuovi_positivi/10)) + 
-#   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases")) +
-#   geom_line(data = cov_Bergamo, aes(x = data, y = new_cases/10, colour = "Covid Bergamo")) + 
-#   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases")) +
-#   geom_line(data = cov_Milano, aes(x = data, y = new_cases/10, colour = "Covid Milano")) + 
-#   scale_y_continuous(sec.axis = sec_axis(~.*10, name = "New cases"))
-
-fig = plot_ly()
-for(l in seq(length(nuts3_mean))){
-  fig = fig %>%
-    add_trace(data = nuts3_mean[[l]], x = ~date, y = ~new_cases,
-              type = 'scatter',
-              name = names(nuts3_mean[l]),
-              mode = 'lines+markers')
-}
-fig = fig %>% layout(xaxis = list(title = "Date"),
-                     yaxis = list(title = "New cases (daily)"))
-fig
-```
-
-
 ## Exemplarische Auswertung für die einzelnen Regionen
 
+Übersicht über die Verteilung von mittlerer bwz. maximaler PM 2.5 Konzentration und dem Median der täglichen COVID-19 Neuinfektionen bzw. der Summe an Covid-19 Infektionen in NUTS3-Regionen Deutschlands.
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+overview = lapply(seq(length(nuts3_mean)), function(r){
+  data.frame(nuts3 = names(nuts3_mean[r]),
+             pm25_mean =  c(mean(nuts3_mean[[r]]$pm25_mean), mean(nuts3_mean[[r]]$pm25_mean),
+                            max(nuts3_mean[[r]]$pm25_mean), max(nuts3_mean[[r]]$pm25_mean)),
+             covid_cases  = c(median(nuts3_mean[[r]]$new_cases), max(nuts3_mean[[r]]$cases),
+                              median(nuts3_mean[[r]]$new_cases), max(nuts3_mean[[r]]$cases)),
+             var = c("mean PM2.5 x median covid", "mean PM2.5 x sum covid", "max PM2.5 x median covid", "max PM2.5 x sum covid"))
+})
+overview = do.call(rbind, overview)
+
+ggplot(data =overview, aes(x = pm25_mean, y = covid_cases)) + 
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(trans='log2') + 
+  labs(title = "Overivew PM2.5 x Covid-19 cases", x = "PM 2.5", y = "Covid-19 cases (log)") +
+  facet_wrap(~var, ncol =2, nrow = 2, scales = "free_x")
+```
+
+Clusteranalyse über mittlere PM2.5 und den Median der täglichen Covid-Infektionen. Es werden nur Standorte mit einem Median der Infektionen größer oder gleich 2 berücksichtigt. Daten wurden vorher auf jeweils maximalen Wert normiert.
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+dat = overview[overview$var == "mean PM2.5 x median covid", c("nuts3", "pm25_mean", "covid_cases")]
+dat = dat[dat$covid_cases >= 2,]
+
+dat$pm25_mean = dat$pm25_mean/max(dat$pm25_mean)
+dat$covid_cases = dat$covid_cases/max(dat$covid_cases)
+cls = kmeans(x = dat[, -1], centers = 4)
+dat$cluster = as.character(cls$cluster)
+
+ggplot(data = dat, aes(x = pm25_mean, y = covid_cases, colour = cluster)) +
+  geom_point() +
+  labs(title = "Clusteranalyse PM2.5 x Median der täglichen Covid-19 Infektionen", x = "PM 2.5", y = "Covid-19 cases (norm)", colour = "Cluster-ID")
+```
+
+## Zeitreihen gruppiert nach Cluster-ID
+
 Die folgenden Abbildungen zeigen jeweils (i) die Zeitreihen PM 2.5 und neuen COVID-Fälle, (ii) die wavelet coherence, (iii) die Phasendifferenz zwischen den periodischen Komponenten (grün = Differenz nahe 0, Gelb-Grün = PM 2.5 früher als COVID, Türkis = Covid früher als PM 2.5, Blau = inverse Zusammenhang, PM 2.5 vor COVID, Rot = inverser Zusammenhang, Covid vor PM 2.5) und (iv) die Übersicht über wichtige Phasen.
+
+Die Zahl vor "station average PM2.5" im jeweils ersten Plot eines Orts gibt die Anzahl der PM-Stationen an, deren Zeitreihe für die Analyse gemittelt wurden, um das Messignal zu stabilisieren.
+
+Die Sortierung erfolgt nach Cluster-ID und mittlerem PM2.5 Wert.
+
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-for(l in seq(length(nuts3_mean))){
+dat = dat[order(dat$cluster, dat$pm25_mean ), ]
 
+for(c in seq(nrow(dat))){
+  
   # Plot of PM 2.5 and COVID time series
   # fig = plot_ly()
   # fig = fig %>%
@@ -88,24 +107,31 @@ for(l in seq(length(nuts3_mean))){
   #                      yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
   # print(fig)
   
+  l = dat[c, "nuts3"]
+  
   g = ggplot() +
     geom_line(data = nuts3_mean[[l]], aes(x = date, y = pm25_mean, colour  = "PM 2.5 mean")) +
     geom_line(data = nuts3_mean[[l]], aes(x = date, y = new_cases/5, colour  = "New cases")) +
     scale_y_continuous(sec.axis = sec_axis(~.*5, name = "New cases")) +
-    labs(title = paste(names(nuts3_mean[l]), " | Average PM2.5 = ", round(mean(nuts3_mean[[l]]$pm25_mean), 2)), x = "Date", y = "PM 25 mean") +
+    labs(title = paste(names(nuts3_mean[l]), " | Cluster-ID ", dat[c, "cluster"], " | ", substr(nuts3_mean[[l]]$stationname[1], 1, 1), "station average PM2.5 = ", round(mean(nuts3_mean[[l]]$pm25_mean), 2)), x = "Date", y = "PM 25 mean") +
+    scale_x_date(date_labels="%d.%m", date_breaks  ="2 day") + 
+    theme(axis.text.x = element_text(angle=45)) + 
     scale_colour_manual(name = NULL, values = c("blue", "red"))
-
-  print(g)
   
+  print(g)
+
   # Plot of PM 2.5 and COVID wavelet analysis
   wc = analyze.coherency(as.data.frame(nuts3_mean[[l]][, c("date", "pm25_mean", "new_cases")])[, -4],
                          my.pair = c("pm25_mean", "new_cases"),
                          loess.span = 0,
-                         dt = 1, dj = 1/100,
-                         make.pval = TRUE, n.sim = 100,
+                         dt = 1, dj = 1/20,
+                         window.type.t = "bar", window.type.s = "bar",
+                         window.size.t = 5, window.size.s = 1/4,
+                         make.pval = TRUE, method = "white.noise",
+                         n.sim = 100,
                          verbose = FALSE)
-
-
+  
+  
   # wc.image(wc, which.image = "wp",
   #        n.levels = 250,
   #        color.key = "interval",
@@ -115,20 +141,20 @@ for(l in seq(length(nuts3_mean))){
   #
   # wc.avg(wc, which.avg = "wp", exponent = 1,
   #        main = paste("Main frequencies of cross-wavelet power", names(it_nuts3_mean[l])))
-
+  
   wc.image(wc, which.image = "wc",
            n.levels = 250, color.key = "interval",
            siglvl.contour = 0.1, siglvl.arrow = 0.1,
            legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE,
-           main = paste("Wavelet coherence", names(nuts3_mean[l])))
-
-  wc.phasediff.image(wc, which.contour = "wc",
-                     show.date = TRUE,
-                     main = paste("Main frequencies of wavelet coherence", names(nuts3_mean[l])))
-
+           main = paste("Wavelet coherence", names(nuts3_mean[l]), " | Cluster-ID ", dat[c, "cluster"]))
+  
+  # wc.phasediff.image(wc, which.contour = "wc",
+  #                    show.date = TRUE,
+  #                    main = paste("Main frequencies of wavelet coherence", names(nuts3_mean[l]), " | Cluster-ID ", dat[c, "cluster"]))
+  
   wc.avg(wc, which.avg = "wc", exponent = 1, periodlab = "period (days)",
-         main = paste("Main frequencies of wavelet coherence", names(nuts3_mean[l])))
-
+         main = paste("Main frequencies of wavelet coherence", names(nuts3_mean[l]), " | Cluster-ID ", dat[c, "cluster"]))
+  
 }
 
 # https://rpubs.com/ibn_abdullah/rwcoher
