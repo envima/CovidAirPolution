@@ -27,7 +27,7 @@ nuts3_mean = germany$de_nuts3_mean
 ```
 
 
-## Übersicht über die verfügbaren Daten zur zeitlichen Entwicklung in Norditalien
+## Übersicht über die verfügbaren Daten zur zeitlichen Entwicklung in Deutschland
 
 Die Abbildung zeigt die räumliche Verteilung der PM 2.5 Messungen.
 ```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
@@ -78,13 +78,13 @@ ggplot(data = dat, aes(x = pm25_mean, y = covid_cases, colour = cluster)) +
 
 ## Zeitreihen gruppiert nach Cluster-ID
 
-Die folgenden Abbildungen zeigen jeweils (i) die Zeitreihen PM 2.5 und neuen COVID-Fälle, (ii) die wavelet coherence, (iii) die Phasendifferenz zwischen den periodischen Komponenten (grün = Differenz nahe 0, Gelb-Grün = PM 2.5 früher als COVID, Türkis = Covid früher als PM 2.5, Blau = inverse Zusammenhang, PM 2.5 vor COVID, Rot = inverser Zusammenhang, Covid vor PM 2.5) und (iv) die Übersicht über wichtige Phasen.
-
 Die Zahl vor "station average PM2.5" im jeweils ersten Plot eines Orts gibt die Anzahl der PM-Stationen an, deren Zeitreihe für die Analyse gemittelt wurden, um das Messignal zu stabilisieren.
 
 Die Sortierung erfolgt nach Cluster-ID und mittlerem PM2.5 Wert.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+#Die folgenden Abbildungen zeigen jeweils (i) die Zeitreihen PM 2.5 und neuen COVID-Fälle, (ii) die wavelet coherence, (iii) die Phasendifferenz zwischen den periodischen Komponenten (grün = Differenz nahe 0, Gelb-Grün = PM 2.5 früher als COVID, Türkis = Covid früher als PM 2.5, Blau = inverse Zusammenhang, PM 2.5 vor COVID, Rot = inverser Zusammenhang, Covid vor PM 2.5) und (iv) die Übersicht über wichtige Phasen.
+
 
 dat = dat[order(dat$cluster, dat$pm25_mean ), ]
 
