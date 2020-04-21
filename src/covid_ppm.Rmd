@@ -1,6 +1,8 @@
 ---
 title: "COVID pm 2.5 playground"
 always_allow_html: true
+editor_options:
+  chunk_output_type: console
 output:
   pdf_document: default
   html_document:
@@ -66,7 +68,7 @@ ggplot(data =overview, aes(x = pm25_mean, y = covid_cases)) +
 Clusteranalyse über mittlere PM2.5 und den Median der täglichen Covid-Infektionen. Es werden nur Standorte mit einem Median der Infektionen größer oder gleich 2 berücksichtigt. Daten wurden vorher auf jeweils maximalen Wert normiert.
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 dat = overview[overview$var == "mean PM2.5 x median covid", c("nuts3", "pm25_mean", "covid_cases")]
-dat = dat[dat$covid_cases >= 2,]
+dat = dat[dat$covid_cases >= 0,]
 
 dat$pm25_mean = dat$pm25_mean/max(dat$pm25_mean)
 dat$covid_cases = dat$covid_cases/max(dat$covid_cases)
@@ -119,6 +121,8 @@ dat = dat[order(dat$cluster, dat$pm25_mean ), ]
 coherence = list()
 angl = list()
 
+wc_all = list()
+
 for(c in seq(nrow(dat))){
   
   # Plot of PM 2.5 and COVID time series
@@ -151,7 +155,7 @@ for(c in seq(nrow(dat))){
     scale_colour_manual(name = NULL, values = c("blue", "red"))
   
   print(g)
-
+  
   # Plot of PM 2.5 and COVID wavelet analysis
   wc = analyze.coherency(as.data.frame(nuts3_mean[[l]][, c("date", "pm25_mean", "new_cases")])[, -4],
                          my.pair = c("pm25_mean", "new_cases"),
@@ -187,8 +191,8 @@ for(c in seq(nrow(dat))){
   wc.avg(wc, which.avg = "wc", exponent = 1, periodlab = "period (days)",
          main = paste("Main frequencies of wavelet coherence", names(nuts3_mean[l]), " | Cluster-ID ", dat[c, "cluster"]))
   
-  
-  
+  wc_all[c] = wc
+  names(wc_all)[c] = names(nuts3_mean[l])
   # wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
   
   sel.period = 3.6
@@ -198,7 +202,7 @@ for(c in seq(nrow(dat))){
   # plot(wc$Phase.x[sel.rnum, ], type = "l", col = "red")
   # + lines(wc$Phase.y[sel.rnum, ], col = "blue")
   # + lines(wc$Angle[sel.rnum, ], col = "green")
-
+  
   angl[c] = list(data.frame(phasex = wc$Phase.x[sel.rnum, ],
                             phasey = wc$Phase.y[sel.rnum, ],
                             angle = wc$Angle[sel.rnum, ], 
@@ -207,17 +211,39 @@ for(c in seq(nrow(dat))){
   names(angl)[c] = names(nuts3_mean[l])
   
   coherence[c] = list(data.frame(coherence_avg = wc$Coherence.avg, 
-                            coherence_avg_pval = wc$Coherence.avg.pval, 
-                            period = wc$Period,
-                            cluster_id = dat[c, "cluster"]))
+                                 coherence_avg_pval = wc$Coherence.avg.pval, 
+                                 period = wc$Period,
+                                 cluster_id = dat[c, "cluster"]))
   names(coherence)[c] = names(nuts3_mean[l])
   
-
+  
 }
+
+
+# saveRDS(wc_all, file.path(envrmt$path_tmp, "wc_all.rds"))
+
+
 
 
 ang = angl
 ang = do.call("rbind", ang)
+
+a = angl
+a = a[[which(names(a) == "SK Halle")]] = NULL
+a = a[[which(names(a) == "SK Braunschweig")]] = NULL
+
+
+a = lapply(angl, function(a){
+  a$angle
+})
+
+dtw_cluster = tsclust(a, type = "partitional", k = 3,
+                      distance = "dtw_basic", centroid = "pam", seed=11081974, 
+                      trace = TRUE,
+                      args = tsclust_args(dist = list(window.size = 10)))
+
+plot(dtw_cluster)
+
 a1 = aggregate(ang$angle, list(ang$date, ang$cluster_id), FUN = mean)
 names(a1) = c("date", "cluster_id", "angle")
 
@@ -228,15 +254,42 @@ ggplot(data = a1, aes(x = date, y = angle, color = cluster_id, group = cluster_i
 
 
 
-dtwclust 
 
 
-dtw_cluster = tsclust(normalized_price, type="partitional",k=5,
-                      distance="dtw_basic",centroid = "pam",seed=1234,trace=T,
-                      args = tsclust_args(dist = list(window.size = 5)))
+
+
 
 
 coh = coherence
+
+c = lapply(coh, function(c){
+  c$coherence_avg
+})
+
+
+c = lapply(coh, function(c){
+  tmp = t(c[, c("coherence_avg", "period")])
+  colnames(tmp) = tmp[2, ]
+  tmp = tmp[1, ]
+})
+
+
+
+dtw_cluster = tsclust(c, type = "partitional", k = 2,
+                      distance = "dtw_basic", centroid = "pam", seed=11081974, 
+                      trace = TRUE,
+                      args = tsclust_args(dist = list(window.size = 10)))
+
+plot(dtw_cluster, type = "c")
+
+
+
+
+
+
+
+
+
 coh[[which(names(coh) == "SK Halle")]] = NULL
 coh[[which(names(coh) == "SK Braunschweig")]] = NULL
 
@@ -261,9 +314,58 @@ ggplot(data = t, aes(x = coherence_avg, y = period)) + geom_line()
 
 ggplot(data = t1, aes(x = coherence_avg, y = period, color = cluster_id, group = cluster_id)) + geom_path()
 
+ggplot(data = t1, aes(x = period, y = coherence_avg, color = cluster_id, group = cluster_id)) + geom_line() + geom_smooth(method = "loess", span = 0.3)
+
 plot(t1$coherence_avg, t1$period, type = "l" )
 
 
+
+n3_mean = lapply(nuts3_mean, function(n){
+  data.frame(n$date, n$pm25_mean, n$new_cases)
+})
+n3_mean = do.call("rbind", n3_mean)
+colnames(n3_mean)
+
+n3_mean_agg = aggregate(. ~ n.date, data = n3_mean, FUN = mean)
+colnames(n3_mean_agg) = c("date", "pm25_mean", "new_cases")
+
+ggplot() + 
+  geom_line(data = n3_mean_agg, aes(x = date, y = pm25_mean)) + 
+  geom_line(data = n3_mean_agg, aes(x = date, y = new_cases))
+
+
+
+wc = analyze.coherency(n3_mean_agg,
+                       my.pair = c("pm25_mean", "new_cases"),
+                       loess.span = 0,
+                       dt = 1, dj = 1/8,
+                       window.type.t = "bar", window.type.s = "bar",
+                       window.size.t = 5, window.size.s = 1/4,
+                       make.pval = TRUE, method = "white.noise",
+                       n.sim = 100,
+                       verbose = FALSE)
+
+
+wc.image(wc, which.image = "wc",
+         n.levels = 250, color.key = "interval",
+         siglvl.contour = 0.1, siglvl.arrow = 0.1,
+         legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE)
+
+
+wc.phasediff.image(wc, which.contour = "wc",
+                   show.date = TRUE)
+
+wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
+
+ccf(n3_mean_agg$new_cases, n3_mean_agg$pm25_mean)
+
+
+
+mg_lag =lapply(seq(0,14), function(k){
+ mg = gam(n3_mean_agg$new_cases ~ lag(n3_mean_agg$pm25_mean, k), family = quasipoisson())  
+})
+
+summary(mg_lag[[2]])
 
 
 # https://rpubs.com/ibn_abdullah/rwcoher
@@ -327,7 +429,7 @@ for(c in seq(nrow(dat))){
     scale_colour_manual(name = NULL, values = c("blue", "red"))
   
   print(g)
-
+  
   # Plot of PM 2.5 and COVID wavelet analysis
   wc = analyze.coherency(as.data.frame(nuts3_mean[[l]][, c("date", "pm25_mean", "new_cases")])[, -4],
                          my.pair = c("pm25_mean", "new_cases"),
