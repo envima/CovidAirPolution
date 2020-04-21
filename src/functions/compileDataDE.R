@@ -9,7 +9,7 @@ compileDataDE = function(){
   # Air quality data -----------------------------------------------------------
   flist = list.files(file.path(envrmt$path_DE),
                      pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
-  flist =  flist[grepl(flist, pattern = "2020PM2_1SMW")]
+  flist =  flist[grepl(flist, pattern = "DE2020PM2_1SMW_20200421")]
   
   
   pm_uba = makedfUBA(flist)#
