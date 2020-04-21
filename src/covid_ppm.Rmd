@@ -78,6 +78,32 @@ ggplot(data = dat, aes(x = pm25_mean, y = covid_cases, colour = cluster)) +
   labs(title = "Clusteranalyse PM2.5 x Median der täglichen Covid-19 Infektionen", x = "PM 2.5", y = "Covid-19 cases (norm)", colour = "Cluster-ID")
 ```
 
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+test = nuts3_mean$`SK Köln`
+test = nuts3_mean$`SK Krefeld`
+test = nuts3_mean$`SK Mönchengladbach`
+head(test)
+
+ccf(test$new_cases, test$pm25_mean)
+
+
+test = nuts3_mean$`SK München`
+ccf(test$new_cases, test$pm25_mean)
+
+
+test = nuts3_mean$`LK Gießen`
+ccf(test$new_cases, test$pm25_mean)
+
+
+model2 <- glm(new_cases ~ pm25_mean, data = test, family = quasipoisson)
+model2 <- gam(new_cases ~ pm25_mean, data = test, family = quasipoisson)
+summary(model2)
+
+```
+
+
+
 ## Zeitreihen gruppiert nach Cluster-ID
 
 Die Zahl vor "station average PM2.5" im jeweils ersten Plot eines Orts gibt die Anzahl der PM-Stationen an, deren Zeitreihe für die Analyse gemittelt wurden, um das Messignal zu stabilisieren.
@@ -89,6 +115,9 @@ Die Sortierung erfolgt nach Cluster-ID und mittlerem PM2.5 Wert.
 
 
 dat = dat[order(dat$cluster, dat$pm25_mean ), ]
+
+coherence = list()
+angl = list()
 
 for(c in seq(nrow(dat))){
   
@@ -109,6 +138,7 @@ for(c in seq(nrow(dat))){
   #                      yaxis2 = list(overlaying = "y", side = "right", title = "new cases"))
   # print(fig)
   print("<P style='page-break-before: always'>")
+  
   l = dat[c, "nuts3"]
   
   g = ggplot() +
@@ -157,7 +187,84 @@ for(c in seq(nrow(dat))){
   wc.avg(wc, which.avg = "wc", exponent = 1, periodlab = "period (days)",
          main = paste("Main frequencies of wavelet coherence", names(nuts3_mean[l]), " | Cluster-ID ", dat[c, "cluster"]))
   
+  
+  
+  # wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
+  
+  sel.period = 3.6
+  sel.rnum = which(abs(wc$Period - sel.period) == min(abs(wc$Period - sel.period)))
+  
+  
+  # plot(wc$Phase.x[sel.rnum, ], type = "l", col = "red")
+  # + lines(wc$Phase.y[sel.rnum, ], col = "blue")
+  # + lines(wc$Angle[sel.rnum, ], col = "green")
+
+  angl[c] = list(data.frame(phasex = wc$Phase.x[sel.rnum, ],
+                            phasey = wc$Phase.y[sel.rnum, ],
+                            angle = wc$Angle[sel.rnum, ], 
+                            date = wc$series$date,
+                            cluster_id = dat[c, "cluster"]))
+  names(angl)[c] = names(nuts3_mean[l])
+  
+  coherence[c] = list(data.frame(coherence_avg = wc$Coherence.avg, 
+                            coherence_avg_pval = wc$Coherence.avg.pval, 
+                            period = wc$Period,
+                            cluster_id = dat[c, "cluster"]))
+  names(coherence)[c] = names(nuts3_mean[l])
+  
+
 }
+
+
+ang = angl
+ang = do.call("rbind", ang)
+a1 = aggregate(ang$angle, list(ang$date, ang$cluster_id), FUN = mean)
+names(a1) = c("date", "cluster_id", "angle")
+
+
+ggplot(data = ang[which(substr(rownames(ang), 1, 6) == "SK Kre"), ], aes(x = date, y = angle, color = cluster_id, group = cluster_id)) + geom_path()
+ggplot(data = a1, aes(x = date, y = angle, color = cluster_id, group = cluster_id)) + geom_path()
+ggplot(data = a1, aes(x = date, y = angle, color = cluster_id, group = cluster_id)) + geom_path()
+
+
+
+dtwclust 
+
+
+dtw_cluster = tsclust(normalized_price, type="partitional",k=5,
+                      distance="dtw_basic",centroid = "pam",seed=1234,trace=T,
+                      args = tsclust_args(dist = list(window.size = 5)))
+
+
+coh = coherence
+coh[[which(names(coh) == "SK Halle")]] = NULL
+coh[[which(names(coh) == "SK Braunschweig")]] = NULL
+
+test = do.call("rbind", coh)
+
+test
+
+
+
+
+t1 = lapply(unique(test$wc.Period), function(u){
+  data.frame(cavg = mean(test[test$wc.Period == u, "wc.Coherence.avg"]),
+             per = u)
+})
+t1 = do.call("rbind", t1)
+
+t = aggregate(. ~ period, data = test, FUN = mean)
+t1 = aggregate(test$coherence_avg, list(test$period, test$cluster_id), FUN = mean)
+names(t1) = c("period", "cluster_id", "coherence_avg")
+
+ggplot(data = t, aes(x = coherence_avg, y = period)) + geom_line()
+
+ggplot(data = t1, aes(x = coherence_avg, y = period, color = cluster_id, group = cluster_id)) + geom_path()
+
+plot(t1$coherence_avg, t1$period, type = "l" )
+
+
+
 
 # https://rpubs.com/ibn_abdullah/rwcoher
 # https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-019-7607-2
@@ -264,3 +371,6 @@ for(c in seq(nrow(dat))){
 # https://ehjournal.biomedcentral.com/articles/10.1186/1476-069X-13-102
 
 ```
+
+
+
