@@ -27,6 +27,8 @@ makedfUBA = function(flist){
   aq = lapply(unique(uba$stationcode), function(s) {
     act = uba[uba$stationcode == s, ]
     
+    act = act[which(duplicated(act$date)), ]
+    
     lna = which(is.na(act$pm25))
     filled = na.approx(act$pm25, na.rm = FALSE)
     
@@ -42,6 +44,8 @@ makedfUBA = function(flist){
       }
     } 
     
+    act[act$date >= as.POSIXct("2020-01-01"),]
+    
     return(act)
   })
   
@@ -51,4 +55,5 @@ makedfUBA = function(flist){
   
 }
 
-
+Elsterwerda                            Potsdam-Zentrum 
+111                                        333 

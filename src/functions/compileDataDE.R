@@ -22,7 +22,8 @@ compileDataDE = function(){
   
   de_nuts3 = lapply(unique(de_nuts3$stationname), function(l){
     m = merge(de_nuts3,  pm_uba[[as.character(l)]],
-              by.x = c("stationname", "date"), by.y = c("stationname", "date"))
+              by.x = c("stationname", "date"), by.y = c("stationname", "date"),
+              all.y = TRUE)
     cn = names(de_nuts3)
     # cn[cn=="lat"] = "lat.x"
     # cn[cn=="lon"] = "lon.x"
