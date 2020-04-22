@@ -46,6 +46,49 @@ mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop,
 ## Exemplarische Auswertung für die einzelnen Regionen
 
 Übersicht über die Verteilung von mittlerer bwz. maximaler PM 2.5 Konzentration und dem Median der täglichen COVID-19 Neuinfektionen bzw. der Summe an Covid-19 Infektionen in NUTS3-Regionen Deutschlands.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+pm25 = lapply(nuts3_mean, function(n){
+  as.data.frame(n[, "pm25_mean"])[, -2]
+})
+
+pm25_dtw_cluster = tsclust(pm25, type = "partitional", k = 6,
+                      distance = "dtw_basic", centroid = "pam", seed=11081974, 
+                      trace = TRUE,
+                      args = tsclust_args(dist = list(window.size = 10)))
+
+plot(pm25_dtw_cluster, type = "c")
+
+new_cases = lapply(nuts3_mean, function(n){
+  as.data.frame(n[, "new_cases"])[, -2]
+})
+
+new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 6,
+                                distance = "dtw_basic", centroid = "pam", seed=11081974, 
+                                trace = TRUE,
+                                args = tsclust_args(dist = list(window.size = 10)))
+
+plot(new_cases_dtw_cluster, type = "c")
+
+cluster = lapply(seq(length(nuts3_mean)), function(r){
+  data.frame(nuts3 = names(nuts3_mean[r]),
+             cluster = pm25_dtw_cluster@cluster[r],
+             pm25_mean =  max(nuts3_mean[[r]]$pm25_mean),
+             covid_cases  = mean(nuts3_mean[[r]]$new_cases),
+             var = c("mean PM2.5 x mean new covid cases"))
+})
+
+cluster = do.call("rbind", cluster)
+
+ggplot(data =cluster, aes(x = pm25_mean, y = covid_cases)) + 
+  geom_point() +
+  geom_smooth() +
+  labs(title = "Overivew PM2.5 x Covid-19 cases", x = "PM 2.5", y = "Covid-19 cases") +
+  facet_wrap(~cluster, ncol =3, nrow = 2, scales = "free")
+```
+
+
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 overview = lapply(seq(length(nuts3_mean)), function(r){
   data.frame(nuts3 = names(nuts3_mean[r]),
@@ -221,7 +264,7 @@ for(c in seq(nrow(dat))){
 
 
 # saveRDS(wc_all, file.path(envrmt$path_tmp, "wc_all.rds"))
-
+# wc_all = readRDS(file.path(envrmt$path_tmp, "wc_all.rds"))
 
 
 
@@ -272,6 +315,7 @@ c = lapply(coh, function(c){
   colnames(tmp) = tmp[2, ]
   tmp = tmp[1, ]
 })
+
 
 
 
@@ -361,9 +405,14 @@ ccf(n3_mean_agg$new_cases, n3_mean_agg$pm25_mean)
 
 
 
-mg_lag =lapply(seq(0,14), function(k){
+mg_lag =lapply(seq(0,20), function(k){
  mg = gam(n3_mean_agg$new_cases ~ lag(n3_mean_agg$pm25_mean, k), family = quasipoisson())  
-})
+})s
+
+for(i in seq(0,20)){
+  print(i)
+  print(summary(mg_lag[[i+1]])$r.sq)
+}
 
 summary(mg_lag[[2]])
 
