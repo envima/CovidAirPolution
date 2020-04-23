@@ -8,7 +8,7 @@ makedfUBA = function(flist){
   geo$stationcode = as.character(geo$stationcode)
   
   uba = read.table(flist, skip = 0, header = TRUE, sep = ";")
-  uba$date = as.POSIXct(as.character(uba$Datum), format = "%Y%m%d", origin = "MEZ")
+  uba$date = as.POSIXct(as.character(uba$Datum), format = "%Y%m%d", origin = "CET")
   
   # Aggregate hourly values and set -999 to NA
   ch01 = which(colnames(uba) == "Wert01")
@@ -27,7 +27,7 @@ makedfUBA = function(flist){
   aq = lapply(unique(uba$stationcode), function(s) {
     act = uba[uba$stationcode == s, ]
     
-    act = act[which(duplicated(act$date)), ]
+    act = act[which(!duplicated(act$date)), ]
     
     lna = which(is.na(act$pm25))
     filled = na.approx(act$pm25, na.rm = FALSE)
@@ -44,7 +44,7 @@ makedfUBA = function(flist){
       }
     } 
     
-    act[act$date >= as.POSIXct("2020-01-01"),]
+    act = act[act$date >= as.POSIXct("2020-01-01"), ]
     
     return(act)
   })
@@ -54,6 +54,3 @@ makedfUBA = function(flist){
   return(aq)
   
 }
-
-Elsterwerda                            Potsdam-Zentrum 
-111                                        333 
