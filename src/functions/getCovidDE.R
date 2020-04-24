@@ -44,12 +44,14 @@ getCovidDE = function(){
     print(c)
     
     tmp = cov_nuts3[cov_nuts3$nuts3Code == c,]
-    tmp$smooth = round(loess.smooth(tmp$date, tmp$cases, family = "gaussian", span=0.1)$y, 0)
+    tmp$smooth = round(loess.smooth(tmp$date, tmp$cases, family = "gaussian", span=0.33)$y, 0)
+
     tmp$smooth[tmp$smooth < 0] = 0
     # ggplot(tmp, aes(x = date_day, y = cases)) +
     #   geom_point() +
     #   geom_point(aes(x = date_day, y = smooth), col = "red") +
     #   theme(axis.text.x = element_text(angle = 90))
+
     cov_nuts3[cov_nuts3$nuts3Code == c, "cases_smooth"] = tmp$smooth
     cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases"]))
     cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_smooth"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases_smooth"]))
