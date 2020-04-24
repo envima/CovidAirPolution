@@ -44,7 +44,7 @@ getCovidDE = function(){
     print(c)
     
     tmp = cov_nuts3[cov_nuts3$nuts3Code == c,]
-    tmp$smooth = round(loess.smooth(tmp$date, tmp$cases, family = "gaussian", span=0.33)$y, 0)
+    tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$cases, family = "gaussian", span=0.33, evaluation = length(tmp$date))$y, 0)
 
     tmp$smooth[tmp$smooth < 0] = 0
     # ggplot(tmp, aes(x = date_day, y = cases)) +
@@ -56,7 +56,7 @@ getCovidDE = function(){
     cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases"]))
     cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_smooth"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases_smooth"]))
     
-    tmp$smooth = round(loess.smooth(tmp$date, tmp$deaths, family = "gaussian", span=0.1)$y, 0)
+    tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$deaths, family = "gaussian", span=0.1, evaluation = length(tmp$date))$y, 0)
     tmp$smooth[tmp$smooth < 0] = 0
     cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_smooth"] = tmp$smooth
     cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "deaths"]))

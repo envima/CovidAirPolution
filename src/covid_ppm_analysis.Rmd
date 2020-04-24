@@ -1,0 +1,282 @@
+---
+title: "COVID pm 2.5 playground"
+always_allow_html: true
+editor_options:
+  chunk_output_type: console
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Set up working environment and defaults --------------------------------------
+library(envimaR)
+if(Sys.info()[["nodename"]] == "PC19616"){
+  source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")
+} else {
+  source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
+}
+# Load Italy -------------------------------------------------------------------
+# italy = compileDataIT()
+# saveRDS(italy, file.path(envrmt$path_tmp, "italy.RDS"))
+# italy = readRDS(file.path(envrmt$path_tmp, "italy.RDS"))
+# nuts3_mean = italy$it_nuts3_mean
+
+# Load Germany -----------------------------------------------------------------
+# germany = compileDataDE()
+# saveRDS(germany, file.path(envrmt$path_tmp, "germany.RDS"))
+germany = readRDS(file.path(envrmt$path_tmp, "germany.RDS"))
+nuts3_mean = germany$de_nuts3_mean
+```
+
+
+## Geographical overview of available PM2.5 station observations
+
+```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+# mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
+#         legend = FALSE, ncol="pm25max")
+mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop, 
+        legend = FALSE, ncol="pm25max")
+```
+
+
+## Data and Methods
+Raw data on PM2.5 has been provided by the German environmental protection agency (UBN). ...
+
+Data on total daily COVID-19 cases and deaths has been provided by the Robert-Koch-Institut. The data has been smoothed using a gaussian loess function with span 0.3 to reduce variation due to delayed reporting over the weekend and especcially on Sunday and Monday. The daily number of new infections has been computed from the daily variations of the total confirmed numbers.
+
+
+## Overview of the mean development of PM2.5 and COVID-19 cases in Germany
+
+The following figure shows the country wide average of daily PM2.5 and new, smoothed COVID-19 cases. Black vertical dotted lines represent the start of the contact restrictions (March 14th) and shut down (March 17th).
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+nuts3_mean_avg = lapply(nuts3_mean, 
+                        "[", c("date", "date_day", "pm25_mean", "new_cases", 
+                               "new_cases_smooth", "cases_smooth", 
+                               "deaths_smooth", "new_deaths", "new_deaths_smooth"))
+nuts3_mean_avg = do.call("rbind", nuts3_mean_avg)
+nuts3_mean_avg = as.data.frame(nuts3_mean_avg)[, -ncol(nuts3_mean_avg)]
+nuts3_mean_avg = nuts3_mean_avg[nuts3_mean_avg$date >= as.POSIXct("2020-02-15", tz = "CET"), ]
+
+nuts3_mean_avg = aggregate(. ~ date, data = nuts3_mean_avg, FUN = mean)
+nuts3_mean_avg$date_day = paste(nuts3_mean_avg$date, substr(weekdays(nuts3_mean_avg$date), 1, 1))
+
+ggplot() + 
+  geom_line(data = nuts3_mean_avg, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
+  geom_line(data = nuts3_mean_avg, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
+  labs(title = "PM2.5 x daily new Covid-19 cases (smoothed)", x = "Date", y = "Value") +
+  scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
+  scale_color_manual(values=c("red", "blue")) +
+  theme(axis.text.x = element_text(angle=90)) + 
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black")
+```
+
+
+## Dependency between development of PM2.5 and COVID-19 cases in Germany
+
+Some studies compare the development of atmospheric parameters and COVID-19 cases over the entire avialable time series. As  both air quality and COVID-19 rates generally decrease after a shutdown event, at least parts of the identified correlations are likely caused by this external event, especially in regions with a strong influence of local activity on local air quality.
+
+To focus on the corelated development of PM2.5 and COVID-19 cases during the early and exponential growing phase, we restrict the time series to the maximum incubation phase of 14 days prior the first reported infection and the turning point of the infection dynamics shortly after the absolute maximum. For the following figure, the time series has been restricted to this period and the daily new, smothed COVID-19 cases have been detrended using a poission regression.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+# nuts3_mean_avg_org = nuts3_mean_avg
+# nuts3_mean_avg = nuts3_mean_avg_org
+new_cases_smooth_detr = glm(new_cases_smooth ~ date,  family = poisson, data =nuts3_mean_avg)
+new_cases_smooth_detr = residuals(new_cases_smooth_detr)
+nuts3_mean_avg$new_cases_smooth_detr = new_cases_smooth_detr
+
+
+nuts3_mean_avg = nuts3_mean_avg[
+  nuts3_mean_avg$date >= as.POSIXct("2020-02-15 CET") & 
+    nuts3_mean_avg$date <= as.POSIXct("2020-04-01 CEST"), ]
+
+# new_cases_smooth_detr = glm(new_cases_smooth ~ date,  family = poisson, data =nuts3_mean_avg)
+# new_cases_smooth_detr = residuals(new_cases_smooth_detr)
+# nuts3_mean_avg$new_cases_smooth_detr = new_cases_smooth_detr
+
+# summary(gam(new_cases_smooth ~ lag(pm25_mean, 6),  family = quasipoisson, data =nuts3_mean_avg))
+# summary(gam(new_cases_smooth_detr ~ lead(pm25_mean, 6),  family = gaussian, data =nuts3_mean_avg))
+# summary(gam(nuts3_mean_avg$new_cases_smooth[7:47] ~ nuts3_mean_avg$pm25_mean[1:41],  family = poisson))
+
+ggplot() + 
+  geom_line(data = nuts3_mean_avg, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
+  geom_line(data = nuts3_mean_avg, aes(x = date, y = new_cases_smooth_detr, color = "New cases (smoothed, detrended)")) +
+  geom_line(data = nuts3_mean_avg, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
+  labs(title = "PM2.5 x daily new Covid-19 cases (smoothed, detrended)", x = "Date", y = "Value") +
+  scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
+  scale_color_manual(values=c("red", "darkgreen", "blue")) +
+  theme(axis.text.x = element_text(angle=90)) + 
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black")
+
+```
+
+Based on that, the cross-correlation between PM2.5 and detrended daily new COVID-19 cases shows that PM2.5 is both leading up to 6 days and lagging up to 9 days. 
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+ccf(nuts3_mean_avg$pm25_mean, nuts3_mean_avg$new_cases_smooth_detr,
+    main = "PM2.5 x Smothed daily new COVID-19 cases")
+```
+
+
+Since the dentrended time series is still rather non-stationary and to get a better idea of the time periods and date ranges related to certain time lags, a wavelet coherence analysis is performed with a loess smoother. 
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+set.seed(01042020)
+wc = analyze.coherency(nuts3_mean_avg,
+                       my.pair = c("pm25_mean", "new_cases_smooth_detr"),
+                       loess.span = 0.33,
+                       dt = 1, dj = 1/12,
+                       window.type.t = "bar", window.type.s = "bar",
+                       window.size.t = 14, window.size.s = 1/4,
+                       make.pval = TRUE, method = "white.noise",
+                       n.sim = 100,
+                       verbose = FALSE)
+
+wc.image(wc, which.image = "wc",
+         n.levels = 250, color.key = "interval",
+         siglvl.contour = 0.1, siglvl.arrow = 0.1,
+         legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE,
+         main = "Wavelet coherence Germany, PM2.5 x detrended daily COVID-19 cases")
+
+# wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
+```
+
+The analysis shows that for the period of 4 to 5 days, the PM2.5 time series is leading arround March 1 with up to 2 or 3 days (arrows towards right upward). The situation changes towards April 1st. Here the COVID-19 cases are taking over the lead, with a small time lag at the period of arround 4 days and a lag of about 2 or 3 days at a period of about 8 days.
+
+
+## Dynmiac time warp clusters
+
+The following figure shows clusters with similar development of daily COVID-19 cases.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+new_cases = lapply(nuts3_mean, function(n){
+  as.data.frame(n[, "new_cases_smooth"])[, -2]
+})
+
+new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 4,
+                                distance = "dtw_basic", centroid = "pam", seed=01042020, 
+                                trace = TRUE,
+                                args = tsclust_args(dist = list(window.size = 10)))
+
+plot(new_cases_dtw_cluster, type = "c")
+
+# cluster = lapply(seq(length(nuts3_mean)), function(r){
+#   data.frame(nuts3 = names(nuts3_mean[r]),
+#              cluster = new_cases_dtw_cluster@cluster[r],
+#              pm25_mean =  mean(nuts3_mean[[r]]$pm25_mean),
+#              covid_cases  = mean(nuts3_mean[[r]]$new_cases_smooth),
+#              var = c("mean PM2.5 x mean new covid cases"))
+# })
+# 
+# cluster = do.call("rbind", cluster)
+# 
+# ggplot(data =cluster, aes(x = pm25_mean, y = covid_cases)) +
+#   geom_point() +
+#   geom_smooth() +
+#   labs(title = "Overivew PM2.5 x Covid-19 cases", x = "PM 2.5", y = "Covid-19 cases") +
+#   facet_wrap(~cluster, ncol =2, nrow = 2, scales = "free")
+```
+
+The average of daily PM2.5 and smoothed new COVID-19 cases along with their detrened series within each cluster is shown in the figure below.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+nuts3_mean_avg = lapply(seq(length(nuts3_mean)), function(c){
+  tmp = nuts3_mean[[c]][, c("date", "date_day", "pm25_mean", "new_cases", 
+                               "new_cases_smooth", "cases_smooth", 
+                               "deaths_smooth", "new_deaths", "new_deaths_smooth")]
+  tmp$cluster = new_cases_dtw_cluster@cluster[c]
+  return(tmp)
+})
+  
+nuts3_mean_avg = do.call("rbind", nuts3_mean_avg)
+nuts3_mean_avg = as.data.frame(nuts3_mean_avg)[, -ncol(nuts3_mean_avg)]
+nuts3_mean_avg = nuts3_mean_avg[nuts3_mean_avg$date >= as.POSIXct("2020-02-15", tz = "CET"), ]
+
+nuts3_mean_avg = aggregate(. ~ date + cluster, data = nuts3_mean_avg, FUN = mean)
+nuts3_mean_avg$date_day = paste(nuts3_mean_avg$date, substr(weekdays(nuts3_mean_avg$date), 1, 1))
+
+# ggplot() + 
+#   geom_line(data = nuts3_mean_avg, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
+#   geom_line(data = nuts3_mean_avg, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
+#   labs(title = "PM2.5 x daily new Covid-19 cases (smoothed) by cluster", x = "Date", y = "Value") +
+#   scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
+#   scale_color_manual(values=c("red", "blue")) +
+#   theme(axis.text.x = element_text(angle=90)) + 
+#   geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+#   geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+#   facet_wrap(~cluster, ncol =2, nrow = 2, scales = "free")
+
+
+nuts3_mean_avg_detr = lapply(seq(4), function(c){
+  tmp = nuts3_mean_avg[nuts3_mean_avg$cluster == c,]
+  detr = glm(new_cases_smooth ~ date,  family = poisson, data =tmp)
+  nuts3_mean_avg[nuts3_mean_avg$cluster == c, "new_cases_smooth_detr"] = residuals(detr)
+  return(nuts3_mean_avg[nuts3_mean_avg$cluster == c,])
+})
+nuts3_mean_avg_detr = do.call("rbind", nuts3_mean_avg_detr)
+
+nuts3_mean_avg_detr = nuts3_mean_avg_detr[
+  nuts3_mean_avg_detr$date >= as.POSIXct("2020-02-15 CET") & 
+    nuts3_mean_avg_detr$date <= as.POSIXct("2020-04-01 CEST"), ]
+
+# new_cases_smooth_detr = glm(new_cases_smooth ~ date,  family = poisson, data =nuts3_mean_avg)
+# new_cases_smooth_detr = residuals(new_cases_smooth_detr)
+# nuts3_mean_avg$new_cases_smooth_detr = new_cases_smooth_detr
+
+# summary(gam(new_cases_smooth ~ lag(pm25_mean, 6),  family = quasipoisson, data =nuts3_mean_avg))
+# summary(gam(new_cases_smooth_detr ~ lead(pm25_mean, 6),  family = gaussian, data =nuts3_mean_avg))
+# summary(gam(nuts3_mean_avg$new_cases_smooth[7:47] ~ nuts3_mean_avg$pm25_mean[1:41],  family = poisson))
+
+ggplot() + 
+  geom_line(data = nuts3_mean_avg_detr, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
+  geom_line(data = nuts3_mean_avg_detr, aes(x = date, y = new_cases_smooth_detr, color = "New cases (smoothed, detrended)")) +
+  geom_line(data = nuts3_mean_avg_detr, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
+  labs(title = "PM2.5 x daily new Covid-19 cases (smoothed, detrended)", x = "Date", y = "Value") +
+  scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
+  scale_color_manual(values=c("red", "darkgreen", "blue")) +
+  theme(axis.text.x = element_text(angle=90)) + 
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  facet_wrap(~cluster, ncol =2, nrow = 2, scales = "free")
+```
+
+
+Based on that, the cross-correlation between PM2.5 and detrended daily new COVID-19 cases per cluster is shown below. 
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+for(c in seq(4)){
+  ccf(nuts3_mean_avg_detr[nuts3_mean_avg_detr$cluster == c, "pm25_mean"], 
+      nuts3_mean_avg_detr[nuts3_mean_avg_detr$cluster == c, "new_cases_smooth_detr"],
+      main = paste("PM2.5 x Smothed daily new COVID-19 cases, cluster ", c))
+}
+```
+
+
+Finally, this is the wavelet coherence analysis per cluster.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+for(c in seq(4)){
+  tmp = nuts3_mean_avg_detr[nuts3_mean_avg_detr$cluster == c,]
+  set.seed(01042020)
+  wc = analyze.coherency(tmp,
+                         my.pair = c("pm25_mean", "new_cases_smooth_detr"),
+                         loess.span = 0.33,
+                         dt = 1, dj = 1/12,
+                         window.type.t = "bar", window.type.s = "bar",
+                         window.size.t = 14, window.size.s = 1/4,
+                         make.pval = TRUE, method = "white.noise",
+                         n.sim = 100, verbose = FALSE)
+  
+  wc.image(wc, which.image = "wc",
+           n.levels = 250, color.key = "interval",
+           siglvl.contour = 0.1, siglvl.arrow = 0.1,
+           legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE,
+           main = paste("Germany, PM2.5 x detrended daily COVID-19 cases, cluster ", c))
+  
+  # wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
+}
+```

@@ -56,6 +56,9 @@ compileDataDE = function(){
   
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(de_nuts3$nuts3Name))
+  
+  nuts3_names = nuts3_names[-which(nuts3_names %in% c("SK Düsseldorf", "SK Essen", "SK Krefeld", "SK Wuppertal"))]
+  
   de_nuts3_mean = lapply(nuts3_names, function(p){
     act = de_nuts3[de_nuts3$nuts3Name == p,]
     
@@ -78,6 +81,8 @@ compileDataDE = function(){
   })
   
   names(de_nuts3_mean) = nuts3_names
+  
+  
   
   return(list(de_nuts3_mean = de_nuts3_mean, pm_uba_points = pm_uba_points))
 }
