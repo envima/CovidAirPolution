@@ -63,8 +63,5 @@ makedfUBA = function(flist){
   
   return(aq)
   
-<<<<<<< HEAD
+
 }
-=======
-}
->>>>>>> 7480d1af8df64cd42add9a4fbcc86805d2bdc7d3
