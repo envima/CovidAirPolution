@@ -40,6 +40,3 @@ makeSFPointsUBA = function(pm_uba){
   
   return(list(pts = pts, pop = pop))
 }
-
-
-

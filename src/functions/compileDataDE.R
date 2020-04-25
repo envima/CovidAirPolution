@@ -9,15 +9,22 @@ compileDataDE = function(){
   # Air quality data -----------------------------------------------------------
   flist = list.files(file.path(envrmt$path_DE),
                      pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
-  flist =  flist[grepl(flist, pattern = "2020PM2_1SMW")]
+  flist =  flist[grepl(flist, pattern = "DE2020PM2_1SMW_20200421")]
   
   
-  pm_uba = makedfUBA(flist)
+  flistWAQI = list.files(file.path(envrmt$path_data,"DE/WAQI/"), 
+                     pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
+  pm_waqi = makedfWAQI(flistWAQI)
+  pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
+  
+  pm_uba = makedfUBA(flist)#
   pm_uba_points =  makeSFPointsUBA(pm_uba)
-  
+  pm_uba_waqi_points=list()
+  pm_uba_waqi_points$pts=st_union(pm_waqi_points$pts, pm_uba_points$pts)
+  pm_uba_waqi_points$pop=c(pm_waqi_points$pop, pm_uba_points$pop)
   
   # Merge air quality and COVID data -------------------------------------------
-  de_nuts3 = st_join(cov_de_polygons, pm_uba_points$pts)
+  de_nuts3 = st_join(cov_de_polygons, pm_uba_waqi_points$pts)
   de_nuts3 = de_nuts3[!is.na(de_nuts3$stationname), ]
   
   de_nuts3 = lapply(unique(de_nuts3$stationname), function(l){
@@ -84,5 +91,5 @@ compileDataDE = function(){
   
   
   
-  return(list(de_nuts3_mean = de_nuts3_mean, pm_uba_points = pm_uba_points))
+  return(list(de_nuts3_mean = de_nuts3_mean, pm_uba_points =  pm_uba_waqi_points))
 }

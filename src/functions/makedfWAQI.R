@@ -12,7 +12,8 @@ makedfWAQI = function(flist){
     for(i in seq(2, ncol(act))){
       act[, i] = as.numeric(act[, i])
     }
-    act$statname = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
+    act$statname = strsplit(basename(f),split = "\\.")[[1]][2]
+    #act$statname = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
     act = act[act$date >= as.POSIXct("2020-01-01"), ]
     
     # p = st_sfc(st_point(latlon),crs = 4326)
