@@ -19,16 +19,19 @@ compileDataDE = function(){
   
   pm_uba = makedfUBA(flist)#
   pm_uba_points =  makeSFPointsUBA(pm_uba)
+  
+  pm_uba_waqi = c(pm_uba,pm_waqi)
   pm_uba_waqi_points=list()
   pm_uba_waqi_points$pts=st_union(pm_waqi_points$pts, pm_uba_points$pts)
   pm_uba_waqi_points$pop=c(pm_waqi_points$pop, pm_uba_points$pop)
+  
   
   # Merge air quality and COVID data -------------------------------------------
   de_nuts3 = st_join(cov_de_polygons, pm_uba_waqi_points$pts)
   de_nuts3 = de_nuts3[!is.na(de_nuts3$stationname), ]
   
   de_nuts3 = lapply(unique(de_nuts3$stationname), function(l){
-    m = merge(de_nuts3,  pm_uba[[as.character(l)]],
+    m = merge(de_nuts3,  pm_uba_waqi[[as.character(l)]],
               by.x = c("stationname", "date"), by.y = c("stationname", "date"),
               all.y = TRUE)
     cn = names(de_nuts3)
