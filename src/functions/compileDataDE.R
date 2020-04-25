@@ -22,11 +22,27 @@ compileDataDE = function(){
   
   de_nuts3 = lapply(unique(de_nuts3$stationname), function(l){
     m = merge(de_nuts3,  pm_uba[[as.character(l)]],
-              by.x = c("stationname", "date"), by.y = c("stationname", "date"))
+              by.x = c("stationname", "date"), by.y = c("stationname", "date"),
+              all.y = TRUE)
     cn = names(de_nuts3)
-    # cn[cn=="lat"] = "lat.x"
-    # cn[cn=="lon"] = "lon.x"
-    # 
+    
+    m$nuts3Code = tail(m$nuts3Code,1)
+    m$cases[is.na(m$cases)] = 0
+    m$deaths[is.na(m$deaths)] = 0
+    m$weekday = as.factor(weekdays(m$date))
+    m$date_day = as.factor(paste(m$date, substr(m$weekday, 1, 1)))
+    m$nuts3Name = tail(m$nuts3Name, 1)
+    m$state = tail(m$state, 1)
+    m$note = tail(m$note, 1)
+    m$new_cases[is.na(m$new_cases)] = 0
+    m$new_cases_smooth[is.na(m$new_cases_smooth)] = 0
+    m$cases_smooth[is.na(m$cases_smooth)] = 0
+    m$deaths_smooth[is.na(m$deaths_smooth)] = 0
+    m$new_deaths[is.na(m$new_deaths)] = 0
+    m$new_deaths_smooth[is.na(m$new_deaths_smooth)] = 0
+    m$name_2 = tail(m$name_2, 1)
+    m$geometry = tail(m$geometry,1)
+
     m = m[, c(cn,
               "pm25",
               "lat", "lon")]
@@ -37,8 +53,12 @@ compileDataDE = function(){
   de_nuts3$state = as.factor(unlist(de_nuts3$state))
   de_nuts3$note = as.factor(unlist(de_nuts3$note))
   
+  
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(de_nuts3$nuts3Name))
+  
+  nuts3_names = nuts3_names[-which(nuts3_names %in% c("SK Düsseldorf", "SK Essen", "SK Krefeld", "SK Wuppertal"))]
+  
   de_nuts3_mean = lapply(nuts3_names, function(p){
     act = de_nuts3[de_nuts3$nuts3Name == p,]
     
@@ -61,6 +81,8 @@ compileDataDE = function(){
   })
   
   names(de_nuts3_mean) = nuts3_names
+  
+  
   
   return(list(de_nuts3_mean = de_nuts3_mean, pm_uba_points = pm_uba_points))
 }

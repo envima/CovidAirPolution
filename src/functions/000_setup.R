@@ -18,8 +18,10 @@ project_folders = c("data/",
                     "data/report-data-platform-16229-259611-lombardy",
                     "data/tmp/")
 
-libs = c("data.table", "dtwclust", "ggplot2", "htmlTable", "htmltools", "jsonlite", "plotly", "mapview", "stringr", 
-         "sf", "wavelets", "wmtsa", "mgcv", "biwavelet", "rnaturalearth", "rnaturalearthhires",
+libs = c("doParallel", "caret", "data.table", "dtwclust", "ggplot2", "htmlTable", "htmltools", 
+         "jsonlite", "plotly", "mapview", "stringr", 
+         "sf", "wavelets", "wmtsa", "mgcv", "biwavelet", "rnaturalearth", 
+         "rnaturalearthhires",
          "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp")
 
 envrmt = createEnvi(root_folder = root_folder,
