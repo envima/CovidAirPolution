@@ -18,10 +18,14 @@ makeSFPolygonsIT = function(nuts){
 # Data for Germany -------------------------------------------------------------
 makeSFPolygonsDE = function(covdata){
   
-  rtyp3 = st_read(file.path(envrmt$path_data, "landkreise-in-germany/landkreise-in-germany.shp"))
+  rtyp3 = st_read(file.path(envrmt$path_data, "DE/landkreise-in-germany/landkreise-in-germany.shp"))
   rtyp3$cca_2 = as.numeric(as.character(rtyp3$cca_2))
+  
   rtyp3 = merge(rtyp3, covdata, by.x = "cca_2", by.y = "nuts3Code")
   names(rtyp3)[1] = "nuts3Code"
   rtyp3 = rtyp3[, c(names(covdata), "name_2")]
+  
   return(rtyp3)
 }
+
+

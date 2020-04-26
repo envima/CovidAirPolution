@@ -2,7 +2,12 @@
 
 makedfUBA = function(flist){
   
+
   geo = read.table(file.path(envrmt$path_DE, "station_All_convert.csv"), skip = 1, header = TRUE, sep = ";", dec = ",")
+  # geo = read_delim(file.path(envrmt$path_DE, "station_All.csv"),
+  #                           ";", escape_double = FALSE, col_types = cols(`Länge dezimal` = col_double()),
+  #                           locale = locale(decimal_mark = ",", grouping_mark = "."),
+  #                           trim_ws = TRUE, skip = 1)
   geo = geo[, c(1, 2, 13, 14)]
   names(geo) = c("stationcode", "stationname", "lon", "lat")
   geo$stationcode = as.character(geo$stationcode)
@@ -58,4 +63,5 @@ makedfUBA = function(flist){
   
   return(aq)
   
+
 }
