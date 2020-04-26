@@ -241,7 +241,6 @@ ggplot() +
 
 
 Based on that, the cross-correlation between PM2.5 and detrended daily new COVID-19 cases per cluster is shown below. 
-
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 for(c in unique(de_clstr_avg$cluster)){
   ccf(de_clstr_avg_detr[de_clstr_avg_detr$cluster == c, "pm25_mean"], 
@@ -295,7 +294,7 @@ fitControl <- trainControl(method = "cv",
 
 set.seed(01042020)
 de_clstr_gam <- train(new_cases_smooth ~ pm25_mean, data = de_clstr_ap, 
-                      method = "gam", 
+                      method = "gam", family = poisson, 
                       trControl = fitControl,
                       ## This last option is actually one
                       ## for gbm() that passes through
@@ -306,7 +305,7 @@ print(summary(de_clstr_gam))
 ```
 
 
-The following gam models indicate the predictive power of PM2.5 within the individual German cases. The internal cross validation error is based on a 10-fold leave region out cross-validation. For cluster 4, only a 2-fold cross-validation has been computed which equals the number of regions in the cluster.
+The following gam models indicate the predictive power of PM2.5 within the individual German clusters The internal cross validation error is based on a 10-fold leave region out cross-validation.
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 cl <- makePSOCKcluster(4)
 registerDoParallel(cl)
@@ -329,7 +328,7 @@ de_clstr_gam_indv = lapply(sort(unique(de_clstr_ap$cluster)), function(c){
   
   set.seed(01042020)
   de_clstr_gam <- train(new_cases_smooth ~ pm25_mean, data = tmp, 
-                        method = "gam", 
+                        method = "gam", family = quasipoisson, 
                         trControl = fitControl,
                         ## This last option is actually one
                         ## for gbm() that passes through
@@ -361,6 +360,38 @@ de_clstr_map = do.call("rbind", de_clstr_map)
 
 mapview(de_clstr_map, zcol = "cluster")
 
-mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop, 
-        legend = FALSE, ncol="pm25max")
+# mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop, 
+#         legend = FALSE, ncol="pm25max")
+```
+
+
+```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+# Roland
+
+test = de_avg
+test$week.day = weekdays(test$date)
+test$week.day.c = weekdays(test$date)
+
+# week.day <- weekdays(data[[1]]$date)
+# week.day.c <- week.day
+for (i in (1:length(test$week.day)))
+  test$week.day.c[i] = ifelse((test$week.day[i] == "Montag"), "M",
+                                      ifelse((test$week.day[i] == "Sonntag") |
+                                               (test$week.day[i] == "Samstag"),
+                                             "SS","W"))
+test$week.day.c = as.factor(test$week.day.c)
+erg.covid = glm(test$new_cases ~ test$date + test$week.day.c, poisson)
+summary(erg.covid)
+
+
+erg.covid.pm <- glm(test$new_cases ~ c(1:47) + test$week.day.c +
+                I(test$pm25_mean), quasipoisson)
+summary(erg.covid.pm)
+
+library(lme4)
+erg.covid.pm <- glmer(test$new_cases ~ c(1:47) + test$week.day.c +
+                      I(test$pm25_mean) +
+                      (1|as.factor(c(1:47))), family=poisson)
+summary(erg.covid.pm)
+
 ```

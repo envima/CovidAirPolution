@@ -19,10 +19,15 @@ makedfWAQI = function(flist){
     # p = st_sfc(st_point(latlon),crs = 4326)
     # st_sf(aq = x,p)
     
+    act$stationname = act$statname
+    act$stationcode = NA
+    act$TYPE_OF_AREA = NA
+    act$TYPE_OF_STATION = NA
+    act = act[, c("stationcode", "date", "pm25", "TYPE_OF_AREA", "TYPE_OF_STATION", "stationname", "lat", "lon")]
     return(act)
   })
   
-  names(aq) = sapply(aq, function(x) x[1, "statname"])
+  names(aq) = sapply(aq, function(x) x[1, "stationname"])
   
   return(aq)
   
