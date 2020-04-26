@@ -28,18 +28,32 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 # saveRDS(germany, file.path(envrmt$path_tmp, "germany.RDS"))
 germany = readRDS(file.path(envrmt$path_tmp, "germany.RDS"))
 nuts3_mean = germany$de_nuts3_mean
+
+nuts3_mean = subsetAnalysisData (nuts3_mean, 
+                                 start_date = as.POSIXct("2020-02-15"), 
+                                 end_date = as.POSIXct("2020-04-20"))
 ```
 
 
-## Data and Methods
-Raw data on PM2.5 has been provided by the German environmental protection agency (UBN). ...
+# Data and Methods
+Raw data on PM2.5 has been provided by the German environmental protection agency (UBN) and WAQI. ...
 
-Data on total daily COVID-19 cases and deaths has been provided by the Robert-Koch-Institut. The data has been smoothed using a gaussian loess function with span 0.3 to reduce variation due to delayed reporting over the weekend and especcially on Sunday and Monday. The daily number of new infections has been computed from the daily variations of the total confirmed numbers.
+Data on total daily COVID-19 cases and deaths has been provided by the Robert-Koch-Institut. For some analysis, the data has been smoothed using a gaussian loess function with span 0.3 to reduce variation due to delayed reporting over the weekend and especcially on Sunday and Monday. The daily number of new infections has been computed from the daily variations of the total confirmed numbers.
+
+The data is availabe for the following nuts 3 regions.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
+nuts3_map = lapply(nuts3_mean, function(n){
+  return(n[1, "nuts3Name"])
+})
+nuts3_map = do.call("rbind", nuts3_map)
+mapview(nuts3_map)
+```
 
 
-## Overview of the mean development of PM2.5 and COVID-19 cases in Germany
+# Analyis 1: Countrywide temporal development of PM2.5 values and COVID-19 cases in Germany
 
-The following figure shows the country wide average of daily PM2.5 and new, smoothed COVID-19 cases. Black vertical dotted lines represent the start of the contact restrictions (March 14th) and shut down (March 17th).
+The following figure shows the countrywide average of daily PM2.5 and smoothed COVID-19 new infections. Black vertical dotted lines represent the start of the contact restrictions (March 14th) and shut down (March 17th).
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 de_avg = lapply(nuts3_mean, 
@@ -47,6 +61,7 @@ de_avg = lapply(nuts3_mean,
                        "new_cases_smooth", "cases_smooth", 
                        "deaths_smooth", "new_deaths", "new_deaths_smooth"))
 de_avg = do.call("rbind", de_avg)
+
 de_avg = as.data.frame(de_avg)[, -ncol(de_avg)]
 de_avg = de_avg[de_avg$date >= as.POSIXct("2020-02-15", tz = "CET"), ]
 
@@ -66,14 +81,15 @@ ggplot() +
 ```
 
 
-## Dependency between development of PM2.5 and COVID-19 cases in Germany
+Some studies compare the development of atmospheric parameters and COVID-19 cases over the entire avialable time series. As  both air quality and COVID-19 infection rates generally decrease after a shutdown event, at least parts of the identified correlations are likely caused by this external event, especially in regions with a strong influence of local activity on local air quality.
 
-Some studies compare the development of atmospheric parameters and COVID-19 cases over the entire avialable time series. As  both air quality and COVID-19 rates generally decrease after a shutdown event, at least parts of the identified correlations are likely caused by this external event, especially in regions with a strong influence of local activity on local air quality.
+To focus on the corelated development of PM2.5 and COVID-19 infections during the early and exponential growing phase, we restrict the time series to the maximum incubation phase of about 14 days prior the first reported infection and the turning point of the infection dynamics shortly after the absolute maximum which occurs about 14 days after the shutdown data. This sets the date limits from February 15th to April 1st.
 
-To focus on the corelated development of PM2.5 and COVID-19 cases during the early and exponential growing phase, we restrict the time series to the maximum incubation phase of 14 days prior the first reported infection and the turning point of the infection dynamics shortly after the absolute maximum. For the following figure, the time series has been restricted to this period and the daily new, smothed COVID-19 cases have been detrended using a poission regression.
+For the following figure, smothed daily COVID-19 new infections have been detrended using a quasipoission regression and the time series has been restricted to the afore mentioned time period afterwards.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-new_cases_smooth_detr = glm(new_cases_smooth ~ date,  family = poisson, data =de_avg)
+set.seed(01042020)
+new_cases_smooth_detr = glm(new_cases_smooth ~ date,  family = quasipoisson, data =de_avg)
 new_cases_smooth_detr = residuals(new_cases_smooth_detr)
 de_avg$new_cases_smooth_detr = new_cases_smooth_detr
 
@@ -103,13 +119,17 @@ ggplot() +
   theme(legend.title = element_blank())
 ```
 
-Based on that, the cross-correlation between PM2.5 and detrended daily new COVID-19 cases shows that PM2.5 is both leading up to 6 days and lagging up to 9 days. 
+## Cross-corelation on countrywide average
+
+The cross-correlation between PM2.5 and detrended and smoothed daily COVID-19 new infections shows that PM2.5 is both leading up to 6 days and lagging up to 9 days. Given the non-stationary features of the COVID-19 infections, the results must be interpreted with care.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 ccf(de_avg$pm25_mean, de_avg$new_cases_smooth_detr,
     main = "PM2.5 x Smothed daily new COVID-19 cases")
 ```
 
+
+## Wavelet coherence analysis on countrywide average
 
 Since the dentrended time series is still rather non-stationary and to get a better idea of the time periods and date ranges related to certain time lags, a wavelet coherence analysis is performed with a loess smoother. 
 
@@ -135,14 +155,14 @@ wc.image(wc, which.image = "wc",
 # wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
 ```
 
-The analysis shows that for the period of 4 to 5 days, the PM2.5 time series is leading arround March 1 with up to 2 or 3 days (arrows towards right upward). The situation changes towards April 1st. Here the COVID-19 cases are taking over the lead, with a small time lag at the period of arround 4 days and a lag of about 2 or 3 days at a period of about 8 days.
+The analysis shows that for the period of 4 to 6 days, the PM2.5 time series is leading arround March 1 with up to 2 or 3 days (arrows towards right upward). The situation changes towards April 1st. Here the COVID-19 cases are taking over the lead, with a time lag about 25% of the period. The relationship is also inverted mainly as a consequence of the sharp increase in PM2.5 values due to a Sahara dust event.
 
 
-## Dynmiac time warp clusters
+# Analyis 2: Dynmiac time warp clustering on countrywide average
 
-The following figure shows clusters with similar development of daily COVID-19 cases.
+The map shows clusters (different colors) with similar development of smoothed daily COVID-19 new infections. Cluster ID and number (n) of nuts 3 regions within each cluster is given in the legend.
 
-```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
 new_cases = lapply(nuts3_mean, function(n){
   as.data.frame(n[, "new_cases_smooth"])[, -2]
 })
@@ -152,7 +172,9 @@ new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 4,
                                 trace = TRUE,
                                 args = tsclust_args(dist = list(window.size = 10)))
 
-plot(new_cases_dtw_cluster, type = "c")
+
+
+# plot(new_cases_dtw_cluster, type = "c")
 
 # cluster = lapply(seq(length(nuts3_mean)), function(r){
 #   data.frame(nuts3 = names(nuts3_mean[r]),
@@ -169,11 +191,29 @@ plot(new_cases_dtw_cluster, type = "c")
 #   geom_smooth() +
 #   labs(title = "Overivew PM2.5 x Covid-19 cases", x = "PM 2.5", y = "Covid-19 cases") +
 #   facet_wrap(~cluster, ncol =2, nrow = 2, scales = "free")
+
+# mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
+#         legend = FALSE, ncol="pm25max")
+
+de_clstr_map = lapply(seq(length(nuts3_mean)), function(c){
+  tmp = nuts3_mean[[c]][1, ]
+  tmp$cluster = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
+                                 new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
+                                 ")"))
+  return(tmp)
+})
+de_clstr_map = do.call("rbind", de_clstr_map)
+
+mapview(de_clstr_map, zcol = "cluster")
+
+# mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop,
+#         legend = FALSE, ncol="pm25max")
 ```
 
-The average of daily PM2.5 and smoothed new COVID-19 cases along with their detrened series within each cluster is shown in the figure below.
 
-```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+The plots show the average of daily PM2.5 and smoothed new infections along with their detrened infection series within each cluster. Cluster ID and number (n) of nuts 3 regions within each cluster is given in the figure headers.
+
+```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
 de_clstr = lapply(seq(length(nuts3_mean)), function(c){
   tmp = nuts3_mean[[c]][, c("date", "pm25_mean", "nuts3Code", "new_cases", 
                             "new_cases_smooth", "cases_smooth", 
@@ -227,8 +267,8 @@ de_clstr_avg_detr = de_clstr_avg_detr[
 
 ggplot() + 
   geom_line(data = de_clstr_avg_detr, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
-  geom_line(data = de_clstr_avg_detr, aes(x = date, y = new_cases_smooth_detr, color = "New cases (smoothed, detrended)")) +
   geom_line(data = de_clstr_avg_detr, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
+  geom_line(data = de_clstr_avg_detr, aes(x = date, y = new_cases_smooth_detr*5, color = "New cases (smoothed, detrended)")) +
   labs(title = "PM2.5 x daily new Covid-19 cases (smoothed, detrended)", x = "Date", y = "Value") +
   scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
   scale_color_manual(values=c("red", "darkgreen", "blue")) +
@@ -236,11 +276,14 @@ ggplot() +
   geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
   geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
   theme(legend.title = element_blank()) +
-  facet_wrap(~cluster, ncol =2, nrow = 2, scales = "free")
+  facet_wrap(~cluster, ncol =2, nrow = 2, scales = "fix")
 ```
 
 
-Based on that, the cross-correlation between PM2.5 and detrended daily new COVID-19 cases per cluster is shown below. 
+## Cross-corelation on cluster averages
+
+Cross-correlations between PM2.5 and detrended daily COVID-19 new infections is similar to the countrywide average. 
+
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 for(c in unique(de_clstr_avg$cluster)){
   ccf(de_clstr_avg_detr[de_clstr_avg_detr$cluster == c, "pm25_mean"], 
@@ -250,7 +293,10 @@ for(c in unique(de_clstr_avg$cluster)){
 ```
 
 
-Finaly, the following figures show the wavelet coherence analysis per cluster.
+## Wavelet coherence analysis on cluster averages
+
+The wavelet coherence analysis for each cluster reveals some considerable differences.
+
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 for(c in unique(de_clstr_avg$cluster)){
   tmp = de_clstr_avg_detr[de_clstr_avg_detr$cluster == c,]
@@ -275,37 +321,55 @@ for(c in unique(de_clstr_avg$cluster)){
 }
 ```
 
-## Explanatory power of PM2.5 for COVID-19 cases
 
-The following gam model indicates the predictive power of PM2.5 for the German cases.
+# Explanatory power of PM2.5 for COVID-19 cases
+
+## Generalized linear model based on nationwide dataset
+
+The following gam model indicates the predictive power of PM2.5 on a nationwide level. An internal 30 fold leave location (i.e. nuts 3 region) out cross-validation has been performed using a generalized linerar model with quasi poission distribution. The date range is again restricted to February 15th to April 1st.
+
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 cl <- makePSOCKcluster(5)
 registerDoParallel(cl)
 
 de_clstr_ap = de_clstr[de_clstr$date >= as.POSIXct("2020-02-15 CET") & 
-    de_clstr$date <= as.POSIXct("2020-04-01 CEST"), ]
+                         de_clstr$date <= as.POSIXct("2020-04-01 CEST"), ]
 
 set.seed(01042020)
-fold = groupKFold(de_clstr_ap$nuts3Code, k = 30)
-
+fold = groupKFold(de_clstr_ap$nuts3Code, k = 20)
 
 fitControl <- trainControl(method = "cv",
                            index = fold)
 
-set.seed(01042020)
-de_clstr_gam <- train(new_cases_smooth ~ pm25_mean, data = de_clstr_ap, 
-                      method = "gam", family = poisson, 
-                      trControl = fitControl,
-                      ## This last option is actually one
-                      ## for gbm() that passes through
-                      verbose = FALSE)
-stopCluster(cl)
+# de_clstr_gam = lapply(seq(0, 14), function(l){
+#   print(l)
+#   tmp =  
+#     de_clstr_ap %>%
+#     group_by(nuts3Code) %>%
+#     mutate(pm25_mean_lag = dplyr::lag(pm25_mean, n = l, default = NA))
+#   
+#   tmp = tmp[!is.na(tmp$pm25_mean_lag), ]
 
+  set.seed(01042020)
+  de_clstr_gam <- train(new_cases_smooth ~ pm25_mean, data = de_clstr_ap,
+                        method = "gam", family = quasipoisson, 
+                        trControl = fitControl,
+                        ## This last option is actually one
+                        ## for gbm() that passes through
+                        verbose = FALSE)
+#   return(de_clstr_gam)
+# })
+stopCluster(cl)
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
 print(summary(de_clstr_gam))
 ```
 
+## Generalized linear based on cluster averages
 
-The following gam models indicate the predictive power of PM2.5 within the individual German clusters The internal cross validation error is based on a 10-fold leave region out cross-validation.
+As for the nationwide case, gam models have been trained to estimate the predictive power of PM2.5 within the individual German clusters. The estimates are based on a 10-fold leave location out cross-validation.
+
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 cl <- makePSOCKcluster(4)
 registerDoParallel(cl)
@@ -315,24 +379,18 @@ de_clstr_gam_indv = lapply(sort(unique(de_clstr_ap$cluster)), function(c){
   tmp = de_clstr_ap[de_clstr_ap$cluster == c, ]
   
   set.seed(01012020)
-  fold = groupKFold(tmp$nuts3Code, k = min(10, (length(unique(tmp$nuts3Code)))))
+  fold = groupKFold(tmp$nuts3Code, k = min(5, (length(unique(tmp$nuts3Code)))))
   
-  # inTraining <- createDataPartition(tmp$nuts3Code, p = .75, list = FALSE)
-  # training <- tmp[ inTraining,]
-  # testing  <- tmp[-inTraining,]
-  
-  # training = training[-which(training$nuts3Code %in% unique(de_clstr[which(is.na(de_clstr$pm25_mean)), "nuts3Code"])),]
-  # testing = testing[-which(testing$nuts3Code %in% unique(de_clstr[which(is.na(de_clstr$pm25_mean)), "nuts3Code"])),]
-  
-  fitControl <- trainControl(index = fold)
+  fitControl <- trainControl(method = "cv",
+                           index = fold)
   
   set.seed(01042020)
-  de_clstr_gam <- train(new_cases_smooth ~ pm25_mean, data = tmp, 
-                        method = "gam", family = quasipoisson, 
-                        trControl = fitControl,
-                        ## This last option is actually one
-                        ## for gbm() that passes through
-                        verbose = FALSE)
+  de_clstr_gam <- train(new_cases_smooth ~ pm25_mean, data = de_clstr_ap, 
+                      method = "gam", family = quasipoisson, 
+                      trControl = fitControl,
+                      ## This last option is actually one
+                      ## for gbm() that passes through
+                      verbose = TRUE)
   return(de_clstr_gam)
 })
 
@@ -344,54 +402,36 @@ print(de_clstr_gam_indv)
 ```
 
 
-## Geographical overview of the clusters
-```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
-# mapview(italy$pm_waqi_points$pts, popup = italy$pm_waqi_points$pop, 
-#         legend = FALSE, ncol="pm25max")
 
-de_clstr_map = lapply(seq(length(nuts3_mean)), function(c){
-  tmp = nuts3_mean[[c]][1, ]
-  tmp$cluster = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
-                                 new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
-                                 ")"))
-  return(tmp)
-})
-de_clstr_map = do.call("rbind", de_clstr_map)
-
-mapview(de_clstr_map, zcol = "cluster")
-
-# mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop, 
-#         legend = FALSE, ncol="pm25max")
-```
 
 
 ```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
 # Roland
 
-test = de_avg
-test$week.day = weekdays(test$date)
-test$week.day.c = weekdays(test$date)
-
-# week.day <- weekdays(data[[1]]$date)
-# week.day.c <- week.day
-for (i in (1:length(test$week.day)))
-  test$week.day.c[i] = ifelse((test$week.day[i] == "Montag"), "M",
-                                      ifelse((test$week.day[i] == "Sonntag") |
-                                               (test$week.day[i] == "Samstag"),
-                                             "SS","W"))
-test$week.day.c = as.factor(test$week.day.c)
-erg.covid = glm(test$new_cases ~ test$date + test$week.day.c, poisson)
-summary(erg.covid)
-
-
-erg.covid.pm <- glm(test$new_cases ~ c(1:47) + test$week.day.c +
-                I(test$pm25_mean), quasipoisson)
-summary(erg.covid.pm)
-
-library(lme4)
-erg.covid.pm <- glmer(test$new_cases ~ c(1:47) + test$week.day.c +
-                      I(test$pm25_mean) +
-                      (1|as.factor(c(1:47))), family=poisson)
-summary(erg.covid.pm)
+# test = de_avg
+# test$week.day = weekdays(test$date)
+# test$week.day.c = weekdays(test$date)
+# 
+# # week.day <- weekdays(data[[1]]$date)
+# # week.day.c <- week.day
+# for (i in (1:length(test$week.day)))
+#   test$week.day.c[i] = ifelse((test$week.day[i] == "Montag"), "M",
+#                               ifelse((test$week.day[i] == "Sonntag") |
+#                                        (test$week.day[i] == "Samstag"),
+#                                      "SS","W"))
+# test$week.day.c = as.factor(test$week.day.c)
+# erg.covid = glm(test$new_cases ~ test$date + test$week.day.c, poisson)
+# summary(erg.covid)
+# 
+# 
+# erg.covid.pm <- glm(test$new_cases ~ test$date + test$week.day.c +
+#                       I(test$pm25_mean), quasipoisson)
+# summary(erg.covid.pm)
+# 
+# library(lme4)
+# erg.covid.pm <- glmer(test$new_cases ~ c(1:47) + test$week.day.c +
+#                         I(test$pm25_mean) +
+#                         (1|as.factor(c(1:47))), family=poisson)
+# summary(erg.covid.pm)
 
 ```
