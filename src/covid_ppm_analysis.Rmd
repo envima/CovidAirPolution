@@ -158,11 +158,20 @@ new_cases = lapply(nuts3_mean, function(n){
   as.data.frame(n[, "new_cases_smooth"])[, -2]
 })
 
+pm25_mean = lapply(nuts3_mean, function(n){
+  as.data.frame(n[, "pm25_mean"])[, -2]
+})
+
+
 new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 4,
                                 distance = "dtw_basic", centroid = "pam", seed=01042020, 
                                 trace = TRUE,
                                 args = tsclust_args(dist = list(window.size = 10)))
 
+pm25_dtw_cluster = tsclust(pm25_mean, type = "partitional", k = 4,
+                           distance = "dtw_basic", centroid = "pam", seed=01042020, 
+                           trace = TRUE,
+                           args = tsclust_args(dist = list(window.size = 10)))
 
 
 # plot(new_cases_dtw_cluster, type = "c")
@@ -197,6 +206,19 @@ de_clstr_map = do.call("rbind", de_clstr_map)
 
 mapview(de_clstr_map, zcol = "cluster")
 
+
+
+de_clstr_pm25_map = lapply(seq(length(nuts3_mean)), function(c){
+  tmp = nuts3_mean[[c]][1, ]
+  tmp$cluster = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
+                                 pm25_dtw_cluster@clusinfo[pm25_dtw_cluster@cluster[c], 1],
+                                 ")"))
+  return(tmp)
+})
+de_clstr_pm25_map = do.call("rbind", de_clstr_pm25_map)
+
+mapview(de_clstr_pm25_map, zcol = "cluster")
+
 # mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop,
 #         legend = FALSE, ncol="pm25max")
 ```
@@ -212,6 +234,9 @@ de_clstr = lapply(seq(length(nuts3_mean)), function(c){
   tmp$cluster = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
                                  new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
                                  ")"))
+  tmp$pm25_cluster = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
+                                      pm25_dtw_cluster@clusinfo[pm25_dtw_cluster@cluster[c], 1],
+                                      ")"))
   return(tmp)
 })
 
@@ -312,16 +337,16 @@ We fit generalized linear models with a quasi poission distribution. We used dat
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 de_clstr_indv = de_clstr[de_clstr$date >= as.POSIXct("2020-02-15 CET") & 
-                         de_clstr$date <= as.POSIXct("2020-04-01 CEST"), ]
+                           de_clstr$date <= as.POSIXct("2020-04-01 CEST"), ]
 
 de_clstr_indv$weekday = weekdays(de_clstr_indv$date)
 de_clstr_indv$weekday_c = NA
 for (i in (1:length(de_clstr_indv$weekday)))
-  de_clstr_indv$weekday_c[i] <- ifelse((de_clstr_indv$weekday[i] == "Montag"), "M", 
+  de_clstr_indv$weekday_c[i] = ifelse((de_clstr_indv$weekday[i] == "Montag"), "M", 
                                       ifelse((de_clstr_indv$weekday[i] == "Sonntag") | 
                                                (de_clstr_indv$weekday[i] == "Samstag"),
                                              "SS","W"))
-de_clstr_indv$weekday_c <- as.factor(de_clstr_indv$weekday_c)
+de_clstr_indv$weekday_c = as.factor(de_clstr_indv$weekday_c)
 
 de_clstr_indv_lag = lapply(unique(de_clstr_indv$nuts3Code), function(n){
   
@@ -341,6 +366,8 @@ de_clstr_indv_lag = lapply(unique(de_clstr_indv$nuts3Code), function(n){
     test = summary(tmp_glm)
     data.frame(nuts3_code = n,
                cluster = tmp$cluster[1],
+               pm25_cluster = tmp$pm25_cluster[1],
+               pm25_mean_mean = mean(tmp$pm25_mean),
                lag = -l, 
                t = test$coefficients["pm25_mean_lag", "t value"], 
                p = test$coefficients["pm25_mean_lag", "Pr(>|t|)"])
@@ -371,7 +398,49 @@ ggplot(data = de_clstr_indv_lag, aes(x = as.factor(lag), y = t, fill = cluster))
 ```
 
 
+
 As indicated by the red horizontal lines, time lags of -8 to -10 days still miss the significance level. Hence, from an empidemological perspective, an actual relationship cannot be confirmed. Nevertheless, the overall shape of the graph indicates some kind of positive relationship between -8 to -10 days. If that relationship is caused by a physiological relationship or a meteorological coincidence cannot be differentiated.
+
+
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+test = de_clstr_indv_lag[de_clstr_indv_lag$lag >= -10 & 
+                    de_clstr_indv_lag$lag <= -8 &
+                    de_clstr_indv_lag$t > 0 &
+                    de_clstr_indv_lag$p < 0.05,]
+
+
+de_clstr_indv_focus = de_clstr_indv_lag[de_clstr_indv_lag$nuts3_code %in% unique(test$nuts3_code),]
+
+ggplot(data = de_clstr_indv_focus, aes(x = lag, y = t, color = as.factor(nuts3_code))) + 
+  geom_path() +
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by clusters",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
+
+
+test = nuts3_mean[unique(test$nuts3_code)]
+
+test = do.call("rbind", test)
+
+mapview(test[test$nuts3Code %in% c("9171", "15082",  "6431", "9779", "12062", "15086", "9575", "12070", "13072", "1059", "9189", "8416", "12073",  "9479", "9561", "9761", "3101", "8121", "9161", "9564", "3403", "8231", "9363", "3405", "5334"), zcoll = "nuts3Name"])
+```
+
+
+
+```{r, eval = FALSE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+ggplot(data = de_clstr_indv_lag, aes(x = as.factor(lag), y = t, fill = pm25_cluster)) + 
+  geom_boxplot() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by clusters",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
+```
+
+
+```{r, eval = FALSE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+ggplot(data = de_clstr_indv_lag[de_clstr_indv_lag$pm25_mean_mean > 9, ], aes(x = as.factor(lag), y = t)) + 
+  geom_boxplot() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by clusters",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
+```
 
 
 
@@ -478,7 +547,7 @@ de_clstr_ap_lag = do.call("rbind", de_clstr_ap_lag)
 ggplot(data = de_clstr_ap_lag, aes(x = lag, y = t, color = cluster)) + 
   geom_line() + 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
-    labs(title = "Dependence of cluster-averaged COVID-19 cases on lagged PM2.5 concentrations", x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
+  labs(title = "Dependence of cluster-averaged COVID-19 cases on lagged PM2.5 concentrations", x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
 ```
 
 
