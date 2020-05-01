@@ -32,6 +32,7 @@ nuts3_mean = germany$de_nuts3_mean
 nuts3_mean = subsetAnalysisData (nuts3_mean, 
                                  start_date = as.POSIXct("2020-02-15"), 
                                  end_date = as.POSIXct("2020-04-20"))
+nuts3_mean = nuts3_mean[-which(names(nuts3_mean) == "LK Böblingen")]
 ```
 
 
@@ -44,10 +45,11 @@ The data is availabe for the following nuts 3 regions.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
 nuts3_map = lapply(nuts3_mean, function(n){
-  return(n[1, "nuts3Name"])
+  cbind(n[n$date == as.POSIXct("2020-04-01"),],
+             nuts3Area = st_area(n[1, c("nuts3Name", "nuts3Code")]))
 })
 nuts3_map = do.call("rbind", nuts3_map)
-mapview(nuts3_map)
+mapview(nuts3_map, zcol = "cases")
 ```
 
 
@@ -168,7 +170,7 @@ new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 4,
                                 trace = TRUE,
                                 args = tsclust_args(dist = list(window.size = 10)))
 
-pm25_dtw_cluster = tsclust(pm25_mean, type = "partitional", k = 4,
+pm25_dtw_cluster = tsclust(pm25_mean, type = "partitional", k = 5,
                            distance = "dtw_basic", centroid = "pam", seed=01042020, 
                            trace = TRUE,
                            args = tsclust_args(dist = list(window.size = 10)))
@@ -418,11 +420,23 @@ ggplot(data = de_clstr_indv_focus, aes(x = lag, y = t, color = as.factor(nuts3_c
   labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by clusters",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
 
 
-test = nuts3_mean[unique(test$nuts3_code)]
+test_area = nuts3_map
+test_area$small_p = FALSE
+test_area[test_area$nuts3Code %in% unique(test$nuts3_code), "small_p"] = TRUE
+test_area$nuts3Area = as.numeric(test_area$nuts3Area)
+mapview(test_area, zcol = "small_p")
 
-test = do.call("rbind", test)
+ggplot(data = test_area, aes(x = small_p, y = nuts3Area)) + geom_boxplot(notch = TRUE)
+t.test(nuts3Area ~ small_p, data = test_area)
 
-mapview(test[test$nuts3Code %in% c("9171", "15082",  "6431", "9779", "12062", "15086", "9575", "12070", "13072", "1059", "9189", "8416", "12073",  "9479", "9561", "9761", "3101", "8121", "9161", "9564", "3403", "8231", "9363", "3405", "5334"), zcoll = "nuts3Name"])
+
+
+nr = de_clstr_indv[de_clstr_indv$date >= as.POSIXct("2020-02-20") & de_clstr_indv$date <= as.POSIXct("2020-03-01"),]
+max_pm25 = aggregate(pm25_mean ~ nuts3Code, data = nr, FUN = mean)
+test_area_max_pm25 = merge(test_area[, -which(colnames(test_area) %in% c("date", "pm25_mean"))]
+, max_pm25)
+t.test(pm25_mean ~ small_p, data = test_area_max_pm25)
+
 ```
 
 

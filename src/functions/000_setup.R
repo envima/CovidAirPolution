@@ -19,7 +19,7 @@ project_folders = c("data/",
                     "data/tmp/")
 
 libs = c("doParallel", "caret", "data.table", "dtwclust", "ggplot2", "htmlTable", "htmltools", 
-         "jsonlite", "plotly", "mapview", "stringr", 
+         "jsonlite", "plotly", "mapview", "stringr", "sf",
          "sf", "wavelets", "wmtsa", "mgcv", "biwavelet", "rnaturalearth", 
          "rnaturalearthhires",
          "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp")
