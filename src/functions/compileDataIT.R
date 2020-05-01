@@ -1,6 +1,6 @@
 # Compile dataset for Italy
 
-compileDataIT = function(){
+compileDataIT = function(city=FALSE){
   # Covid-19 -------------------------------------------------------------------
   cov_it = getCovidIT()
   cov_it_polygons = makeSFPolygonsIT(cov_it$cov_nuts3)
@@ -10,7 +10,14 @@ compileDataIT = function(){
   flist = list.files(file.path(envrmt$path_data,"IT/"), 
                      pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
   flist =  flist[grepl(flist,pattern = "report-data-platform")]   
-  pm_waqi = makedfWAQI(flist)
+  if (city){
+  flist = list.files(file.path(envrmt$path_world),
+                     pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
+  flist =  flist[grepl(flist, pattern = "waqi-covid19-airqualitydata")]  
+  pm_waqi = makedfWAQIworld(flist,country="IT",param="pm25")
+  }
+  else  pm_waqi = makedfWAQI(flist)
+  
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
   
   
