@@ -6,7 +6,7 @@ if(Sys.info()[["nodename"]] == "PC19616"){
   root_folder = path.expand("~/project/CovidAirPolution/")
 }
 
-fcts_folder = file.path(root_folder, "src/functions/")
+fcts_folder = file.path(root_folder, "CovidAirPolution/src/functions/")
 
 project_folders = c("data/",
                     "data/FR/",
@@ -19,7 +19,7 @@ project_folders = c("data/",
                     "data/tmp/")
 
 libs = c("doParallel", "caret", "data.table", "dtwclust", "ggplot2", "htmlTable", "htmltools", 
-         "jsonlite", "plotly", "mapview", "stringr", 
+         "jsonlite", "plotly", "mapview", "stringr", "sf",
          "sf", "wavelets", "wmtsa", "mgcv", "biwavelet", "rnaturalearth", 
          "rnaturalearthhires",
          "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp")

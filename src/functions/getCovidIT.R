@@ -8,11 +8,11 @@ getCovidIT = function(){
                 destfile=file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-regioni.csv"))
   
   cov_nuts2 = read.delim(file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-regioni.csv"), header = TRUE, sep = ",", dec=".")
-  cov_nuts2$date = as.POSIXct(cov_nuts2$data)
+  cov_nuts2$date = as.POSIXct(cov_nuts2$data, origin = "CET")
   names(cov_nuts2)[which(names(cov_nuts2) == "long")] = "lon"
   
   cov_nuts3 = read.delim(file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-province.csv"), header = TRUE, sep = ",", dec=".")  
-  cov_nuts3$date = as.POSIXct(cov_nuts3$data)
+  cov_nuts3$date = as.POSIXct(cov_nuts3$data, origin = "CET")
   names(cov_nuts3)[which(names(cov_nuts3) == "long")] = "lon"
   
   cov_nuts3$new_cases = NA

@@ -6,11 +6,12 @@ makeSFPointsWAQI = function(pm_waqi){
     latlon = c(x[1, "lon"],x[1, "lat"])
     class(latlon) = "numeric"
     p = st_sfc(st_point(latlon), crs = 4326)
-    st_sf(aq_location = x[1, "statname"],p)
+    st_sf(stationname = x[1, "stationname"],p)
   })
   pts = do.call(rbind, p)
   
-  pop = lapply(lapply(pm_waqi, function(x) x[ ,c("date","pm25","pm25_min","pm25_max")]), htmlTable)
+  # pop = lapply(lapply(pm_waqi, function(x) x[ ,c("date","pm25","pm25_min","pm25_max")]), htmlTable)
+  pop = lapply(lapply(pm_waqi, function(x) x[1 ,c("stationname")]), htmlTable)
   names(pop) = NULL
   
   return(list(pts = pts, pop = pop))
@@ -35,7 +36,8 @@ makeSFPointsUBA = function(pm_uba){
   })
   pts = do.call(rbind, p)
   
-  pop = lapply(lapply(pm_uba, function(s) s[ ,c("date","pm25")]), htmlTable)
+  # pop = lapply(lapply(pm_uba, function(s) s[ ,c("date","pm25")]), htmlTable)
+  pop = lapply(lapply(pm_uba, function(s) s[1 ,c("stationname")]), htmlTable)
   names(pop) = NULL
   
   return(list(pts = pts, pop = pop))
