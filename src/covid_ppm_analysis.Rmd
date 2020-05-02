@@ -77,13 +77,15 @@ de_avg$date_day = paste(de_avg$date, substr(weekdays(de_avg$date), 1, 1))
 
 ggplot() + 
   geom_line(data = de_avg, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
-  geom_line(data = de_avg, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
-  labs(title = "PM2.5 x daily new Covid-19 cases (smoothed)", x = "Date", y = "Value") +
-  scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
-  scale_color_manual(values=c("red", "blue")) +
-  theme(axis.text.x = element_text(angle=90)) + 
+  geom_line(data = de_avg, aes(x = date, y = new_cases, color = "New cases")) + 
+  geom_line(data = de_avg, aes(x = date, y = new_cases_smooth, color = "New cases smoothed")) + 
+  labs(title = "PM2.5 x daily new Covid-19 cases", x = "Date", y = "Value") +
   geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
   geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  theme_bw() + 
+  scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
+  scale_color_manual(values=c("red", "blue", "darkgreen")) +
+  theme(axis.text.x = element_text(angle=90)) + 
   theme(legend.title = element_blank())
 ```
 
@@ -118,11 +120,10 @@ ggplot() +
   geom_line(data = de_avg, aes(x = date, y = new_cases_smooth_detr, color = "New cases (smoothed, detrended)")) +
   geom_line(data = de_avg, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
   labs(title = "PM2.5 x daily new Covid-19 cases (smoothed, detrended)", x = "Date", y = "Value") +
+  theme_bw() + 
   scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
   scale_color_manual(values=c("red", "darkgreen", "blue")) +
   theme(axis.text.x = element_text(angle=90)) + 
-  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
-  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
   theme(legend.title = element_blank())
 ```
 
@@ -175,7 +176,7 @@ new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 4,
                                 trace = TRUE,
                                 args = tsclust_args(dist = list(window.size = 10)))
 
-pm25_dtw_cluster = tsclust(pm25_mean, type = "partitional", k = 5,
+pm25_dtw_cluster = tsclust(pm25_mean, type = "partitional", k = 4,
                            distance = "dtw_basic", centroid = "pam", seed=01042020, 
                            trace = TRUE,
                            args = tsclust_args(dist = list(window.size = 10)))
@@ -207,24 +208,16 @@ de_clstr_map = lapply(seq(length(nuts3_mean)), function(c){
   tmp$cluster = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
                                  new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
                                  ")"))
+  tmp$cluster_pm25 = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
+                                 pm25_dtw_cluster@clusinfo[pm25_dtw_cluster@cluster[c], 1],
+                                 ")"))
   return(tmp)
 })
 de_clstr_map = do.call("rbind", de_clstr_map)
 
 mapview(de_clstr_map, zcol = "cluster")
 
-
-
-de_clstr_pm25_map = lapply(seq(length(nuts3_mean)), function(c){
-  tmp = nuts3_mean[[c]][1, ]
-  tmp$cluster = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
-                                 pm25_dtw_cluster@clusinfo[pm25_dtw_cluster@cluster[c], 1],
-                                 ")"))
-  return(tmp)
-})
-de_clstr_pm25_map = do.call("rbind", de_clstr_pm25_map)
-
-mapview(de_clstr_pm25_map, zcol = "cluster")
+mapview(de_clstr_map, zcol = "cluster_pm25")
 
 # mapview(germany$pm_uba_points$pts, popup = germany$pm_uba_points$pop,
 #         legend = FALSE, ncol="pm25max")
@@ -241,7 +234,7 @@ de_clstr = lapply(seq(length(nuts3_mean)), function(c){
   tmp$cluster = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
                                  new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
                                  ")"))
-  tmp$pm25_cluster = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
+  tmp$cluster_pm25 = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
                                       pm25_dtw_cluster@clusinfo[pm25_dtw_cluster@cluster[c], 1],
                                       ")"))
   return(tmp)
@@ -253,7 +246,7 @@ de_clstr = de_clstr[de_clstr$date >= as.POSIXct("2020-02-15", tz = "CET"), ]
 de_clstr$cluster = factor(de_clstr$cluster, levels = sort(unique(as.character(de_clstr$cluster))))
 
 de_clstr_avg = de_clstr[, -which(names(de_clstr) == "nuts3Code")]
-de_clstr_avg = aggregate(. ~ date + cluster, data = de_clstr_avg, FUN = mean)
+de_clstr_avg = aggregate(. ~ date + cluster_pm25, data = de_clstr_avg, FUN = mean)
 de_clstr_avg$date_day = paste(de_clstr_avg$date, substr(weekdays(de_clstr_avg$date), 1, 1))
 
 # ggplot() + 
@@ -268,11 +261,11 @@ de_clstr_avg$date_day = paste(de_clstr_avg$date, substr(weekdays(de_clstr_avg$da
 #   facet_wrap(~cluster, ncol =2, nrow = 2, scales = "free")
 
 
-de_clstr_avg_detr = lapply(unique(de_clstr_avg$cluster), function(c){
-  tmp = de_clstr_avg[de_clstr_avg$cluster == c,]
+de_clstr_avg_detr = lapply(unique(de_clstr_avg$cluster_pm25), function(c){
+  tmp = de_clstr_avg[de_clstr_avg$cluster_pm25 == c,]
   detr = glm(new_cases_smooth ~ date,  family = poisson, data =tmp)
-  de_clstr_avg[de_clstr_avg$cluster == c, "new_cases_smooth_detr"] = residuals(detr)
-  return(de_clstr_avg[de_clstr_avg$cluster == c,])
+  de_clstr_avg[de_clstr_avg$cluster_pm25 == c, "new_cases_smooth_detr"] = residuals(detr)
+  return(de_clstr_avg[de_clstr_avg$cluster_pm25 == c,])
 })
 de_clstr_avg_detr = do.call("rbind", de_clstr_avg_detr)
 
@@ -292,14 +285,15 @@ ggplot() +
   geom_line(data = de_clstr_avg_detr, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
   geom_line(data = de_clstr_avg_detr, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
   geom_line(data = de_clstr_avg_detr, aes(x = date, y = new_cases_smooth_detr*5, color = "New cases (smoothed, detrended)")) +
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  theme_bw() + 
   labs(title = "PM2.5 x daily new Covid-19 cases (smoothed, detrended)", x = "Date", y = "Value") +
   scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
   scale_color_manual(values=c("red", "darkgreen", "blue")) +
   theme(axis.text.x = element_text(angle=90)) + 
-  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
-  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
   theme(legend.title = element_blank()) +
-  facet_wrap(~cluster, ncol =2, nrow = 2, scales = "fix")
+  facet_wrap(~cluster_pm25, ncol =2, nrow = 2, scales = "fix")
 ```
 
 
@@ -312,8 +306,8 @@ ggplot() +
 The wavelet coherence analysis for each cluster reveals some considerable differences.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-for(c in unique(de_clstr_avg$cluster)){
-  tmp = de_clstr_avg_detr[de_clstr_avg_detr$cluster == c,]
+for(c in unique(de_clstr_avg$cluster_pm25)){
+  tmp = de_clstr_avg_detr[de_clstr_avg_detr$cluster_pm25 == c,]
   set.seed(01042020)
   wc = analyze.coherency(tmp,
                          my.pair = c("pm25_mean", "new_cases_smooth_detr"),
@@ -348,11 +342,12 @@ de_clstr_indv = de_clstr[de_clstr$date >= as.POSIXct("2020-02-15 CET") &
 
 de_clstr_indv$weekday = weekdays(de_clstr_indv$date)
 de_clstr_indv$weekday_c = NA
-for (i in (1:length(de_clstr_indv$weekday)))
+for (i in (1:length(de_clstr_indv$weekday))){
   de_clstr_indv$weekday_c[i] = ifelse((de_clstr_indv$weekday[i] == "Montag"), "M", 
                                       ifelse((de_clstr_indv$weekday[i] == "Sonntag") | 
                                                (de_clstr_indv$weekday[i] == "Samstag"),
                                              "SS","W"))
+}
 de_clstr_indv$weekday_c = as.factor(de_clstr_indv$weekday_c)
 
 de_clstr_indv_lag = lapply(unique(de_clstr_indv$nuts3Code), function(n){
@@ -373,7 +368,7 @@ de_clstr_indv_lag = lapply(unique(de_clstr_indv$nuts3Code), function(n){
     test = summary(tmp_glm)
     data.frame(nuts3_code = n,
                cluster = tmp$cluster[1],
-               pm25_cluster = tmp$pm25_cluster[1],
+               cluster_pm25 = tmp$cluster_pm25[1],
                pm25_mean_mean = mean(tmp$pm25_mean),
                lag = -l, 
                t = test$coefficients["pm25_mean_lag", "t value"], 
@@ -391,20 +386,74 @@ Range of t values of the partial coefficient for PM2.5 for each time lag. Negati
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 ggplot(data = de_clstr_indv_lag, aes(x = as.factor(lag), y = t)) + 
   geom_boxplot() + 
+  theme_bw() +
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
-  labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by clusters",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
+  labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
 ```
 
 As figure above but this time, the partial coefficient for PM2.5 is grouped by the four clusters resulting from the dynmiac time warp clustering. Red horizontal lines roughly indicate the significance on the 95% level.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-ggplot(data = de_clstr_indv_lag, aes(x = as.factor(lag), y = t, fill = cluster)) + 
+ggplot(data = de_clstr_indv_lag, aes(x = as.factor(lag), y = t, fill = cluster_pm25)) + 
   geom_boxplot() + 
+  theme_bw() + 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
-  labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by clusters",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
+  labs(title = "Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by PM2.5 clusters",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient")
 ```
 
 
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+test_geo = merge(de_clstr_indv_lag, nuts3_map[, c("nuts3Code", "cases", "deaths", "nuts3Name", "state", "lat", "lon", "nuts3Area")], by.x = "nuts3_code", by.y = "nuts3Code")
+
+test_geo_lag = lapply(unique(test_geo$lag), function(l){
+  tmp = test_geo[test_geo$lag == l,]
+  tmp_lm = lm(tmp$t ~ tmp$lat + tmp$lon + log10(tmp$nuts3Area))
+  s = summary(tmp_lm)
+  data.frame(tmp[1,],
+             rsq = s$r.squared,
+             lat_t = s$coefficients["tmp$lat", "t value"],
+             lat_p = s$coefficients["tmp$lat",  "Pr(>|t|)"],
+             lon_t = s$coefficients["tmp$lon", "t value"],
+             lon_p = s$coefficients["tmp$lon",  "Pr(>|t|)"],
+             area_t = s$coefficients["log10(tmp$nuts3Area)", "t value"],
+             area_p = s$coefficients["log10(tmp$nuts3Area)",  "Pr(>|t|)"])
+})
+test_geo_lag = do.call("rbind", test_geo_lag)
+
+plot(test_geo_lag$lag, test_geo_lag$rsq)
+
+ggplot(data = test_geo_lag) + 
+  geom_line(aes(x = lag, y = lat_t, color = "latitude")) +
+  geom_point(aes(x = lag, y = lat_t, color = "latitude")) +
+  geom_line(aes(x = lag, y = lon_t, color = "longitude")) +
+  geom_point(aes(x = lag, y = lon_t, color = "longitude")) +
+  geom_line(aes(x = lag, y = area_t, color = "log10(area)")) +
+  geom_point(aes(x = lag, y = area_t, color = "log10(area)")) +
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(-15, 0, 1), minor_breaks = seq(-15, 0, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(title = "t values of lagged PM2.5 concentrations for latitude, longitude and area",x = "Time lag PM2.5 [days]", y = "t value of the partial coefficient", color = "Partial coefficient")
+
+
+ggplot(data = test_geo[test_geo$lag <= -10,]) + 
+  geom_point(aes(x = lat, y = t, color = as.factor(lag))) +
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(47, 55, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(title = "t values of lagged PM2.5 concentrations for latitude",x = "Latitude [degrees]", y = "t value of the partial coefficient for PM2.5 (glm model)", color = "Lag of PM2.5")
+
+
+ggplot(data = test_geo[test_geo$lag >= -7 & test_geo$lag <= -4,]) + 
+  geom_point(aes(x = lat, y = t, color = as.factor(lag))) +
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(47, 55, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(title = "t values of lagged PM2.5 concentrations for latitude",x = "Latitude [degrees]", y = "t value of the partial coefficient for PM2.5 (glm model)", color = "Lag of PM2.5")
+
+```
 
 As indicated by the red horizontal lines, time lags of -8 to -10 days still miss the significance level. Hence, from an empidemological perspective, an actual relationship cannot be confirmed. Nevertheless, the overall shape of the graph indicates some kind of positive relationship between -8 to -10 days. If that relationship is caused by a physiological relationship or a meteorological coincidence cannot be differentiated.
 
