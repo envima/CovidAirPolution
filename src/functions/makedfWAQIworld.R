@@ -10,12 +10,12 @@ makedfWAQIworld = function(flist,country="IT",param="pm25"){
      aq = lapply(unique(pm$City), function(x){
        #latlon = as.tibble(geo_osm(x))
        act = pm[pm$City == x ,]
-       act$lat= as.numeric(geo_osm(x)[1])
-       act$lon= as.numeric(geo_osm(x)[2])
+       act$lat= as.numeric(geo_osm(as.character(x))[1])
+       act$lon= as.numeric(geo_osm(as.character(x))[2])
        act$date = as.POSIXct(act$Date, origin = "CET")
-       for(i in seq(5, ncol(act))){
-         act[, i] = as.numeric(act[, i])
-       }
+       # for(i in seq(5, ncol(act))){
+       #   act[, i] = as.numeric(act[, i])
+       # }
        act$statname = act$City
        #act$statname = substr(basename(f), regexec("\\.", basename(f))[[1]][1]+1, regexec("--", basename(f))[[1]][1]-1)
        act = act[act$date >= as.POSIXct("2020-01-01"), ]

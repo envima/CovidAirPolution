@@ -1,6 +1,6 @@
 # Compile dataset for Italy
 
-compileDataIT = function(city=FALSE){
+compileDataIT = function(city=TRUE){
   # Covid-19 -------------------------------------------------------------------
   cov_it = getCovidIT()
   cov_it_polygons = makeSFPolygonsIT(cov_it$cov_nuts3)
@@ -11,12 +11,13 @@ compileDataIT = function(city=FALSE){
                      pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
   flist =  flist[grepl(flist,pattern = "report-data-platform")]   
   if (city){
-  flist = list.files(file.path(envrmt$path_world),
-                     pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
-  flist =  flist[grepl(flist, pattern = "waqi-covid19-airqualitydata")]  
-  pm_waqi = makedfWAQIworld(flist,country="IT",param="pm25")
-  }
-  else  pm_waqi = makedfWAQI(flist)
+    flist = list.files(file.path(envrmt$path_world),
+                       pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
+    flist =  flist[grepl(flist, pattern = "waqi-covid19-airqualitydata")]  
+    pm_waqi = makedfWAQIworld(flist,country="IT",param="pm25")
+  } else {
+    pm_waqi = makedfWAQI(flist)
+  }  
   
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
   
@@ -47,8 +48,10 @@ compileDataIT = function(city=FALSE){
     m$totale_casi[is.na(m$totale_casi)] = 0
     
     m = m[, c(cn, 
-              "pm25",
+              "median",
               "lat.y", "lon.y")]
+    colnames(m)[which(colnames(m) == "median")] = "pm25"
+    return(m)
   })
   
   it_nuts3 = do.call(rbind, it_nuts3)
@@ -72,6 +75,17 @@ compileDataIT = function(city=FALSE){
     
     act = st_set_geometry(act, act$geometry)
     act = st_transform(act, crs = 4326)
+    
+    colnames(act) = c("date", "pm25_mean", "nuts3Code", "data", "stato", 
+                      "codice_regione", "denominazione_regione", 
+                      "codice_provincia", "nuts3Name", "sigla_provincia", 
+                      "lat", "lon", "cases", "notes", "notes_en", 
+                      "new_cases", "stationname", "pm25", "lat.y", "lon.y", 
+                      "geometry")
+    act$weekday = weekdays(act$date)
+    act$date_day = as.factor(paste(act$date, substr(act$weekday, 1, 1)))
+    
+    return(act)
   })
   
   names(it_nuts3_mean) = nuts3_names
