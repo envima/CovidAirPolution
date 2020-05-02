@@ -17,13 +17,13 @@ compileDataDE = function(){
                      pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
   pm_waqi = makedfWAQI(flistWAQI)
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
-  
   pm_uba_waqi = c(pm_uba, pm_waqi)
   
   pm_uba_waqi_points=list()
   # pm_uba_waqi_points$pts=st_union(pm_waqi_points$pts, pm_uba_points$pts)
   pm_uba_waqi_points$pts = rbind(pm_waqi_points$pts, pm_uba_points$pts)
   pm_uba_waqi_points$pop = c(pm_waqi_points$pop, pm_uba_points$pop)
+  
   
   # Merge air quality and COVID data -------------------------------------------
   de_nuts3 = st_join(cov_de_polygons, pm_uba_waqi_points$pts)
@@ -64,7 +64,9 @@ compileDataDE = function(){
   de_nuts3$nuts3Name = as.factor(unlist(de_nuts3$nuts3Name))
   de_nuts3$state = as.factor(unlist(de_nuts3$state))
   de_nuts3$note = as.factor(unlist(de_nuts3$note))
-  
+  de_nuts3 = st_transform(de_nuts3, crs = 25832)
+  de_nuts3$area <- st_area(de_nuts3)
+  de_nuts3 = st_transform(de_nuts3, crs = 4326)
   
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(de_nuts3$nuts3Name))

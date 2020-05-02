@@ -3,12 +3,13 @@
 makedfWAQI = function(flist){
   
   aq = lapply(flist, function(f) {
+    print(f)
     latlon = getWAQIpos(readLines(f, n=5))
     act = read.table(f, skip = 0, header = TRUE, sep = ",")
     latlon= as.numeric(c(latlon[2],latlon[1]))
     act$lat= latlon[2]
     act$lon= latlon[1]
-    act$date = as.POSIXct(act$date)
+    act$date = as.POSIXct(act$date, origin = "CET")
     for(i in seq(2, ncol(act))){
       act[, i] = as.numeric(act[, i])
     }
