@@ -114,14 +114,16 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   # Compile data for overview maps ---------------------------------------------
   de_nuts3_map = compileMapDE(de_nuts3_mean)
   
+  
   # # Compile data averaged over country -----------------------------------------
-  de_avg = compileAvg(dataset = de_nuts3_mean)
-
-  de_clstr = 1
+  # de_avg = compileAvg(de_nuts3_mean)
+  # 
+  # 
   # # Compile clusters based on DTW ----------------------------------------------
   # de_clstr = compileDTW(de_nuts3_mean)
   # 
-  # 
+  # return(list(de_nuts3 = de_nuts3_mean, pm_uba_points =  pm_uba_waqi_points,
+  #             de_nuts3_map = de_nuts3_map, de_avg = de_avg, de_clstr = de_clstr))
   return(list(de_nuts3 = de_nuts3_mean, pm_uba_points =  pm_uba_waqi_points,
-              de_nuts3_map = de_nuts3_map, de_avg = de_avg, de_clstr = de_clstr))
+              de_nuts3_map = de_nuts3_map))
 }

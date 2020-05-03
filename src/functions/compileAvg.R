@@ -10,8 +10,6 @@ compileAvg = function(data){
 
   avg = st_set_geometry(avg, NULL)
   
-  print(avg)
-  
   avg = aggregate(. ~ date, data = avg, FUN = mean)
   avg$date_day = paste(avg$date, substr(weekdays(avg$date), 1, 1))
   

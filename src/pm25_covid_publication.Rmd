@@ -25,6 +25,8 @@ end_date = as.POSIXct("2020-04-01")
 # Load Germany -----------------------------------------------------------------
 if(compile_data){
   germany = compileDataDE(start_date = start_date, end_date = end_date)
+  de_avg = compileAvg(germany$de_nuts3)
+  de_clstr = compileDTW(germany$de_nuts3)
   saveRDS(germany, file.path(envrmt$path_tmp, "germany.RDS"))
 } else {
   germany = readRDS(file.path(envrmt$path_tmp, "germany.RDS"))
