@@ -72,11 +72,13 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   de_nuts3$state = as.factor(unlist(de_nuts3$state))
   de_nuts3$note = as.factor(unlist(de_nuts3$note))
   de_nuts3 = st_transform(de_nuts3, crs = 25832)
-  de_nuts3$area <- st_area(de_nuts3)
+  de_nuts3$area = st_area(de_nuts3)
   de_nuts3 = st_transform(de_nuts3, crs = 4326)
 
   saveRDS(de_nuts3, file.path(envrmt$path_tmp, "de_nuts3.RDS"))
   de_nuts3 = readRDS(file.path(envrmt$path_tmp, "de_nuts3.RDS"))
+
+  
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(de_nuts3$nuts3Name))
 
@@ -119,7 +121,7 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   de_avg = compileAvg(de_nuts3_mean)
 
 
-  # # Compile clusters based on DTW ----------------------------------------------
+  # Compile clusters based on DTW ----------------------------------------------
   de_clstr = compileDTW(de_nuts3_mean)
 
   return(list(de_nuts3 = de_nuts3_mean, pm_uba_points =  pm_uba_waqi_points,

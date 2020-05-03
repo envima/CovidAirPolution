@@ -1,6 +1,8 @@
 # Compile dataset for Italy
 
-compileDataIT = function(city=TRUE){
+compileDataIT = function(city=TRUE, 
+                         start_date = as.POSIXct("2020-02-15"), 
+                         end_date = as.POSIXct("2020-04-01")){
   # Covid-19 -------------------------------------------------------------------
   cov_it = getCovidIT()
   cov_it_polygons = makeSFPolygonsIT(cov_it$cov_nuts3)
@@ -46,6 +48,8 @@ compileDataIT = function(city=TRUE){
     m$lat.x = m$lat.x[fill_pos]
     m$lon.x = m$lon.x[fill_pos]
     m$totale_casi[is.na(m$totale_casi)] = 0
+    m$new_cases[is.na(m$new_cases)] = 0
+    m$geometry = m$geometry[fill_pos]
     
     m = m[, c(cn, 
               "median",
@@ -55,6 +59,11 @@ compileDataIT = function(city=TRUE){
   })
   
   it_nuts3 = do.call(rbind, it_nuts3)
+  
+  it_nuts3 = st_transform(it_nuts3, crs = 25832)
+  it_nuts3$area = st_area(it_nuts3)
+  it_nuts3 = st_transform(it_nuts3, crs = 4326)
+  
   
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(it_nuts3$denominazione_provincia))
@@ -73,24 +82,37 @@ compileDataIT = function(city=TRUE){
       pm, act[seq(nrow(act[act$stationname == u_stations[1],])), ],
       by.x = "date", by.y = "date")
     
-    act = st_set_geometry(act, act$geometry)
-    act = st_transform(act, crs = 4326)
-    
+    act$weekday = weekdays(act$date)
+    act$date_day = as.factor(paste(act$date, substr(act$weekday, 1, 1)))
+
     colnames(act) = c("date", "pm25_mean", "nuts3Code", "data", "stato", 
                       "codice_regione", "denominazione_regione", 
                       "codice_provincia", "nuts3Name", "sigla_provincia", 
                       "lat", "lon", "cases", "notes", "notes_en", 
                       "new_cases", "stationname", "pm25", "lat.y", "lon.y", 
-                      "geometry")
-    act$weekday = weekdays(act$date)
-    act$date_day = as.factor(paste(act$date, substr(act$weekday, 1, 1)))
+                      "geometry", "area", "weekday", "date_day")
+    
+    act = st_set_geometry(act, act$geometry)
+    act = st_transform(act, crs = 4326)
     
     return(act)
   })
   
   names(it_nuts3_mean) = nuts3_names
   
-  return(list(it_nuts3_mean = it_nuts3_mean, pm_waqi_points = pm_waqi_points))
+  # Compile data for overview maps ---------------------------------------------
+  it_nuts3_map = compileMapDE(it_nuts3_mean)
+  
+  
+  # Compile data averaged over country -----------------------------------------
+  it_avg = compileAvgIT(it_nuts3_mean)
+  
+  
+  # Compile clusters based on DTW ----------------------------------------------
+  it_clstr = compileDTWIT(it_nuts3_mean)
+  
+  return(list(it_nuts3 = it_nuts3_mean, pm_waqi_points = pm_waqi_points,
+              it_nuts3_map = it_nuts3_map, it_avg = it_avg, it_clstr = it_clstr))
 }
 
 
