@@ -29,7 +29,7 @@ subsetAnalysisData = function(data, start_date, end_date){
     }
   }
   
-  valid_data = valid_data[(!names(valid_data) == "incomplete")]
+  valid_data = valid_data[which((!names(valid_data) == "incomplete"))]
   
   print(names(data)[!(names(data) %in% names(valid_data))])
   

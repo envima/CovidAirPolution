@@ -1,11 +1,11 @@
 #' Compile lagged glm models.
 
 compileLaggedGLM = function(data){
-  model_lag = lapply(unique(de_clstr_indv$nuts3Code), function(n){
+  model_lag = lapply(unique(data$nuts3Code), function(n){
     
     model_lag = lapply(seq(0, 14), function(l){
       
-      tmp = de_clstr_indv[de_clstr_indv$nuts3Code == n, ]
+      tmp = data[data$nuts3Code == n, ]
       
       tmp = tmp %>%
         # group_by(nuts3Code) %>%
