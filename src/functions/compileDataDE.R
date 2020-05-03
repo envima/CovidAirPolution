@@ -1,31 +1,38 @@
-# Compile dataset for Germany
+#' Compile SARS-CoV-2 and PM2.5 data for Germany.
+#' 
+#' Daily SARS-CoV-2 and PM2.5 data is compiled for Germany on NUTS3 level.
+#' Time series are only included if they are complete from April 15th onwards.
+#' 
 
-compileDataDE = function(){
-  # Covid-19 -------------------------------------------------------------------
+compileDataDE = function(start_date = as.POSIXct("2020-02-15"), 
+                         end_date = as.POSIXct("2020-04-01")){
+  # SARS-CoV-2 -----------------------------------------------------------------
   cov_de = getCovidDE()
   cov_de_polygons = makeSFPolygonsDE(cov_de$cov_nuts3)
   
   
   # Air quality data -----------------------------------------------------------
+  # Data from UBA.
   flist = list.files(file.path(envrmt$path_DE),
                      pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
   flist =  flist[grepl(flist, pattern = "DE2020PM2_1SMW_20200421")]
   pm_uba = makedfUBA(flist)
   pm_uba_points =  makeSFPointsUBA(pm_uba)
   
+  # Data from WAQI for Baden-Württemberg.
   flistWAQI = list.files(file.path(envrmt$path_data,"DE/WAQI/"), 
                      pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
   pm_waqi = makedfWAQI(flistWAQI)
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
-  pm_uba_waqi = c(pm_uba, pm_waqi)
   
+  # Merge datasets from UBA and WAQI.
+  pm_uba_waqi = c(pm_uba, pm_waqi)
   pm_uba_waqi_points=list()
-  # pm_uba_waqi_points$pts=st_union(pm_waqi_points$pts, pm_uba_points$pts)
   pm_uba_waqi_points$pts = rbind(pm_waqi_points$pts, pm_uba_points$pts)
   pm_uba_waqi_points$pop = c(pm_waqi_points$pop, pm_uba_points$pop)
   
   
-  # Merge air quality and COVID data -------------------------------------------
+  # Merge air quality and SARS-CoV-2 data --------------------------------------
   de_nuts3 = st_join(cov_de_polygons, pm_uba_waqi_points$pts)
   de_nuts3 = de_nuts3[!is.na(de_nuts3$stationname), ]
   
@@ -68,10 +75,9 @@ compileDataDE = function(){
   de_nuts3$area <- st_area(de_nuts3)
   de_nuts3 = st_transform(de_nuts3, crs = 4326)
   
+  
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(de_nuts3$nuts3Name))
-  
-  nuts3_names = nuts3_names[-which(nuts3_names %in% c("SK Düsseldorf", "SK Essen", "SK Krefeld", "SK Wuppertal"))]
   
   de_nuts3_mean = lapply(nuts3_names, function(p){
     act = de_nuts3[de_nuts3$nuts3Name == p,]
@@ -96,6 +102,26 @@ compileDataDE = function(){
   names(de_nuts3_mean) = nuts3_names
   
   
+  # Subset analysis regions to complete/valid ones -----------------------------
+  de_nuts3_mean = subsetAnalysisData (data = de_nuts3_mean, 
+                                      start_date = start_date, 
+                                      end_date = end_date)
   
-  return(list(de_nuts3_mean = de_nuts3_mean, pm_uba_points =  pm_uba_waqi_points))
+  # Exclude Böblingen because of obviously wrong PM2.5 observations.
+  de_nuts3_mean = de_nuts3_mean[-which(names(de_nuts3_mean) == "LK Böblingen")]
+  
+  
+  # Compile data for overview maps ---------------------------------------------
+  de_nuts3_map = compileMapDE(de_nuts3_mean)
+  
+  # # Compile data averaged over country -----------------------------------------
+  de_avg = compileAvg(dataset = de_nuts3_mean)
+
+  de_clstr = 1
+  # # Compile clusters based on DTW ----------------------------------------------
+  # de_clstr = compileDTW(de_nuts3_mean)
+  # 
+  # 
+  return(list(de_nuts3 = de_nuts3_mean, pm_uba_points =  pm_uba_waqi_points,
+              de_nuts3_map = de_nuts3_map, de_avg = de_avg, de_clstr = de_clstr))
 }
