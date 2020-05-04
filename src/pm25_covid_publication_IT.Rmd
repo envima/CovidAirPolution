@@ -24,7 +24,7 @@ end_date = as.POSIXct("2020-04-01")
 
 # Load Italy -------------------------------------------------------------------
 if(compile_data){
-  italy = compileDataIT(start_date = start_date, end_date = end_date)
+  italy = compileDataIT(city = FALSE, start_date = start_date, end_date = end_date)
   saveRDS(italy, file.path(envrmt$path_tmp, "italy.RDS"))
 } else {
   italy = readRDS(file.path(envrmt$path_tmp, "italy.RDS"))

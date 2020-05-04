@@ -21,7 +21,6 @@ makedfWAQI = function(flist){
       act[, i] = as.numeric(act[, i])
     }
     act$statname = strsplit(basename(f),split = "\\.")[[1]][2]
-    act = act[act$date >= as.POSIXct("2020-01-01"), ]
     
     act$stationname = act$statname
     act$stationcode = NA
@@ -29,6 +28,30 @@ makedfWAQI = function(flist){
     act$TYPE_OF_STATION = NA
     act = act[, c("stationcode", "date", "pm25", "TYPE_OF_AREA", 
                   "TYPE_OF_STATION", "stationname", "lat", "lon")]
+    
+    
+    lna = which(is.na(act$pm25))
+    filled = na.approx(act$pm25, na.rm = FALSE)
+    
+    if(!is_empty(lna)){
+      if(lna[1] == 1){
+        first_valid = which(!is.na(filled))[1]
+        filled[1:(first_valid - 1)] = filled[first_valid]
+      }
+      
+      if(lna[length(lna)] == length(filled)){
+        last_valid = tail(which(!is.na(filled)), 1)
+        filled[(last_valid + 1):length(filled)] = filled[last_valid]
+      }
+    } 
+    act$pm25 = filled
+
+    if(any(is.na(act$pm25))){
+      print(act$stationcode)
+    }
+    
+    act = act[act$date >= as.POSIXct("2020-01-01"), ]
+    
     return(act)
   })
   
