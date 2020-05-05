@@ -15,7 +15,7 @@ subsetAnalysisData = function(data, start_date, end_date){
       if(which(data[[n]]$date == end_date) - 
          which(data[[n]]$date == start_date) == date_length & 
          all(!is.na(data[[n]][which(data[[n]]$date == start_date) : 
-                              which(data[[n]]$date == end_date), "pm25_mean"])) &
+                              which(data[[n]]$date == end_date), "pm_mean"])) &
          all(!is.na(data[[n]][which(data[[n]]$date == start_date) : 
                               which(data[[n]]$date == end_date), "new_cases"]))){
         valid_data[[n]] = data[[n]][data[[n]]$date >= start_date &

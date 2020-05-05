@@ -1,6 +1,6 @@
 # Compile dataset for Italy
 
-compileDataIT = function(city=TRUE, 
+compileDataIT = function(city=FALSE, 
                          start_date = as.POSIXct("2020-02-15"), 
                          end_date = as.POSIXct("2020-04-01")){
   # Covid-19 -------------------------------------------------------------------
@@ -9,19 +9,26 @@ compileDataIT = function(city=TRUE,
   
   
   # Air quality data -----------------------------------------------------------
-  flist = list.files(file.path(envrmt$path_data,"IT/"), 
-                     pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
-  flist =  flist[grepl(flist,pattern = "report-data-platform")]   
   if (city){
     flist = list.files(file.path(envrmt$path_world),
                        pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
     flist =  flist[grepl(flist, pattern = "waqi-covid19-airqualitydata")]  
-    pm_waqi = makedfWAQIworld(flist,country="IT",param="pm25")
+    pm_waqi = makedfWAQIworld(flist,country="IT",param="pm")
   } else {
+    flist = list.files(file.path(envrmt$path_data,"IT/"), 
+                       pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
+    flist =  flist[grepl(flist,pattern = "report-data-platform")]   
     pm_waqi = makedfWAQI(flist)
   }  
   
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
+  
+  dplcts = which(duplicated(pm_waqi_points$pts$p))
+  for(i in dplcts){
+    d = which(pm_waqi_points$pts$p == pm_waqi_points$pts$p[i])
+    pm_waqi_points$pts$stationname[d] = pm_waqi_points$pts$stationname[d[1]]
+  }
+  
   
   
   # Merge air quality and COVID data -------------------------------------------
@@ -51,10 +58,14 @@ compileDataIT = function(city=TRUE,
     m$new_cases[is.na(m$new_cases)] = 0
     m$geometry = m$geometry[fill_pos]
     
+    if (city){
+      colnames(m)[which(colnames(m) == "median")] = "pm"
+    }
     m = m[, c(cn, 
-              "median",
+              "pm",
               "lat.y", "lon.y")]
-    colnames(m)[which(colnames(m) == "median")] = "pm25"
+    
+    m = m[!duplicated(as.data.frame(m)),]
     return(m)
   })
   
@@ -70,27 +81,33 @@ compileDataIT = function(city=TRUE,
   it_nuts3_mean = lapply(nuts3_names, function(p){
     act = it_nuts3[it_nuts3$denominazione_provincia == p,]
     
-    pm = aggregate(list(act$pm25), 
+    pm = aggregate(list(act$pm), 
                    by = list(act$date), FUN = mean, na.rm=TRUE)
-    names(pm) = c("date", "pm25_mean")
+    names(pm) = c("date", "pm_mean")
     
     u_stations = unique(act$stationname)
     
     new_stationname = paste(length(u_stations), u_stations, collapse = "-")
     
+    act = act[!is.na(act$stationname), ]
+    
     act = merge(
       pm, act[seq(nrow(act[act$stationname == u_stations[1],])), ],
       by.x = "date", by.y = "date")
+
+    act$stationname = new_stationname
     
     act$weekday = weekdays(act$date)
     act$date_day = as.factor(paste(act$date, substr(act$weekday, 1, 1)))
-
-    colnames(act) = c("date", "pm25_mean", "nuts3Code", "data", "stato", 
+    
+    colnames(act) = c("date", "pm_mean", "nuts3Code", "data", "stato", 
                       "codice_regione", "denominazione_regione", 
                       "codice_provincia", "nuts3Name", "sigla_provincia", 
                       "lat", "lon", "cases", "notes", "notes_en", 
-                      "new_cases", "stationname", "pm25", "lat.y", "lon.y", 
+                      "new_cases", "stationname", "pm", "lat.y", "lon.y", 
                       "geometry", "area", "weekday", "date_day")
+    
+    act = act[!duplicated(act),]
     
     act = st_set_geometry(act, act$geometry)
     act = st_transform(act, crs = 4326)
@@ -99,6 +116,10 @@ compileDataIT = function(city=TRUE,
   })
   
   names(it_nuts3_mean) = nuts3_names
+  
+  # Subset analysis regions to complete/valid ones -----------------------------
+  it_nuts3_mean = subsetAnalysisData(it_nuts3_mean, start_date, end_date)
+  
   
   # Compile data for overview maps ---------------------------------------------
   it_nuts3_map = compileMapDE(it_nuts3_mean)

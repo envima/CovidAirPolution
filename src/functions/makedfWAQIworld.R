@@ -1,6 +1,6 @@
 
 
-makedfWAQIworld = function(flist,country="IT",param="pm25"){
+makedfWAQIworld = function(flist,country="IT",param="pm"){
 
   pm =  read.csv(flist,skip = 4,header = TRUE, sep = ",", dec = ".",nrows = 10000000)
   
@@ -29,7 +29,7 @@ makedfWAQIworld = function(flist,country="IT",param="pm25"){
        act$TYPE_OF_STATION = NA
        act
 
-       #act = act[, c("Date","Country","City","Specie","pm25count","pm25min","pm25max","pm25median","pm25variance","lat","lon","date","statname","stationname","stationcode","TYPE_OF_AREA","TYPE_OF_STATION")]
+       #act = act[, c("Date","Country","City","Specie","pmcount","pmmin","pmmax","pmmedian","pmvariance","lat","lon","date","statname","stationname","stationcode","TYPE_OF_AREA","TYPE_OF_STATION")]
      })
 
   names(aq) = sapply(aq, function(x) x[1, "stationname"])

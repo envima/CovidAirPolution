@@ -5,7 +5,15 @@
 #' 
 
 compileDataDE = function(start_date = as.POSIXct("2020-02-15"), 
-                         end_date = as.POSIXct("2020-04-01")){
+                         end_date = as.POSIXct("2020-04-01"),
+                         pm = "PM2.5"){
+  
+  if(pm == "PM2.5"){
+    pattern = "DE2020PM2_1SMW_20200421"
+  } else {
+    pattern = "DE2020PM1_1SMW_20200421"
+  }
+  
   # SARS-CoV-2 -----------------------------------------------------------------
   cov_de = getCovidDE()
   cov_de_polygons = makeSFPolygonsDE(cov_de$cov_nuts3)
@@ -15,22 +23,28 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   # Data from UBA.
   flist = list.files(file.path(envrmt$path_DE),
                      pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
-  flist =  flist[grepl(flist, pattern = "DE2020PM2_1SMW_20200421")]
+  flist =  flist[grepl(flist, pattern = pattern)]
   pm_uba = makedfUBA(flist)
   pm_uba_points =  makeSFPointsUBA(pm_uba)
-
+  
+  pm_uba_waqi = pm_uba
+  pm_uba_waqi_points = pm_uba_points
+  
   # Data from WAQI for Baden-Württemberg.
-  flistWAQI = list.files(file.path(envrmt$path_data,"DE/WAQI/"),
-                     pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
-  pm_waqi = makedfWAQI(flistWAQI)
-  pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
-
-  # Merge datasets from UBA and WAQI.
-  pm_uba_waqi = c(pm_uba, pm_waqi)
-  pm_uba_waqi_points=list()
-  pm_uba_waqi_points$pts = rbind(pm_waqi_points$pts, pm_uba_points$pts)
-  pm_uba_waqi_points$pop = c(pm_waqi_points$pop, pm_uba_points$pop)
-
+  if(pm == "PM2.5"){
+    flistWAQI = list.files(file.path(envrmt$path_data,"DE/WAQI/"),
+                           pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
+    pm_waqi = makedfWAQI(flistWAQI, pm = pm)
+    pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
+    
+    # Merge datasets from UBA and WAQI.
+    pm_uba_waqi = c(pm_uba, pm_waqi)
+    pm_uba_waqi_points=list()
+    pm_uba_waqi_points$pts = rbind(pm_waqi_points$pts, pm_uba_points$pts)
+    pm_uba_waqi_points$pop = c(pm_waqi_points$pop, pm_uba_points$pop)
+  }
+  
+  
 
   # Merge air quality and SARS-CoV-2 data --------------------------------------
   de_nuts3 = st_join(cov_de_polygons, pm_uba_waqi_points$pts)
@@ -62,7 +76,7 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
     m$geometry = m$geometry[fill_pos]
 
     m = m[, c(cn,
-              "pm25",
+              "pm",
               "lat", "lon")]
     return(m)
   })
@@ -75,18 +89,15 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   de_nuts3$area = st_area(de_nuts3)
   de_nuts3 = st_transform(de_nuts3, crs = 4326)
 
-  saveRDS(de_nuts3, file.path(envrmt$path_tmp, "de_nuts3.RDS"))
-  de_nuts3 = readRDS(file.path(envrmt$path_tmp, "de_nuts3.RDS"))
 
-  
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(de_nuts3$nuts3Name))
 
   de_nuts3_mean = lapply(nuts3_names, function(p){
     act = de_nuts3[de_nuts3$nuts3Name == p,]
-    pm = aggregate(list(act$pm25),
+    pm = aggregate(list(act$pm),
                    by = list(act$date), FUN = mean, na.rm=TRUE)
-    names(pm) = c("date", "pm25_mean")
+    names(pm) = c("date", "pm_mean")
 
     u_stations = unique(act$stationname)
 

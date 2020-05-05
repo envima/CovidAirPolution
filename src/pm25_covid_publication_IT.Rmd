@@ -24,7 +24,7 @@ end_date = as.POSIXct("2020-04-01")
 
 # Load Italy -------------------------------------------------------------------
 if(compile_data){
-  italy = compileDataIT(start_date = start_date, end_date = end_date)
+  italy = compileDataIT(city = FALSE, start_date = start_date, end_date = end_date)
   saveRDS(italy, file.path(envrmt$path_tmp, "italy.RDS"))
 } else {
   italy = readRDS(file.path(envrmt$path_tmp, "italy.RDS"))
@@ -49,7 +49,7 @@ mapview(italy$it_nuts3_map, zcol = "cases")
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 it_avg = italy$it_avg
 ggplot() + 
-  geom_line(data = it_avg, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
+  geom_line(data = it_avg, aes(x = date, y = pm_mean, color = "PM2.5")) + 
   geom_line(data = it_avg, aes(x = date, y = new_cases, color = "New cases")) + 
   labs(title = "PM2.5 x daily new Covid-19 cases", x = "Date", y = "Value") +
   geom_vline(xintercept = as.POSIXct("2020-03-13"), linetype="dotted", color = "black") +
@@ -65,7 +65,7 @@ ggplot() +
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 it_avg = italy$it_avg
 ggplot() + 
-  geom_line(data = it_avg, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
+  geom_line(data = it_avg, aes(x = date, y = pm_mean, color = "PM2.5")) + 
   geom_line(data = it_avg, aes(x = date, y = new_cases_detr, color = "New cases (smoothed, detrended)")) +
   geom_line(data = it_avg, aes(x = date, y = new_cases, color = "New cases (smoothed)")) + 
   labs(title = "PM2.5 x daily new Covid-19 cases (smoothed, detrended)", x = "Date", y = "Value") +
@@ -103,7 +103,7 @@ The map shows clusters (different colors) with similar development of smoothed d
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
 mapview(italy$it_clstr$clstr_map, zcol = "cluster_covid")
-mapview(italy$it_clstr$clstr_map, zcol = "cluster_pm25")
+mapview(italy$it_clstr$clstr_map, zcol = "cluster_pm")
 ```
 
 
@@ -112,7 +112,7 @@ The plots show the average of daily PM2.5 and smoothed new infections along with
 ```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
 it_clstr = italy$it_clstr
 ggplot() + 
-  geom_line(data = it_clstr$clstr_avg_detr, aes(x = date, y = pm25_mean, color = "PM2.5")) + 
+  geom_line(data = it_clstr$clstr_avg_detr, aes(x = date, y = pm_mean, color = "PM2.5")) + 
   geom_line(data = it_clstr$clstr_avg_detr, aes(x = date, y = new_cases, color = "New cases")) + 
   geom_line(data = it_clstr$clstr_avg_detr, aes(x = date, y = new_cases_detr*5, color = "New cases (detrended)")) +
   geom_vline(xintercept = as.POSIXct("2020-03-13"), linetype="dotted", color = "black") +
@@ -122,7 +122,7 @@ ggplot() +
   scale_color_manual(values=c("red", "darkgreen", "blue")) +
   theme(axis.text.x = element_text(angle=90)) + 
   theme(legend.title = element_blank()) +
-  facet_wrap(~cluster_pm25, ncol =2, nrow = 2, scales = "fix")
+  facet_wrap(~cluster_pm, ncol =2, nrow = 2, scales = "fix")
 ```
 
 
@@ -132,8 +132,8 @@ The wavelet coherence analysis for each cluster reveals some considerable differ
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 it_clstr = italy$it_clstr
-for(c in unique(it_clstr$clstr_avg_detr$cluster_pm25)){
-  tmp = it_clstr$clstr_avg_detr[it_clstr$clstr_avg_detr$cluster_pm25 == c,]
+for(c in unique(it_clstr$clstr_avg_detr$cluster_pm)){
+  tmp = it_clstr$clstr_avg_detr[it_clstr$clstr_avg_detr$cluster_pm == c,]
   wc = compileWCIT(tmp)
   
   wc.image(wc, which.image = "wc",
@@ -168,7 +168,7 @@ ggplot(data = it_model_lag, aes(x = as.factor(lag), y = t)) +
 
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-ggplot(data = it_model_lag, aes(x = as.factor(lag), y = t, fill = cluster_pm25)) + 
+ggplot(data = it_model_lag, aes(x = as.factor(lag), y = t, fill = cluster_pm)) + 
   geom_boxplot() + 
   theme_bw() + 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
@@ -228,7 +228,7 @@ Italien vielleicht in Supplements?
 test = italy$it_clstr$clstr[italy$it_clstr$clstr$date < as.POSIXct("2020-03-01"),] %>%
     group_by(nuts3Code) %>%
     summarize(n_days = n(),
-              pm_gt_10 = sum(pm25_mean > 100),
+              pm_gt_10 = sum(pm_mean > 100),
               pm_gt_10_rel = pm_gt_10 / n_days)
 test_merge = merge(test, italy$it_clstr$clstr[italy$it_clstr$clstr$date == as.POSIXct("2020-03-07"),])
 test_merge = merge(test_merge, st_set_geometry(italy$it_nuts3_map, NULL)[, c("nuts3Code", "area")])

@@ -26,10 +26,10 @@ makedfUBA = function(flist){
   ch01 = which(colnames(uba) == "Wert01")
   ch24 = which(colnames(uba) == "Wert24")
   uba[, ch01:ch24][uba[, ch01:ch24] < 0] = NA
-  uba$pm25 = rowMeans(uba[, ch01:ch24], na.rm = TRUE)
+  uba$pm = rowMeans(uba[, ch01:ch24], na.rm = TRUE)
   uba$Station = as.character(uba$Station)
   uba = uba[, c(1, 32, 33, 4:5 )]
-  names(uba)[1:3] = c("stationcode", "date", "pm25")
+  names(uba)[1:3] = c("stationcode", "date", "pm")
   
   uba = merge(uba, geo, by = "stationcode")
   uba$lat = uba$lat
@@ -41,8 +41,8 @@ makedfUBA = function(flist){
     
     act = act[which(!duplicated(act$date)), ]
     
-    lna = which(is.na(act$pm25))
-    filled = na.approx(act$pm25, na.rm = FALSE)
+    lna = which(is.na(act$pm))
+    filled = na.approx(act$pm, na.rm = FALSE)
     
     if(!is_empty(lna)){
       if(lna[1] == 1){
@@ -55,9 +55,9 @@ makedfUBA = function(flist){
         filled[(last_valid + 1):length(filled)] = filled[last_valid]
       }
     } 
-    act$pm25 = filled
+    act$pm = filled
     act = act[act$date >= as.POSIXct("2020-02-15"), ]
-    if(any(is.na(act$pm25))){
+    if(any(is.na(act$pm))){
       print(act$stationcode)
     }
     

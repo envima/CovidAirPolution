@@ -6,8 +6,8 @@ compileDTWIT = function(data){
     as.data.frame(n[, "new_cases"])[, -2]
   })
   
-  pm25_mean = lapply(data, function(n){
-    as.data.frame(n[, "pm25_mean"])[, -2]
+  pm_mean = lapply(data, function(n){
+    as.data.frame(n[, "pm_mean"])[, -2]
   })
   
   # Compute DTW clusters.
@@ -16,7 +16,7 @@ compileDTWIT = function(data){
                                   trace = TRUE,
                                   args = tsclust_args(dist = list(window.size = 10)))
   
-  pm25_dtw_cluster = tsclust(pm25_mean, type = "partitional", k = 2,
+  pm_dtw_cluster = tsclust(pm_mean, type = "partitional", k = 2,
                              distance = "dtw_basic", centroid = "pam", seed=01042020, 
                              trace = TRUE,
                              args = tsclust_args(dist = list(window.size = 10))) 
@@ -27,8 +27,8 @@ compileDTWIT = function(data){
     tmp$cluster_covid = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
                                          new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
                                          ")"))
-    tmp$cluster_pm25 = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
-                                        pm25_dtw_cluster@clusinfo[pm25_dtw_cluster@cluster[c], 1],
+    tmp$cluster_pm = as.factor(paste0("c ", pm_dtw_cluster@cluster[c], " n=(", 
+                                        pm_dtw_cluster@clusinfo[pm_dtw_cluster@cluster[c], 1],
                                         ")"))
     return(tmp)
   })
@@ -37,13 +37,13 @@ compileDTWIT = function(data){
   # Add cluster information to dataset.
   clstr = lapply(seq(length(data)), function(c){
     
-    tmp = data[[c]][, c("date", "pm25_mean", "nuts3Code", "new_cases", 
+    tmp = data[[c]][, c("date", "pm_mean", "nuts3Code", "new_cases", 
                             "cases")]
     tmp$cluster_covid = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
                                          new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
                                          ")"))
-    tmp$cluster_pm25 = as.factor(paste0("c ", pm25_dtw_cluster@cluster[c], " n=(", 
-                                        pm25_dtw_cluster@clusinfo[pm25_dtw_cluster@cluster[c], 1],
+    tmp$cluster_pm = as.factor(paste0("c ", pm_dtw_cluster@cluster[c], " n=(", 
+                                        pm_dtw_cluster@clusinfo[pm_dtw_cluster@cluster[c], 1],
                                         ")"))
     return(tmp)
   })
@@ -52,7 +52,7 @@ compileDTWIT = function(data){
   clstr = as.data.frame(clstr)[, -ncol(clstr)]
   # clstr = clstr[clstr$date >= as.POSIXct("2020-02-15", tz = "CET"), ]
   clstr$cluster_covid = factor(clstr$cluster_covid, levels = sort(unique(as.character(clstr$cluster_covid))))
-  clstr$cluster_pm25 = factor(clstr$cluster_pm25, levels = sort(unique(as.character(clstr$cluster_pm25))))
+  clstr$cluster_pm = factor(clstr$cluster_pm, levels = sort(unique(as.character(clstr$cluster_pm))))
   clstr$weekday = weekdays(clstr$date)
   clstr$weekday_c = NA
   for (i in (1:length(clstr$weekday))){
@@ -66,15 +66,15 @@ compileDTWIT = function(data){
   
   # Compile dataset averaged over each cluster
   clstr_avg = clstr[, -which(names(clstr) %in% c("nuts3Code", "weekday", "weekday_c"))]
-  clstr_avg = aggregate(. ~ date + cluster_pm25, data = clstr_avg, FUN = mean)
+  clstr_avg = aggregate(. ~ date + cluster_pm, data = clstr_avg, FUN = mean)
   clstr_avg$date_day = paste(clstr_avg$date, substr(weekdays(clstr_avg$date), 1, 1))
   
   # Compile detrended dataset with cluster information.
-  clstr_avg_detr = lapply(unique(clstr_avg$cluster_pm25), function(c){
-    tmp = clstr_avg[clstr_avg$cluster_pm25 == c,]
+  clstr_avg_detr = lapply(unique(clstr_avg$cluster_pm), function(c){
+    tmp = clstr_avg[clstr_avg$cluster_pm == c,]
     detr = glm(new_cases ~ date,  family = poisson, data =tmp)
-    clstr_avg[clstr_avg$cluster_pm25 == c, "new_cases_detr"] = residuals(detr)
-    return(clstr_avg[clstr_avg$cluster_pm25 == c,])
+    clstr_avg[clstr_avg$cluster_pm == c, "new_cases_detr"] = residuals(detr)
+    return(clstr_avg[clstr_avg$cluster_pm == c,])
   })
   clstr_avg_detr = do.call("rbind", clstr_avg_detr)
   
