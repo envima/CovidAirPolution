@@ -1,8 +1,16 @@
 # Compile dataset for Italy
 
 compileDataIT = function(city=FALSE, 
-                         start_date = as.POSIXct("2020-02-15"), 
-                         end_date = as.POSIXct("2020-04-01")){
+                         start_date = as.POSIXct("2020-02-25"), 
+                         end_date = as.POSIXct("2020-04-01"),
+                         pm = "PM2.5"){
+  
+  if(pm == "PM2.5"){
+    param = "pm25"
+  } else {
+    param = "pm10"
+  }
+  
   # Covid-19 -------------------------------------------------------------------
   cov_it = getCovidIT()
   cov_it_polygons = makeSFPolygonsIT(cov_it$cov_nuts3)
@@ -13,12 +21,13 @@ compileDataIT = function(city=FALSE,
     flist = list.files(file.path(envrmt$path_world),
                        pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
     flist =  flist[grepl(flist, pattern = "waqi-covid19-airqualitydata")]  
-    pm_waqi = makedfWAQIworld(flist,country="IT",param="pm")
+    
+    pm_waqi = makedfWAQIworld(flist, country = "IT", param = param)
   } else {
     flist = list.files(file.path(envrmt$path_data,"IT/"), 
                        pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
     flist =  flist[grepl(flist,pattern = "report-data-platform")]   
-    pm_waqi = makedfWAQI(flist)
+    pm_waqi = makedfWAQI(flist, pm = pm)
   }  
   
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
@@ -28,7 +37,6 @@ compileDataIT = function(city=FALSE,
     d = which(pm_waqi_points$pts$p == pm_waqi_points$pts$p[i])
     pm_waqi_points$pts$stationname[d] = pm_waqi_points$pts$stationname[d[1]]
   }
-  
   
   
   # Merge air quality and COVID data -------------------------------------------

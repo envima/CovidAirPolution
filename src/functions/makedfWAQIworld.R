@@ -1,6 +1,6 @@
 
 
-makedfWAQIworld = function(flist,country="IT",param="pm"){
+makedfWAQIworld = function(flist, country="IT", param="pm"){
 
   pm =  read.csv(flist,skip = 4,header = TRUE, sep = ",", dec = ".",nrows = 10000000)
   
