@@ -6,7 +6,7 @@
 #' 
 
 
-makedfWAQI = function(flist){
+makedfWAQI = function(flist, pm = "PM2.5"){
   
   # Combine information with geographical infromation and move each station to 
   # individual list and fill NAs.
@@ -26,12 +26,18 @@ makedfWAQI = function(flist){
     act$stationcode = NA
     act$TYPE_OF_AREA = NA
     act$TYPE_OF_STATION = NA
-    act = act[, c("stationcode", "date", "pm25", "TYPE_OF_AREA", 
-                  "TYPE_OF_STATION", "stationname", "lat", "lon")]
+    
+    if(pm == "PM2.5"){
+      act = act[, c("stationcode", "date", "pm25", "TYPE_OF_AREA", 
+                    "TYPE_OF_STATION", "stationname", "lat", "lon")]
+    } else {
+      act = act[, c("stationcode", "date", "pm", "TYPE_OF_AREA", 
+                    "TYPE_OF_STATION", "stationname", "lat", "lon")]
+    }
     
     
-    lna = which(is.na(act$pm25))
-    filled = na.approx(act$pm25, na.rm = FALSE)
+    lna = which(is.na(act$pm))
+    filled = na.approx(act$pm, na.rm = FALSE)
     
     if(!is_empty(lna)){
       if(lna[1] == 1){
@@ -44,9 +50,9 @@ makedfWAQI = function(flist){
         filled[(last_valid + 1):length(filled)] = filled[last_valid]
       }
     } 
-    act$pm25 = filled
+    act$pm = filled
 
-    if(any(is.na(act$pm25))){
+    if(any(is.na(act$pm))){
       print(act$stationcode)
     }
     

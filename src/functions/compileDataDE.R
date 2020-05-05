@@ -6,7 +6,14 @@
 
 compileDataDE = function(start_date = as.POSIXct("2020-02-15"), 
                          end_date = as.POSIXct("2020-04-01"),
-                         pattern = "DE2020PM2_1SMW_20200421"){
+                         pm = "PM2.5"){
+  
+  if(pm == "PM2.5"){
+    pattern = "DE2020PM2_1SMW_20200421"
+  } else {
+    pattern = "DE2020PM1_1SMW_20200421"
+  }
+  
   # SARS-CoV-2 -----------------------------------------------------------------
   cov_de = getCovidDE()
   cov_de_polygons = makeSFPolygonsDE(cov_de$cov_nuts3)
@@ -16,15 +23,18 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   # Data from UBA.
   flist = list.files(file.path(envrmt$path_DE),
                      pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
-  flist =  flist[grepl(flist, pattern = "DE2020PM1_1SMW_20200421")]
+  flist =  flist[grepl(flist, pattern = pattern)]
   pm_uba = makedfUBA(flist)
   pm_uba_points =  makeSFPointsUBA(pm_uba)
-
+  
+  pm_uba_waqi = pm_uba
+  pm_uba_waqi_points = pm_uba_points
+  
   # Data from WAQI for Baden-Württemberg.
-  if(pattern = "DE2020PM2_1SMW_20200421"){
+  if(pm == "PM2.5"){
     flistWAQI = list.files(file.path(envrmt$path_data,"DE/WAQI/"),
                            pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
-    pm_waqi = makedfWAQI(flistWAQI)
+    pm_waqi = makedfWAQI(flistWAQI, pm = pm)
     pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
     
     # Merge datasets from UBA and WAQI.
@@ -34,7 +44,6 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
     pm_uba_waqi_points$pop = c(pm_waqi_points$pop, pm_uba_points$pop)
   }
   
-  pm_uba_waqi_points = pm_uba_points
   
 
   # Merge air quality and SARS-CoV-2 data --------------------------------------
@@ -67,7 +76,7 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
     m$geometry = m$geometry[fill_pos]
 
     m = m[, c(cn,
-              "pm25",
+              "pm",
               "lat", "lon")]
     return(m)
   })
@@ -86,9 +95,9 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
 
   de_nuts3_mean = lapply(nuts3_names, function(p){
     act = de_nuts3[de_nuts3$nuts3Name == p,]
-    pm = aggregate(list(act$pm25),
+    pm = aggregate(list(act$pm),
                    by = list(act$date), FUN = mean, na.rm=TRUE)
-    names(pm) = c("date", "pm25_mean")
+    names(pm) = c("date", "pm_mean")
 
     u_stations = unique(act$stationname)
 

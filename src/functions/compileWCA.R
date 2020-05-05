@@ -3,7 +3,7 @@
 compileWC = function(data){
   set.seed(01042020)
   wc = analyze.coherency(data,
-                         my.pair = c("pm25_mean", "new_cases_smooth_detr"),
+                         my.pair = c("pm_mean", "new_cases_smooth_detr"),
                          loess.span = 0.33,
                          dt = 1, dj = 1/12,
                          window.type.t = "bar", window.type.s = "bar",
@@ -18,7 +18,7 @@ compileWC = function(data){
 compileWCIT = function(data){
   set.seed(01042020)
   wc = analyze.coherency(data,
-                         my.pair = c("pm25_mean", "new_cases_detr"),
+                         my.pair = c("pm_mean", "new_cases_detr"),
                          loess.span = 0.33,
                          dt = 1, dj = 1/12,
                          window.type.t = "bar", window.type.s = "bar",

@@ -13,7 +13,7 @@ compileDataIT = function(city=FALSE,
     flist = list.files(file.path(envrmt$path_world),
                        pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
     flist =  flist[grepl(flist, pattern = "waqi-covid19-airqualitydata")]  
-    pm_waqi = makedfWAQIworld(flist,country="IT",param="pm25")
+    pm_waqi = makedfWAQIworld(flist,country="IT",param="pm")
   } else {
     flist = list.files(file.path(envrmt$path_data,"IT/"), 
                        pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
@@ -59,10 +59,10 @@ compileDataIT = function(city=FALSE,
     m$geometry = m$geometry[fill_pos]
     
     if (city){
-      colnames(m)[which(colnames(m) == "median")] = "pm25"
+      colnames(m)[which(colnames(m) == "median")] = "pm"
     }
     m = m[, c(cn, 
-              "pm25",
+              "pm",
               "lat.y", "lon.y")]
     
     m = m[!duplicated(as.data.frame(m)),]
@@ -81,9 +81,9 @@ compileDataIT = function(city=FALSE,
   it_nuts3_mean = lapply(nuts3_names, function(p){
     act = it_nuts3[it_nuts3$denominazione_provincia == p,]
     
-    pm = aggregate(list(act$pm25), 
+    pm = aggregate(list(act$pm), 
                    by = list(act$date), FUN = mean, na.rm=TRUE)
-    names(pm) = c("date", "pm25_mean")
+    names(pm) = c("date", "pm_mean")
     
     u_stations = unique(act$stationname)
     
@@ -100,11 +100,11 @@ compileDataIT = function(city=FALSE,
     act$weekday = weekdays(act$date)
     act$date_day = as.factor(paste(act$date, substr(act$weekday, 1, 1)))
     
-    colnames(act) = c("date", "pm25_mean", "nuts3Code", "data", "stato", 
+    colnames(act) = c("date", "pm_mean", "nuts3Code", "data", "stato", 
                       "codice_regione", "denominazione_regione", 
                       "codice_provincia", "nuts3Name", "sigla_provincia", 
                       "lat", "lon", "cases", "notes", "notes_en", 
-                      "new_cases", "stationname", "pm25", "lat.y", "lon.y", 
+                      "new_cases", "stationname", "pm", "lat.y", "lon.y", 
                       "geometry", "area", "weekday", "date_day")
     
     act = act[!duplicated(act),]

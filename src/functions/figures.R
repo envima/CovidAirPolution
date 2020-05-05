@@ -2,7 +2,7 @@ plotly_figure = function(d, l){
   fig = plot_ly()
   
   fig = fig %>%
-    add_trace(data = d[[l]], x = ~date, y = ~pm25_mean,
+    add_trace(data = d[[l]], x = ~date, y = ~pm_mean,
               name = paste("PM 2.5", names(d[l])),
               mode = 'lines+markers', line = list(color = "red"), marker = list(color = "red"))
   

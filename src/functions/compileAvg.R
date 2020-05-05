@@ -3,7 +3,7 @@
 # Compile average over Germany -------------------------------------------------
 compileAvg = function(data){
   avg = lapply(data, 
-                  "[", c("date", "date_day", "pm25_mean", "new_cases", 
+                  "[", c("date", "date_day", "pm_mean", "new_cases", 
                          "new_cases_smooth", "cases", "cases_smooth", 
                          "deaths_smooth", "new_deaths", "new_deaths_smooth"))
   avg = do.call("rbind", avg)
@@ -26,7 +26,7 @@ compileAvg = function(data){
 
 compileAvgIT = function(data){
   avg = lapply(data, 
-               "[", c("date", "date_day", "pm25_mean", "new_cases", 
+               "[", c("date", "date_day", "pm_mean", "new_cases", 
                       "cases"))
   avg = do.call("rbind", avg)
   
