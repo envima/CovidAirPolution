@@ -31,37 +31,44 @@ makedfWAQI = function(flist, pm = "PM2.5"){
       act = act[, c("stationcode", "date", "pm25", "TYPE_OF_AREA", 
                     "TYPE_OF_STATION", "stationname", "lat", "lon")]
     } else {
-      act = act[, c("stationcode", "date", "pm", "TYPE_OF_AREA", 
-                    "TYPE_OF_STATION", "stationname", "lat", "lon")]
+      if("pm10" %in% names(act)){
+        act = act[, c("stationcode", "date", "pm10", "TYPE_OF_AREA", 
+                      "TYPE_OF_STATION", "stationname", "lat", "lon")]
+      } else {
+        act = NULL
+      }
     }
     
-    
-    lna = which(is.na(act$pm))
-    filled = na.approx(act$pm, na.rm = FALSE)
-    
-    if(!is_empty(lna)){
-      if(lna[1] == 1){
-        first_valid = which(!is.na(filled))[1]
-        filled[1:(first_valid - 1)] = filled[first_valid]
+    if(!is.null(act)){
+      lna = which(is.na(act$pm))
+      filled = na.approx(act$pm, na.rm = FALSE)
+      
+      if(!is_empty(lna)){
+        if(lna[1] == 1){
+          first_valid = which(!is.na(filled))[1]
+          filled[1:(first_valid - 1)] = filled[first_valid]
+        }
+        
+        if(lna[length(lna)] == length(filled)){
+          last_valid = tail(which(!is.na(filled)), 1)
+          filled[(last_valid + 1):length(filled)] = filled[last_valid]
+        }
+      } 
+      act$pm = filled
+      
+      if(any(is.na(act$pm))){
+        print(act$stationcode)
       }
       
-      if(lna[length(lna)] == length(filled)){
-        last_valid = tail(which(!is.na(filled)), 1)
-        filled[(last_valid + 1):length(filled)] = filled[last_valid]
-      }
-    } 
-    act$pm = filled
-
-    if(any(is.na(act$pm))){
-      print(act$stationcode)
+      act = act[act$date >= as.POSIXct("2020-01-01"), ]
     }
-    
-    act = act[act$date >= as.POSIXct("2020-01-01"), ]
     
     return(act)
   })
   
   names(aq) = sapply(aq, function(x) x[1, "stationname"])
+  
+  aq = compact(aq)
   
   return(aq)
 }
