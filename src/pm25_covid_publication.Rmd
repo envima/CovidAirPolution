@@ -21,13 +21,22 @@ compile_data = FALSE
 
 start_date = as.POSIXct("2020-02-15")
 end_date = as.POSIXct("2020-04-01")
+pm = 2.5
 
 # Load Germany -----------------------------------------------------------------
 if(compile_data){
-  germany = compileDataDE(start_date = start_date, end_date = end_date)
-  saveRDS(germany, file.path(envrmt$path_tmp, "germany.RDS"))
+  if(pm == 2.5){
+    pattern = "DE2020PM2_1SMW_20200421"
+    savefile = "germany_025.RDS"
+  } else {
+    pattern = "DE2020PM1_1SMW_20200421"
+    savefile = "germany_100.RDS"
+  }
+  germany = compileDataDE(start_date = start_date, end_date = end_date,
+                          pattern = pattern)
+  saveRDS(germany, file.path(envrmt$path_tmp, savefile))
 } else {
-  germany = readRDS(file.path(envrmt$path_tmp, "germany.RDS"))
+  germany = readRDS(file.path(envrmt$path_tmp, savefile))
 }
 
 ```
@@ -243,10 +252,10 @@ Hier mal ein Versuch, die Italien-Grafik etwas nachzubauen. Auch hier - nur zufÃ
 # 10, 12
 
 test = germany$de_clstr$clstr[germany$de_clstr$clstr$date < as.POSIXct("2020-03-10"),] %>%
-    group_by(nuts3Code) %>%
-    summarize(n_days = n(),
-              pm_gt_10 = sum(pm25_mean > 10),
-              pm_gt_10_rel = pm_gt_10 / n_days)
+  group_by(nuts3Code) %>%
+  summarize(n_days = n(),
+            pm_gt_10 = sum(pm25_mean > 10),
+            pm_gt_10_rel = pm_gt_10 / n_days)
 test_merge = merge(test, germany$de_clstr$clstr[germany$de_clstr$clstr$date == as.POSIXct("2020-03-16"),])
 test_merge = merge(test_merge, st_set_geometry(germany$de_nuts3_map, NULL)[, c("nuts3Code", "area")])
 test_merge$ratio = as.numeric(test_merge$cases/test_merge$area)
