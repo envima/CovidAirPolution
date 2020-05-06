@@ -21,7 +21,7 @@ compile_data = FALSE
 
 start_date = as.POSIXct("2020-02-15")
 end_date = as.POSIXct("2020-04-01")
-pm = "PM2.5"
+pm = "PM2.5"  # PM10
 
 # Load Germany -----------------------------------------------------------------
 if(pm == "PM2.5"){
@@ -35,8 +35,7 @@ if(compile_data){
   saveRDS(germany, file.path(envrmt$path_tmp, savefile))
  } else {
   germany = readRDS(file.path(envrmt$path_tmp, savefile))
-}
-
+ }
 ```
 
 # Results for PM

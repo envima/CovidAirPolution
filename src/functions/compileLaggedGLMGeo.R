@@ -22,6 +22,7 @@ compileLaggedGLMGeo = function(model_lag, map){
 }
 
 
+
 compileLaggedGLMGeoIT = function(model_lag, map){
   test_geo = merge(model_lag, map[, c("nuts3Code", "cases", "nuts3Name", "denominazione_regione", "lat", "lon", "nuts3Area")], by.x = "nuts3_code", by.y = "nuts3Code")
   

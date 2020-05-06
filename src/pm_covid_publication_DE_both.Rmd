@@ -1,0 +1,63 @@
+---
+title: "Correlation of PM concentrations and SARS-CoV-2 infection"
+always_allow_html: true
+editor_options:
+  chunk_output_type: console
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Set up working environment and defaults --------------------------------------
+library(envimaR)
+if(Sys.info()[["nodename"]] == "PC19616"){
+  source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")
+} else {
+  source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
+}
+compile_data = FALSE
+
+start_date = as.POSIXct("2020-02-15")
+end_date = as.POSIXct("2020-04-01")
+
+germany = readRDS(file.path(envrmt$path_tmp, "germany_025.RDS"))
+germany_10 = readRDS(file.path(envrmt$path_tmp, "germany_100.RDS"))
+germany$de_clstr$clstr = mergePM(pm25 = germany, pm10 = germany_10)
+saveRDS(file.path(envrmt$path_tmp$))
+```
+
+
+# Explanatory potential of PM2.5 for COVID-19 cases
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_clstr = germany$de_clstr$clstr
+de_model_lag = compileLaggedGLMboth(de_clstr)
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_model_lag_long = melt(de_model_lag[, c("nuts3_code", "lag", "t25", "p25", "t10", "p10")], measure.vars = c("t25", "t10"))
+
+ggplot(data = de_model_lag_long, aes(x = as.factor(lag), y = value, fill = variable)) + 
+  geom_boxplot() + 
+  theme_bw() +
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = paste("Dependence of individual COVID-19 time series and lagged PM2.5 + PM10 concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t25, fill = cluster_pm)) + 
+  geom_boxplot() + 
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = paste("Dependence of individual COVID-19 time series and lagged PM2.5 concentrations by PM clusters"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+
+
+ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t10, fill = cluster_pm)) + 
+  geom_boxplot() + 
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = paste("Dependence of individual COVID-19 time series and lagged PM10 concentrations by PM clusters"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+```
+
