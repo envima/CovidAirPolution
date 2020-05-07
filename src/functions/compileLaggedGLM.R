@@ -50,7 +50,7 @@ compileLaggedGLMboth = function(data){
       
       tmp = merge(tmp25, tmp10)
       
-      tmp_glm = glm(cases ~ date + weekday_c + pm25_mean_lag + pm10_mean_lag, family = quasipoisson, data = tmp)
+      tmp_glm = glm(cases ~ date + weekday_c + pm10_mean_lag + pm25_mean_lag, family = quasipoisson, data = tmp)
       
       test = summary(tmp_glm)
       data.frame(nuts3_code = n,

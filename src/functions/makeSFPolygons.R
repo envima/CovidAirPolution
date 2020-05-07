@@ -16,6 +16,10 @@ makeSFPolygonsDE = function(covdata){
   names(rtyp3)[1] = "nuts3Code"
   rtyp3 = rtyp3[, c(names(covdata), "name_2")]
   
+  centroids = st_coordinates(st_centroid(rtyp3))
+  rtyp3$centroid_lon = centroids[, "X"]
+  rtyp3$centroid_lat = centroids[, "Y"]
+  
   return(rtyp3)
 }
 
@@ -33,5 +37,10 @@ makeSFPolygonsIT = function(nuts){
   plgns = do.call(rbind, p)
   it  = ne_states(country = "italy", returnclass = "sf")
   it = it[, "adm1_code"]
+  
+  centroids = st_coordinates(st_centroid(it))
+  it$centroid_lon = centroids[, "X"]
+  it$centroid_lat = centroids[, "Y"]
+  
   return(st_join(it, plgns))
 }
