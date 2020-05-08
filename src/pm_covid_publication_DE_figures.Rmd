@@ -21,7 +21,7 @@ compile_data = FALSE
 
 start_date = as.POSIXct("2020-02-15")
 end_date = as.POSIXct("2020-04-01")
-pm = "PM10"  # PM10
+pm = "PM10"
 
 Sys.setlocale("LC_TIME", "English") 
 
@@ -40,8 +40,10 @@ if(compile_data){
 }
 ```
 
-# Figure 1a
 
+# Figure 1
+
+## Figure 1a
 
 a, Geographic distribution of total confirmed SARS-CoV-2 infections in Germany on April 1st 2020.
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
@@ -64,16 +66,16 @@ figure_1a = ggplot(data = background_map) +
                          pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
                          style = north_arrow_fancy_orienteering)
 
-ggsave(file.path(envrmt$path_figures, "figure_1a.png"), plot = figure_1a,
-       dpi = 600)
-
-print(figure_1a)
+# ggsave(file.path(envrmt$path_figures, "figure_1a.png"), plot = figure_1a,
+#        dpi = 600)
+# 
+# print(figure_1a)
 ```
 
 
-# Figure 1b
+## Figure 1b
 
-Raw data on PM2.5 has been provided by the German environmental protection agency (UBN) and WAQI. ...
+b, Raw data on PM2.5 has been provided by the German environmental protection agency (UBN) and WAQI. ...
 
 Data on total daily COVID-19 cases and deaths has been provided by the Robert-Koch-Institut. For some analysis, the data has been smoothed using a gaussian loess function with span 0.3 to reduce variation due to delayed reporting over the weekend and especcially on Sunday and Monday. The daily number of new infections has been computed from the daily variations of the total confirmed numbers.
 
@@ -98,19 +100,31 @@ figure_1b = ggplot() +
         legend.title = element_blank(), panel.background = element_blank(),
         panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
-ggsave(file.path(envrmt$path_figures, "figure_1b.png"), plot = figure_1b,
-       dpi = 600)
-
-print(figure_1b)
+# ggsave(file.path(envrmt$path_figures, "figure_1b.png"), plot = figure_1b,
+#        dpi = 600)
+# 
+# print(figure_1b)
 ```
 
 
-# Figure 2a
+## Figure 1 combined
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+figure_1 = plot_grid(figure_1a, figure_1b, labels = "auto")
+ggsave(file.path(envrmt$path_figures, "figure_1.png"), plot = figure_1, dpi = 300)
+```
+
+
+# Figure 2
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 de_clstr = germany$de_clstr$clstr
 de_model_lag = compileLaggedGLM(de_clstr)
+de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
 ```
+
+
+## Figure 2a
 
 Dependence of individual COVID-19 time series and lagged PM10 concentrations.
 
@@ -119,28 +133,30 @@ figure_2a = ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t)) +
   geom_boxplot() + 
   theme_bw() +
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
-  labs(x = "Time lag PM10 (days)", y = "t value of the partial coefficient") + 
+  labs(x = "Time lag PM10 (days)", y = "t-value of the partial coefficient") + 
   theme(panel.background = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-ggsave(file.path(envrmt$path_figures, "figure_2a.png"), plot = figure_2a,
-       dpi = 600)
-
-print(figure_2a)
+# ggsave(file.path(envrmt$path_figures, "figure_2a.png"), plot = figure_2a,
+#        dpi = 600)
+# 
+# print(figure_2a)
 ```
 
 
 # Figure 2b
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
-
-# ggplot(data = de_model_geo$test_geo_lag) + 
+# ggplot(data = de_model_geo$test_geo_lag) +
 #   geom_line(aes(x = lag, y = rsq, color = "R squared")) +
 #   geom_point(aes(x = lag, y = rsq, color = "R squared")) +
-#   theme_bw() + 
-#   scale_x_continuous(breaks = seq(-15, 0, 1), minor_breaks = seq(-15, 0, 1)) + 
-#   labs(title = paste("R squared values of lagged ", pm, " concentrations based on latitude, longitude and area",x = "Time lag PM [days]"), y = "R squared", color = "R squared")
+#   theme_bw() +
+#   scale_x_continuous(breaks = seq(-15, 0, 1), minor_breaks = seq(-15, 0, 1)) +
+#   labs(title = paste("R squared values of lagged ", pm,
+#                      " concentrations based on latitude, longitude and area",
+#                      x = "Time lag PM [days]"), y = "R squared",
+#        color = "R squared")
+
 
 figure_2b = ggplot(data = de_model_geo$test_geo_lag) + 
   geom_line(aes(x = lag, y = centroid_lat_t, color = "Latitude")) +
@@ -149,18 +165,94 @@ figure_2b = ggplot(data = de_model_geo$test_geo_lag) +
   geom_point(aes(x = lag, y = centroid_lon_t, color = "Longitude")) +
   geom_line(aes(x = lag, y = area_t, color = "Log10(area)")) +
   geom_point(aes(x = lag, y = area_t, color = "Log10(area)")) +
+  scale_x_continuous(breaks = seq(-15, 0, 1), minor_breaks = seq(-15, 0, 1)) +
   theme_bw() + 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
-  labs(x = "Time lag PM10 (days)", y = "t value of the partial coefficient", color = "Partial coefficient") + 
-  theme(panel.background = element_blank(), panel.grid.major = element_blank(),
+  labs(x = "Time lag PM10 (days)", y = "t-value of the partial coefficient", 
+       color = "") + 
+  theme(legend.position = c(0.8, 0.8), panel.background = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-ggsave(file.path(envrmt$path_figures, "figure_2b.png"), plot = figure_2b,
-       dpi = 600)
 
-print(figure_2b)
+# ggsave(file.path(envrmt$path_figures, "figure_2b.png"), plot = figure_2b,
+#        dpi = 600)
+# 
+# print(figure_2b)
+```
+
+## Figure 2c 
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+figure_2c = ggplot() + 
+  geom_point(data = de_model_geo$test_geo[de_model_geo$test_geo$lag <= -10, ], 
+             aes(x = centroid_lat, y = t, fill = as.factor(lag), 
+                 shape = as.factor(lag), size = as.factor(lag))) +
+  scale_shape_manual(values = c(22, 23, 21, 24, 25)) +
+  scale_fill_manual(values = c('grey', 'grey','red', 'grey', 'grey')) +
+  scale_size_manual(values = c(1.5, 1.5, 3, 1.5, 1.5)) + 
+  geom_smooth(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -12, ], 
+              aes(x = centroid_lat, y = t, ), method = "lm", color = "red")+
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(47, 55, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(x = "Latitude (degrees)", y = "t-value of the partial coefficient", 
+       fill = "", shape = "", size = "") + 
+  theme(legend.position = c(0.65, 0.08), legend.direction="horizontal", 
+        panel.background = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+ 
+
+# ggsave(file.path(envrmt$path_figures, "figure_2c.png"), plot = figure_2c,
+#        dpi = 600)
+# 
+# print(figure_2c)
+
+```
 
 
+## Figure 2d 
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+figure_2d = ggplot() + 
+  geom_point(data = de_model_geo$test_geo[de_model_geo$test_geo$lag >= -8 &
+                                            de_model_geo$test_geo$lag <= -3, ], 
+             aes(x = centroid_lat, y = t, fill = as.factor(lag), 
+                 shape = as.factor(lag), size = as.factor(lag))) +
+  scale_shape_manual(values = c(22, 23, 21, 24, 25, 21)) +
+  scale_fill_manual(values = c('grey', 'grey','red', 'grey', 'grey', "blue")) +
+  scale_size_manual(values = c(1.5, 1.5, 3, 1.5, 1.5, 3)) + 
+  geom_smooth(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -6, ], 
+              aes(x = centroid_lat, y = t, ), method = "lm", color = "red")+
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(47, 55, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(x = "Latitude (degrees)", y = "t-value of the partial coefficient", 
+       fill = "", shape = "", size = "") + 
+  theme(legend.position = c(0.3, 0.09), legend.direction="horizontal", 
+        panel.background = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+
+# ggsave(file.path(envrmt$path_figures, "figure_2d.png"), plot = figure_2d,
+#        dpi = 600)
+# 
+# print(figure_2c)
+
+```
+
+
+## Figure 2 combined
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+figure_2 = plot_grid(figure_2a, figure_2b, figure_2c, figure_2d, labels = "auto")
+ggsave(file.path(envrmt$path_figures, "figure_2.png"), plot = figure_2, dpi = 300)
+```
+
+
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag <= -10,]) + 
   geom_point(aes(x = centroid_lat, y = t, color = as.factor(lag))) +
@@ -168,7 +260,7 @@ ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag <= -10,]) +
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
   scale_x_continuous(breaks = seq(47, 55, 1)) + 
   scale_y_continuous(breaks = seq(-10, 20, 2)) +
-  labs(title = paste("t values of lagged ", pm, " concentrations for latitude"),x = "Latitude [degrees]", y = "t value of the partial coefficient for PM (glm model)", color = "Lag of PM")
+  labs(title = paste("t-values of lagged ", pm, " concentrations for latitude"),x = "Latitude [degrees]", y = "t-value of the partial coefficient for PM (glm model)", color = "Lag of PM")
 
 ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag >= -7 & de_model_geo$test_geo$lag <= -4,]) + 
   geom_point(aes(x = centroid_lat, y = t, color = as.factor(lag))) +
@@ -176,7 +268,7 @@ ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag >= -7 & de_model_g
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
   scale_x_continuous(breaks = seq(47, 55, 1)) + 
   scale_y_continuous(breaks = seq(-10, 20, 2)) +
-  labs(title = paste("t values of lagged ", pm, " concentrations for latitude"),x = "Latitude [degrees]", y = "t value of the partial coefficient for PM (glm model)", color = "Lag of PM")
+  labs(title = paste("t-values of lagged ", pm, " concentrations for latitude"),x = "Latitude [degrees]", y = "t-value of the partial coefficient for PM (glm model)", color = "Lag of PM")
 ```
 
 Hier mal ein Versuch, die "Italien-Grafik" aus dem  etwas nachzubauen. Die Signifikanz ist bei PM10 für längere Zeitintervalle gegeben, für PM2.5 praktisch nicht (Setti, L. et al. The Potential role of Particulate Matter in the Spreading of COVID-19 in Northern Italy: First Evidence-based Research Hypotheses. medRxiv, https://www.medrxiv.org/content/10.1101/2020.04.11.20061713v1 (2020).)
