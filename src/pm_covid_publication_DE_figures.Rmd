@@ -284,5 +284,3 @@ figure_2 = plot_grid(figure_2a, figure_2b, figure_2c, figure_2d, figure_1b, figu
 # figure_2 = plot_grid(figure_2a, figure_2b, figure_2c, figure_2d, labels = "auto")
 ggsave(file.path(envrmt$path_figures, "figure_2_alternative.png"), plot = figure_2, dpi = 300)
 ```
-
-

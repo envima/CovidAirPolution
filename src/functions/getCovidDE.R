@@ -39,6 +39,15 @@ getCovidDE = function(){
   cov_nuts3 = merge(cov_nuts3, cov_nuts3_deaths)
   cov_nuts3$weekday = as.factor(weekdays(cov_nuts3$date))
   cov_nuts3$date_day = as.factor(paste(cov_nuts3$date, substr(cov_nuts3$weekday, 1, 1)))
+  cov_nuts3$weekday_c = NA
+  for (i in (1:length(cov_nuts3$weekday))){
+    cov_nuts3$weekday_c[i] = ifelse((cov_nuts3$weekday[i] == "Montag"), "M", 
+                                ifelse((cov_nuts3$weekday[i] == "Sonntag") | 
+                                         (cov_nuts3$weekday[i] == "Samstag"),
+                                       "SS","W"))
+  }
+  cov_nuts3$weekday_c = as.factor(cov_nuts3$weekday_c)
+  
   
   # Compile and add geographic information.
   ags_names = fromJSON(file.path(envrmt$`path_covid-19-germany-gae`, "ags.json"), flatten = TRUE)
@@ -57,7 +66,8 @@ getCovidDE = function(){
 
     tmp = cov_nuts3[cov_nuts3$nuts3Code == c,]
     tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$cases, family = "gaussian", span=0.33, evaluation = length(tmp$date))$y, 0)
-
+    tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$cases, family = "gaussian", span=0.33, evaluation = length(tmp$date))$y, 0)
+    
     tmp$smooth[tmp$smooth < 0] = 0
 
     cov_nuts3[cov_nuts3$nuts3Code == c, "cases_smooth"] = tmp$smooth
