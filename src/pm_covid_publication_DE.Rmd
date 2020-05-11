@@ -32,7 +32,7 @@ if(pm == "PM2.5"){
 if(compile_data){
   germany = compileDataDE(start_date = start_date, end_date = end_date,
                           pm = pm)
-  saveRDS(germany, file.path(envrmt$path_tmp, savefile))
+   saveRDS(germany, file.path(envrmt$path_tmp, savefile))
 } else {
   germany = readRDS(file.path(envrmt$path_tmp, savefile))
 }
