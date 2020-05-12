@@ -60,7 +60,6 @@ getCovidDE = function(){
     
     tmp = cov_nuts3[cov_nuts3$nuts3Code == c,]
     tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$cases, family = "gaussian", span=0.33, evaluation = length(tmp$date))$y, 0)
-    tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$cases, family = "gaussian", span=0.33, evaluation = length(tmp$date))$y, 0)
     
     tmp$smooth[tmp$smooth < 0] = 0
     

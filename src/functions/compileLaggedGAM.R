@@ -1,6 +1,6 @@
-#' Compile lagged glm models.
+#' Compile lagged gam models.
 
-compileLaggedGLM = function(data){
+compileLaggedGAM = function(data){
   model_lag = lapply(unique(data$nuts3Code), function(n){
     
     model_lag = lapply(seq(0, 14), function(l){
@@ -14,16 +14,16 @@ compileLaggedGLM = function(data){
       # tmp = tmp[!is.na(tmp$cases_lag), ]
       # print(tmp$pm_mean_lag)
       
-      tmp_glm = glm(new_cases ~ date + weekday_c + pm_mean_lag, family = quasipoisson, data = tmp)
+      tmp_gam = gam(new_cases ~ s(seq(length(date))) + pm_mean_lag, family = quasipoisson(link = "log"), data = tmp)
       
-      test = summary(tmp_glm)
+      test = summary(tmp_gam)
       data.frame(nuts3_code = n,
                  cluster = tmp$cluster_covid[1],
                  cluster_pm = tmp$cluster_pm[1],
                  pm_mean_mean = mean(tmp$pm_mean),
                  lag = -l, 
-                 t = test$coefficients["pm_mean_lag", "t value"], 
-                 p = test$coefficients["pm_mean_lag", "Pr(>|t|)"])
+                 t = test$p.t["pm_mean_lag"],
+                 p = test$p.pv["pm_mean_lag"])
     })
     model_lag = do.call("rbind", model_lag)
     
@@ -34,7 +34,7 @@ compileLaggedGLM = function(data){
 
 
 
-compileLaggedGLMboth = function(data){
+compileLaggedGAMboth = function(data){
   
   model_lag = lapply(unique(data$nuts3Code), function(n){
     
@@ -50,9 +50,9 @@ compileLaggedGLMboth = function(data){
       
       tmp = merge(tmp25, tmp10)
       
-      tmp_glm = glm(cases ~ date + weekday_c + pm10_mean_lag + pm25_mean_lag, family = quasipoisson, data = tmp)
+      tmp_gam = gam(cases ~ date + weekday_c + pm10_mean_lag + pm25_mean_lag, family = quasipoisson, data = tmp)
       
-      test = summary(tmp_glm)
+      test = summary(tmp_gam)
       data.frame(nuts3_code = n,
                  cluster = tmp$cluster_covid[1],
                  cluster_pm = tmp$cluster_pm[1],
