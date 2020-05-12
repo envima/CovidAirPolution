@@ -32,7 +32,7 @@ if(pm == "PM2.5"){
 if(compile_data){
   germany = compileDataDE(start_date = start_date, end_date = end_date,
                           pm = pm)
-  saveRDS(germany, file.path(envrmt$path_tmp, savefile))
+   saveRDS(germany, file.path(envrmt$path_tmp, savefile))
 } else {
   germany = readRDS(file.path(envrmt$path_tmp, savefile))
 }
@@ -57,13 +57,15 @@ de_avg = germany$de_avg
 ggplot() + 
   geom_line(data = de_avg, aes(x = date, y = pm_mean, color = "PM")) + 
   geom_line(data = de_avg, aes(x = date, y = new_cases, color = "New cases")) + 
+  geom_line(data = de_avg, aes(x = date, y = new_cases_detr, color = "New cases detrended")) + 
   geom_line(data = de_avg, aes(x = date, y = new_cases_smooth, color = "New cases smoothed")) + 
+  geom_line(data = de_avg, aes(x = date, y = new_cases_smooth_detr, color = "New cases smoothed detrended")) + 
   labs(title = paste(pm, " x daily new Covid-19 cases"), x = "Date", y = "Value") +
   geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
   geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
   theme_bw() + 
   scale_x_datetime(date_labels = "%d.%m - %a", date_breaks = "1 day") + 
-  scale_color_manual(values=c("red", "blue", "darkgreen")) +
+  # scale_color_manual(values=c("red", "blue", "darkgreen")) +
   theme(axis.text.x = element_text(angle=90)) + 
   theme(legend.title = element_blank())
 ```
@@ -95,7 +97,7 @@ mapview(germany$de_clstr$clstr_map, zcol = "cluster_pm")
 de_clstr = germany$de_clstr
 ggplot() + 
   geom_line(data = de_clstr$clstr_avg_detr, aes(x = date, y = pm_mean, color = "PM")) + 
-  geom_line(data = de_clstr$clstr_avg_detr, aes(x = date, y = new_cases_smooth, color = "New cases (smoothed)")) + 
+  geom_line(data = de_clstr$clstr_avg_detr, aes(x = date, y = new_cases, color = "New cases")) + 
   geom_line(data = de_clstr$clstr_avg_detr, aes(x = date, y = new_cases_smooth_detr*5, color = "New cases (smoothed, detrended)")) +
   geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
   geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
@@ -105,7 +107,7 @@ ggplot() +
   scale_color_manual(values=c("red", "darkgreen", "blue")) +
   theme(axis.text.x = element_text(angle=90)) + 
   theme(legend.title = element_blank()) +
-  facet_wrap(~cluster_pm, ncol =2, nrow = 2, scales = "fix")
+  facet_wrap(~cluster_covid, ncol =2, nrow = 2, scales = "fix")
 ```
 
 
@@ -122,6 +124,20 @@ ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t)) +
   theme_bw() +
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
   labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+```
+
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_model_lag_gam = compileLaggedGAM(de_clstr)
+
+ggplot(data = de_model_lag_gam[de_model_lag_gam$t < 5 & de_model_lag_gam$t > -5,], aes(x = as.factor(lag), y = t)) + 
+  geom_boxplot() + 
+  theme_bw() +
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+
+de_model_geo = compileLaggedGLMGeo(de_model_lag_gam, germany$de_nuts3_map)
+
 ```
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}

@@ -22,11 +22,26 @@ compile_data = FALSE
 start_date = as.POSIXct("2020-02-15")
 end_date = as.POSIXct("2020-04-01")
 
-germany = readRDS(file.path(envrmt$path_tmp, "germany_025.RDS"))
+germany_25 = readRDS(file.path(envrmt$path_tmp, "germany_025.RDS"))
 germany_10 = readRDS(file.path(envrmt$path_tmp, "germany_100.RDS"))
-germany$de_clstr$clstr = mergePM(pm25 = germany, pm10 = germany_10)
+germany = germany_25
+germany$de_clstr$clstr = mergePM(pm25 = germany_25, pm10 = germany_10)
 ```
 
+
+# Some numbers
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+length(germany_25$de_nuts3)
+length(germany_10$de_nuts3)
+length(germany$de_nuts3)
+cor(germany$de_clstr$clstr$pm25_mean, germany$de_clstr$clstr$pm10_mean)
+summary(lm(germany$de_clstr$clstr$pm25_mean ~ germany$de_clstr$clstr$pm10_mean))
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_clstr = germany$de_clstr$clstr
+de_model_lag = compileLaggedGLMboth(de_clstr)
+```
 
 # Explanatory potential of PM2.5 for COVID-19 cases
 

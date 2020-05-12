@@ -59,16 +59,37 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
     m$deaths[is.na(m$deaths)] = 0
     m$weekday = as.factor(weekdays(m$date))
     m$date_day = as.factor(paste(m$date, substr(m$weekday, 1, 1)))
+    m$weekday_c = compileDetrendedTimeSeries(data = m$weekday, comp = "weekday_c")
     m$nuts3Name = m$nuts3Name[fill_pos]
     m$state = m$state[fill_pos]
     m$note = m$note[fill_pos]
     m$new_cases[is.na(m$new_cases)] = 0
-    m$new_cases_smooth[is.na(m$new_cases_smooth)] = 0
-    m$cases_smooth[is.na(m$cases_smooth)] = 0
-    m$deaths_smooth[is.na(m$deaths_smooth)] = 0
     m$new_deaths[is.na(m$new_deaths)] = 0
+    m$cases_smooth[is.na(m$cases_smooth)] = 0
+    m$new_cases_smooth[is.na(m$new_cases_smooth)] = 0
+    m$deaths_smooth[is.na(m$deaths_smooth)] = 0
     m$new_deaths_smooth[is.na(m$new_deaths_smooth)] = 0
+    
+    m$cases_detr = compileDetrendedTimeSeries(data = m,
+                                              vars = c("cases", "date", "weekday_c"),
+                                              comp = "detr")
+    m$new_cases_detr = compileDetrendedTimeSeries(data = m,
+                                                  vars = c("new_cases", "date", "weekday_c"),
+                                                  comp = "detr")
+    m$new_cases_smooth_detr = compileDetrendedTimeSeries(data = m,
+                                                  vars = c("new_cases_smooth", "date", "weekday_c"),
+                                                  comp = "detr")
+    m$deaths_detr = compileDetrendedTimeSeries(data = m,
+                                               vars = c("deaths", "date", "weekday_c"),
+                                               comp = "detr")
+    m$new_deaths_detr = compileDetrendedTimeSeries(data = m,
+                                                   vars = c("new_deaths", "date", "weekday_c"),
+                                                   comp = "detr")
+    
+    
     m$name_2 = m$name_2[fill_pos]
+    m$centroid_lon = m$centroid_lon[fill_pos]
+    m$centroid_lat = m$centroid_lat[fill_pos]
     m$geometry = m$geometry[fill_pos]
     
     m = m[, c(cn,
@@ -112,7 +133,7 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   
   names(de_nuts3_mean) = nuts3_names
   
-  
+
   # Subset analysis regions to complete/valid ones -----------------------------
   de_nuts3_mean = subsetAnalysisData (de_nuts3_mean, start_date, end_date)
   
@@ -127,6 +148,7 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   # Compile data averaged over country -----------------------------------------
   de_avg = compileAvg(de_nuts3_mean)
   
+  # saveRDS(nuts3_names, file.path(envrmt$path_tm, "tmp.RDS"))
   
   # Compile clusters based on DTW ----------------------------------------------
   de_clstr = compileDTW(de_nuts3_mean)

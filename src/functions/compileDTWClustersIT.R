@@ -3,7 +3,7 @@
 compileDTWIT = function(data){
   
   new_cases = lapply(data, function(n){
-    as.data.frame(n[, "new_cases"])[, -2]
+    as.data.frame(n[, "new_cases_detr"])[, -2]
   })
   
   pm_mean = lapply(data, function(n){
@@ -54,14 +54,8 @@ compileDTWIT = function(data){
   clstr$cluster_covid = factor(clstr$cluster_covid, levels = sort(unique(as.character(clstr$cluster_covid))))
   clstr$cluster_pm = factor(clstr$cluster_pm, levels = sort(unique(as.character(clstr$cluster_pm))))
   clstr$weekday = weekdays(clstr$date)
-  clstr$weekday_c = NA
-  for (i in (1:length(clstr$weekday))){
-    clstr$weekday_c[i] = ifelse((clstr$weekday[i] == "Montag"), "M", 
-                                ifelse((clstr$weekday[i] == "Sonntag") | 
-                                         (clstr$weekday[i] == "Samstag"),
-                                       "SS","W"))
-  }
-  clstr$weekday_c = as.factor(clstr$weekday_c)
+  clstr$weekday_c = compileDetrendedTimeSeries(data = clstr$weekday, comp = "weekday_c")
+  
   clstr$new_cases[clstr$new_cases < 0] = 0
   
   # Compile dataset averaged over each cluster
@@ -72,7 +66,11 @@ compileDTWIT = function(data){
   # Compile detrended dataset with cluster information.
   clstr_avg_detr = lapply(unique(clstr_avg$cluster_pm), function(c){
     tmp = clstr_avg[clstr_avg$cluster_pm == c,]
-    detr = glm(new_cases ~ date,  family = poisson, data =tmp)
+    tmp$weekday = weekdays(tmp$date)
+    tmp$weekday_c = compileDetrendedTimeSeries(data = tmp$weekday, comp = "weekday_c")
+    detr = compileDetrendedTimeSeries(data = tmp,
+                                      vars = c("new_cases", "date", "weekday_c"),
+                                      comp = "detr")
     clstr_avg[clstr_avg$cluster_pm == c, "new_cases_detr"] = residuals(detr)
     return(clstr_avg[clstr_avg$cluster_pm == c,])
   })
