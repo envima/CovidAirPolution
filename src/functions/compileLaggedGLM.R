@@ -1,20 +1,26 @@
 #' Compile lagged glm models.
 
-compileLaggedGLM = function(data){
+compileLaggedGLM = function(data, individual = FALSE){
   model_lag = lapply(unique(data$nuts3Code), function(n){
     
+    if(individual){
+      indv = which(data[data$nuts3Code == n, "cases"] > 0)[1] - 14
+    } else {
+      indv = 0
+    }
+
     model_lag = lapply(seq(0, 14), function(l){
       
       tmp = data[data$nuts3Code == n, ]
       
       tmp = tmp %>%
         # group_by(nuts3Code) %>%
-        mutate(pm_mean_lag = dplyr::lag(pm_mean, n = l, default = NA))
+        mutate(pm_mean_lag = dplyr::lag(pm_mean, n = (l + indv), default = NA))
       
       # tmp = tmp[!is.na(tmp$cases_lag), ]
       # print(tmp$pm_mean_lag)
       
-      tmp_glm = glm(new_cases ~ date + weekday_c + pm_mean_lag, family = quasipoisson, data = tmp)
+      tmp_glm = glm(cases ~ date + weekday_c + pm_mean_lag, family = quasipoisson, data = tmp)
       
       test = summary(tmp_glm)
       data.frame(nuts3_code = n,
@@ -23,7 +29,8 @@ compileLaggedGLM = function(data){
                  pm_mean_mean = mean(tmp$pm_mean),
                  lag = -l, 
                  t = test$coefficients["pm_mean_lag", "t value"], 
-                 p = test$coefficients["pm_mean_lag", "Pr(>|t|)"])
+                 p = test$coefficients["pm_mean_lag", "Pr(>|t|)"],
+                 indv = indv)
     })
     model_lag = do.call("rbind", model_lag)
     

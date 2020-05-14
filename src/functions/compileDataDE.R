@@ -4,8 +4,8 @@
 #' Time series are only included if they are complete from April 15th onwards.
 #' 
 
-compileDataDE = function(start_date = as.POSIXct("2020-02-15"), 
-                         end_date = as.POSIXct("2020-04-01"),
+compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
+                         end_date = as.POSIXct("2020-04-20"),
                          pm = "PM2.5"){
   
   if(pm == "PM2.5"){
@@ -24,14 +24,14 @@ compileDataDE = function(start_date = as.POSIXct("2020-02-15"),
   flist = list.files(file.path(envrmt$path_DE),
                      pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
   flist =  flist[grepl(flist, pattern = pattern)]
-  pm_uba = makedfUBA(flist)
+  pm_uba = makedfUBA(flist, start_date = start_date)
   pm_uba_points =  makeSFPointsUBA(pm_uba)
   
   
   # Data from WAQI for Baden-Württemberg.
   flistWAQI = list.files(file.path(envrmt$path_data,"DE/WAQI/"),
-                         pattern = "^.*\\.csv$",full.names = TRUE,recursive = TRUE)
-  pm_waqi = makedfWAQI(flistWAQI, pm = pm)
+                         pattern = "^.*\\.csv$",full.names = TRUE, recursive = TRUE)
+  pm_waqi = makedfWAQI(flistWAQI, pm = pm, start_date = start_date)
   pm_waqi_points =  makeSFPointsWAQI(pm_waqi)
   
   # Merge datasets from UBA and WAQI.

@@ -19,8 +19,8 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 }
 compile_data = FALSE
 
-start_date = as.POSIXct("2020-02-15")
-end_date = as.POSIXct("2020-04-01")
+start_date = as.POSIXct("2020-01-15")
+end_date = as.POSIXct("2020-04-20")
 pm = "PM10"
 
 Sys.setlocale("LC_TIME", "English") 

@@ -19,23 +19,27 @@ if(Sys.info()[["nodename"]] == "PC19616"){
 }
 compile_data = FALSE
 
-start_date = as.POSIXct("2020-02-15")
-end_date = as.POSIXct("2020-04-01")
+start_date = as.POSIXct("2020-01-15")
+end_date = as.POSIXct("2020-04-20")
 pm = "PM10"  # PM10
 
 # Load Germany -----------------------------------------------------------------
 if(pm == "PM2.5"){
-  savefile = "germany_025.RDS"
+  savefile = "germany_extended_025.RDS"
 } else {
-  savefile = "germany_100.RDS"
+  savefile = "germany_extended_100.RDS"
 }
 if(compile_data){
   germany = compileDataDE(start_date = start_date, end_date = end_date,
-                          pm = pm)
-   saveRDS(germany, file.path(envrmt$path_tmp, savefile))
+                                  pm = pm)
+  saveRDS(germany, file.path(envrmt$path_tmp, savefile))
 } else {
   germany = readRDS(file.path(envrmt$path_tmp, savefile))
 }
+
+# [1] "LK Böblingen"                "LK Breisgau-Hochschwarzwald" "LK Erzgebirgskreis"          "LK Esslingen"                "LK Ludwigsburg"             
+# [6] "LK Mansfeld-Südharz"         "LK Nordfriesland"            "LK Oberhavel"                "LK Schwarzwald-Baar-Kreis"   "LK Uelzen"                  
+# [11] "SK Freiburg i.Breisgau"      "SK Heidelberg"               "SK Heilbronn"                "SK Pforzheim"  
 ```
 
 # Geographical distribution of covid cases
@@ -111,33 +115,22 @@ ggplot() +
 ```
 
 
-# Explanatory potential of PM2.5 for COVID-19 cases
+# Explanatory potential of PM for COVID-19 cases
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 de_clstr = germany$de_clstr$clstr
-de_model_lag = compileLaggedGLM(de_clstr)
+de_model_lag = compileLaggedGLM(de_clstr, individual = TRUE)
+
+de_model_lag_org
 ```
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t)) + 
   geom_boxplot() + 
+  stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="red", fill="red") +
   theme_bw() +
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
   labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
-```
-
-
-```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-de_model_lag_gam = compileLaggedGAM(de_clstr)
-
-ggplot(data = de_model_lag_gam[de_model_lag_gam$t < 5 & de_model_lag_gam$t > -5,], aes(x = as.factor(lag), y = t)) + 
-  geom_boxplot() + 
-  theme_bw() +
-  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
-  labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
-
-de_model_geo = compileLaggedGLMGeo(de_model_lag_gam, germany$de_nuts3_map)
-
 ```
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
@@ -150,6 +143,13 @@ ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t, fill = cluster_pm)) +
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
+
+plot(de_model_lag$lag, rowMeans(de_model_lag$t))
+
+t.test(de_model_geo$test_geo[de_model_geo$test_geo$lag == -6 & de_model_geo$test_geo$centroid_lat >= 30, "t"])
+
+t.test(de_model_lag$t[de_model_lag$lag == -6])
+
 
 ggplot(data = de_model_geo$test_geo_lag) + 
   geom_line(aes(x = lag, y = rsq, color = "R squared")) +
@@ -171,7 +171,7 @@ ggplot(data = de_model_geo$test_geo_lag) +
   scale_y_continuous(breaks = seq(-10, 20, 2)) +
   labs(title = paste("t values of lagged ", pm, " concentrations for latitude, longitude and area"),x = "Time lag PM [days]", y = "t value of the partial coefficient", color = "Partial coefficient")
 
-ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag <= -10,]) + 
+ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -9,]) + 
   geom_point(aes(x = centroid_lat, y = t, color = as.factor(lag))) +
   theme_bw() + 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
@@ -192,7 +192,6 @@ Hier mal ein Versuch, die "Italien-Grafik" aus dem  etwas nachzubauen. Die Signi
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 # 10, 12
-
 test = germany$de_clstr$clstr[germany$de_clstr$clstr$date < as.POSIXct("2020-03-17"),] %>%
   group_by(nuts3Code) %>%
   summarize(n_days = n(),
@@ -254,3 +253,15 @@ for(c in unique(de_clstr$clstr_avg_detr$cluster_pm)){
 }
 ```
 
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+# de_model_lag_gam = compileLaggedGAM(de_clstr)
+# 
+# ggplot(data = de_model_lag_gam[de_model_lag_gam$t < 5 & de_model_lag_gam$t > -5,], aes(x = as.factor(lag), y = t)) + 
+#   geom_boxplot() + 
+#   theme_bw() +
+#   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+#   labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+# 
+# de_model_geo = compileLaggedGLMGeo(de_model_lag_gam, germany$de_nuts3_map)
+
+```

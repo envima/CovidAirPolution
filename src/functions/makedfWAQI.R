@@ -6,7 +6,7 @@
 #' 
 
 
-makedfWAQI = function(flist, pm = "PM2.5"){
+makedfWAQI = function(flist, pm = "PM10", start_date = as.POSIXct("2020-01-01")){
   
   # Combine information with geographical infromation and move each station to 
   # individual list and fill NAs.
@@ -60,7 +60,7 @@ makedfWAQI = function(flist, pm = "PM2.5"){
         print(act$stationcode)
       }
       
-      act = act[act$date >= as.POSIXct("2020-01-01"), ]
+      act = act[act$date >= start_date, ]
     }
     
     return(act)
