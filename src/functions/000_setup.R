@@ -18,6 +18,7 @@ project_folders = c("data/",
                     "data/report-data-platform-16133-94427-misc/",
                     "data/report-data-platform-16229-259611-lombardy",
                     "data/tmp/",
+                    "data/population/",
                     "data/figures/")
 
 libs = c("doParallel", "caret", "data.table", "dtwclust", "ggplot2", "htmlTable", "htmltools", 

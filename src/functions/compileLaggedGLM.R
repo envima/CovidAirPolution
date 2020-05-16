@@ -1,26 +1,30 @@
 #' Compile lagged glm models.
 
-compileLaggedGLM = function(data, individual = FALSE){
+compileLaggedGLM = function(data, target = "new_cases", nlags = 14,
+                            min_cases = 1, individual = FALSE, ndays = c(-14, 32),
+                            obsprd_start = NULL, obsprd_end = NULL){
+  
+  
   model_lag = lapply(unique(data$nuts3Code), function(n){
     
     if(individual){
-      indv = which(data[data$nuts3Code == n, "cases"] > 0)[1] - 14
+      obsprd_start = data$date[which(data[data$nuts3Code == n, "cases"] >= min_cases)[1] + ndays[1]]
+      obsprd_end = data$date[which(data[data$nuts3Code == n, "cases"] >= min_cases)[1] + ndays[2]]
     } else {
-      indv = 0
+      obsprd_start = as.POSIXct("2020-02-15")
+      obsprd_end =  as.POSIXct("2020-04-01")
+      
     }
-
-    model_lag = lapply(seq(0, 14), function(l){
+    
+    model_lag = lapply(seq(0, nlags), function(l){
       
       tmp = data[data$nuts3Code == n, ]
       
       tmp = tmp %>%
-        # group_by(nuts3Code) %>%
-        mutate(pm_mean_lag = dplyr::lag(pm_mean, n = (l + indv), default = NA))
+        mutate(pm_mean_lag = dplyr::lag(pm_mean_dt, n = (l), default = NA))
       
-      # tmp = tmp[!is.na(tmp$cases_lag), ]
-      # print(tmp$pm_mean_lag)
-      
-      tmp_glm = glm(cases ~ date + weekday_c + pm_mean_lag, family = quasipoisson, data = tmp)
+      frml = as.formula(paste(target, "~ date + weekday_c + pm_mean_lag"))      
+      tmp_glm = glm(frml , family = quasipoisson, data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end,])
       
       test = summary(tmp_glm)
       data.frame(nuts3_code = n,
@@ -30,12 +34,14 @@ compileLaggedGLM = function(data, individual = FALSE){
                  lag = -l, 
                  t = test$coefficients["pm_mean_lag", "t value"], 
                  p = test$coefficients["pm_mean_lag", "Pr(>|t|)"],
-                 indv = indv)
+                 obsprd_start = obsprd_start,
+                 obsprd_end = obsprd_end)
     })
     model_lag = do.call("rbind", model_lag)
     
   })
   model_lag = do.call("rbind", model_lag)
+  
   return(model_lag)
 }
 

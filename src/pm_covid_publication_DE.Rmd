@@ -111,7 +111,7 @@ ggplot() +
   scale_color_manual(values=c("red", "darkgreen", "blue")) +
   theme(axis.text.x = element_text(angle=90)) + 
   theme(legend.title = element_blank()) +
-  facet_wrap(~cluster_covid, ncol =2, nrow = 2, scales = "fix")
+  facet_wrap(~cluster_pm, ncol =2, nrow = 2, scales = "fix")
 ```
 
 
@@ -119,13 +119,37 @@ ggplot() +
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 de_clstr = germany$de_clstr$clstr
-de_model_lag = compileLaggedGLM(de_clstr, individual = TRUE)
+pdata = compilePopulation()
+de_clstr = merge(de_clstr, pdata, by = "nuts3Code")
 
-de_model_lag_org
+de_clstr = merge(de_clstr, st_set_geometry(germany$de_nuts3_map[, c("nuts3Code", "nuts3Name", "centroid_lat", "centroid_lon", "nuts3Area")], NULL), by.x = "nuts3Code", by.y = "nuts3Code")
+
+de_clstr$nuts3Area = as.numeric(de_clstr$nuts3Area)
+de_clstr$cases_per_area = de_clstr$cases / de_clstr$nuts3Area
+de_clstr$cases_per_pop = de_clstr$cases / de_clstr$pop_total
+de_clstr$cases_per_pop_dens = de_clstr$cases / de_clstr$pop_dens
+de_clstr$new_cases_per_area = de_clstr$new_cases / de_clstr$nuts3Area
+de_clstr$new_cases_per_pop = de_clstr$new_cases / de_clstr$pop_total
+de_clstr$new_cases_per_pop_dens = de_clstr$new_cases / de_clstr$pop_dens
+de_clstr$pm_mean_dt = c(0, diff(de_clstr$pm_mean))
+
+ggplot(de_clstr[de_clstr$nuts3Code == 12064, ], aes(x = date, y = cases, colour = as.factor(nuts3Code))) + geom_line()
+
+
+de_model_lag = compileLaggedGLM(data = de_clstr,  
+                                target = "new_cases", nlags = 35,
+                                min_cases = 1, individual = TRUE, ndays = c(-6, 24))
+
+de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
+
+t.test(de_model_geo$test_geo[de_model_geo$test_geo$lag == -6 & de_model_geo$test_geo$centroid_lat >= 30, "t"])
+t.test(de_model_lag$t[de_model_lag$lag == -3])
+
+# de_model_lag = de_model_lag_org
 ```
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t)) + 
+ggplot(data = de_model_lag[abs(de_model_lag$t)<5,], aes(x = as.factor(lag), y = t)) + 
   geom_boxplot() + 
   stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="red", fill="red") +
   theme_bw() +
@@ -134,7 +158,7 @@ ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t)) +
 ```
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t, fill = cluster_pm)) + 
+ggplot(data = de_model_lag[abs(de_model_lag$t)<5,], aes(x = as.factor(lag), y = t, fill = cluster_pm)) + 
   geom_boxplot() + 
   theme_bw() + 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
@@ -142,15 +166,6 @@ ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t, fill = cluster_pm)) +
 ```
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
-
-plot(de_model_lag$lag, rowMeans(de_model_lag$t))
-
-t.test(de_model_geo$test_geo[de_model_geo$test_geo$lag == -6 & de_model_geo$test_geo$centroid_lat >= 30, "t"])
-
-t.test(de_model_lag$t[de_model_lag$lag == -6])
-
-
 ggplot(data = de_model_geo$test_geo_lag) + 
   geom_line(aes(x = lag, y = rsq, color = "R squared")) +
   geom_point(aes(x = lag, y = rsq, color = "R squared")) +
