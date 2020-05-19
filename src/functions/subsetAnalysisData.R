@@ -7,6 +7,8 @@ subsetAnalysisData = function(data, start_date, end_date){
   
   valid_data = data
   
+  # pm = data.frame()
+  
   for(n in seq(length(data))){
     
     if(any(data[[n]]$date == end_date) &
@@ -20,6 +22,11 @@ subsetAnalysisData = function(data, start_date, end_date){
                               which(data[[n]]$date == end_date), "new_cases"]))){
         valid_data[[n]] = data[[n]][data[[n]]$date >= start_date &
                                       data[[n]]$date <= end_date  , ]
+        ndf = data.frame(pm_mean = data[[n]]$pm_mean,
+                         pm_median = data[[n]]$pm_median,
+                         nuts3Code = data[[n]]$nuts3Code,
+                         n = rep(n, nrow(data[[n]])))
+        # pm = rbind(pm, ndf)
       } else {
         names(valid_data)[n] = "incomplete"
       }
@@ -29,8 +36,11 @@ subsetAnalysisData = function(data, start_date, end_date){
     }
   }
   
-  valid_data = valid_data[which((!names(valid_data) == "incomplete"))]
+  # pm_mean_agg = aggregate(pm$pm_mean, by = list(pm$nuts3Code), FUN = mean)
+  # summary(pm_mean_agg)
   
+  valid_data = valid_data[which((!names(valid_data) == "incomplete"))]
+
   print(names(data)[!(names(data) %in% names(valid_data))])
   
   return(valid_data)

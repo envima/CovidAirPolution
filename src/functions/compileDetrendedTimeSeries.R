@@ -1,8 +1,16 @@
-#' Compile detrended time series using glm models.
+#' Compile detrended time series using glm models or mark weekdays.
 
 compileDetrendedTimeSeries = function(data, vars = NA, comp = c("detr", "weekday_c")){
   
   comp = comp[1]
+
+  if(comp == "detr"){
+    
+    frml = as.formula(paste(paste(vars[1], "~"), paste(vars[-1], collapse="+")))
+    set.seed(01042020)
+    glmmod = glm(frml, family = quasipoisson, data = data)
+    ret_val = list(fit_val = glmmod$fitted.values, res_val = residuals(glmmod))
+  }
   
   if(comp == "weekday_c"){
     
@@ -17,15 +25,6 @@ compileDetrendedTimeSeries = function(data, vars = NA, comp = c("detr", "weekday
     ret_val = as.factor(ret_val)
   }
   
-  
-  if(comp == "detr"){
-    
-    frml = as.formula(paste(paste(vars[1], "~"), paste(vars[-1], collapse="+")))
-    set.seed(01042020)
-    ret_val = residuals(glm(frml, family = quasipoisson, data = data))
-  }
-
   return(ret_val)
-  
 }  
   

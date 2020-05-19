@@ -2,7 +2,7 @@
 #' 
 #' Data is downloaded from the GitHub repository jgehrcke/covid-19-germany-gae.
 #' Geographic information is included based on station locations.
-#' Daily new infection cases are computed from the daily total sum. A smoothed
+#' Daily new infection cases are computed from the daily total sum. A loessed
 #' version of daily cases is computed (loess function) for models which do not 
 #' correct for weekdays to account for the reporting delay on weekends and 
 #' Mondays.
@@ -39,7 +39,6 @@ getCovidDE = function(){
   cov_nuts3 = merge(cov_nuts3, cov_nuts3_deaths)
   cov_nuts3$weekday = as.factor(weekdays(cov_nuts3$date))
   cov_nuts3$date_day = as.factor(paste(cov_nuts3$date, substr(cov_nuts3$weekday, 1, 1)))
-  
   cov_nuts3$weekday_c = compileDetrendedTimeSeries(cov_nuts3$weekday, comp = "weekday_c")
   
   # Compile and add geographic information.
@@ -51,46 +50,60 @@ getCovidDE = function(){
   cov_nuts3 = merge(cov_nuts3, ags_names)
   cov_nuts3 = cov_nuts3[order(cov_nuts3$date), ]
   
-  # Compile daily new cases (original and smoothed version).
-
+  # Compile daily new cases (original and loessed version).
+  
   for(c in unique(cov_nuts3$nuts3Code)){
     
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases"]))
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "deaths"]))
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases"] = 
+      c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases"]))
+    
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths"] = 
+      c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "deaths"]))
+    
+    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+                                 vars = c("cases", "date", "weekday_c"),
+                                 comp = "detr")
+    cov_nuts3[cov_nuts3$nuts3Code == c, "cases_glm_time"] = tmp$fit_val
+    cov_nuts3[cov_nuts3$nuts3Code == c, "cases_glm_time_residuals"] = tmp$res_val
+    
+
+    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+                                     vars = c("new_cases", "date", "weekday_c"),
+                                     comp = "detr")
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_glm_time"] = tmp$fit_val
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_glm_time_residuals"] = tmp$res_val
+    
+
+    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+                                     vars = c("deaths", "date", "weekday_c"),
+                                     comp = "detr")
+    cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_glm_time"] = tmp$fit_val
+    cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_glm_time_residuals"] = tmp$res_val
+    
+    
+    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+                                     vars = c("new_deaths", "date", "weekday_c"),
+                                     comp = "detr")
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_glm_time"] = tmp$fit_val
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_glm_time_residuals"] = tmp$res_val
     
     tmp = cov_nuts3[cov_nuts3$nuts3Code == c,]
-    tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$cases, family = "gaussian", span=0.33, evaluation = length(tmp$date))$y, 0)
+    tmp$loess = round(loess.smooth(seq(length(tmp$date)), tmp$cases, 
+                                   family = "gaussian", span=0.33, 
+                                   evaluation = length(tmp$date))$y, 0)
+    tmp$loess[tmp$loess < 0] = 0
+    cov_nuts3[cov_nuts3$nuts3Code == c, "cases_loess"] = tmp$loess
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_loess"] = 
+      c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases_loess"]))
     
-    tmp$smooth[tmp$smooth < 0] = 0
+    tmp$loess = round(loess.smooth(seq(length(tmp$date)), tmp$deaths, 
+                                   family = "gaussian", span=0.1, 
+                                   evaluation = length(tmp$date))$y, 0)
+    tmp$loess[tmp$loess < 0] = 0
+    cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_loess"] = tmp$loess
+    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_loess"] = 
+      c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_loess"]))
     
-    cov_nuts3[cov_nuts3$nuts3Code == c, "cases_smooth"] = tmp$smooth
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_smooth"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "cases_smooth"]))
-    
-    tmp$smooth = round(loess.smooth(seq(length(tmp$date)), tmp$deaths, family = "gaussian", span=0.1, evaluation = length(tmp$date))$y, 0)
-    tmp$smooth[tmp$smooth < 0] = 0
-    
-    cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_smooth"] = tmp$smooth
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_smooth"] = c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_smooth"]))
-    
-    cov_nuts3[cov_nuts3$nuts3Code == c, "cases_detr"] = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                                                                   vars = c("cases", "date", "weekday_c"),
-                                                                                   comp = "detr")
-    
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_detr"] = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                                                                       vars = c("new_cases", "date", "weekday_c"),
-                                                                                       comp = "detr")
-    
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_smooth_detr"] = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                                                                       vars = c("new_cases_smooth", "date", "weekday_c"),
-                                                                                       comp = "detr")
-
-    cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_detr"] = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                                                                    vars = c("deaths", "date", "weekday_c"),
-                                                                                    comp = "detr")
-    
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_detr"] = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                                                                        vars = c("new_deaths", "date", "weekday_c"),
-                                                                                        comp = "detr")
   }
   
   return(list(cov_nuts3 = cov_nuts3))

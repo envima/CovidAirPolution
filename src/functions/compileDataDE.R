@@ -16,7 +16,12 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
   
   # SARS-CoV-2 -----------------------------------------------------------------
   cov_de = getCovidDE()
-  cov_de_polygons = makeSFPolygonsDE(cov_de$cov_nuts3)
+  cov_de_polygons = makeSFPolygonsDE(data = cov_de$cov_nuts3)
+  
+  
+  # Population data  -----------------------------------------------------------
+  pdata = compilePopulation()
+  cov_de_polygons = merge(cov_de_polygons, pdata, by = "nuts3Code")
   
   
   # Air quality data -----------------------------------------------------------
@@ -39,7 +44,6 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
   pm_uba_waqi_points=list()
   pm_uba_waqi_points$pts = rbind(pm_waqi_points$pts, pm_uba_points$pts)
   pm_uba_waqi_points$pop = c(pm_waqi_points$pop, pm_uba_points$pop)
-  
   
   
   # Merge air quality and SARS-CoV-2 data --------------------------------------
@@ -65,32 +69,28 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
     m$note = m$note[fill_pos]
     m$new_cases[is.na(m$new_cases)] = 0
     m$new_deaths[is.na(m$new_deaths)] = 0
-    m$cases_smooth[is.na(m$cases_smooth)] = 0
-    m$new_cases_smooth[is.na(m$new_cases_smooth)] = 0
-    m$deaths_smooth[is.na(m$deaths_smooth)] = 0
-    m$new_deaths_smooth[is.na(m$new_deaths_smooth)] = 0
-    
-    m$cases_detr = compileDetrendedTimeSeries(data = m,
-                                              vars = c("cases", "date", "weekday_c"),
-                                              comp = "detr")
-    m$new_cases_detr = compileDetrendedTimeSeries(data = m,
-                                                  vars = c("new_cases", "date", "weekday_c"),
-                                                  comp = "detr")
-    m$new_cases_smooth_detr = compileDetrendedTimeSeries(data = m,
-                                                  vars = c("new_cases_smooth", "date", "weekday_c"),
-                                                  comp = "detr")
-    m$deaths_detr = compileDetrendedTimeSeries(data = m,
-                                               vars = c("deaths", "date", "weekday_c"),
-                                               comp = "detr")
-    m$new_deaths_detr = compileDetrendedTimeSeries(data = m,
-                                                   vars = c("new_deaths", "date", "weekday_c"),
-                                                   comp = "detr")
-    
-    
+    m$cases_glm_time[is.na(m$cases_glm_time)] = 0
+    m$cases_glm_time_residuals[is.na(m$cases_glm_time_residuals)] = 0
+    m$new_cases_glm_time[is.na(m$new_cases_glm_time)] = 0
+    m$new_cases_glm_time_residuals[is.na(m$new_cases_glm_time_residuals)] = 0
+    m$deaths_glm_time[is.na(m$deaths_glm_time)] = 0
+    m$deaths_glm_time_residuals[is.na(m$deaths_glm_time_residuals)] = 0
+    m$new_deaths_glm_time[is.na(m$new_deaths_glm_time)] = 0
+    m$new_deaths_glm_time_residuals[is.na(m$new_deaths_glm_time_residuals)] = 0
+    m$cases_loess[is.na(m$cases_loess)] = 0
+    m$new_cases_loess[is.na(m$new_cases_loess)] = 0
+    m$deaths_loess[is.na(m$deaths_loess)] = 0
+    m$new_deaths_loess[is.na(m$new_deaths_loess)] = 0
     m$name_2 = m$name_2[fill_pos]
     m$centroid_lon = m$centroid_lon[fill_pos]
     m$centroid_lat = m$centroid_lat[fill_pos]
+    m$st_area = m$st_area[fill_pos]
     m$geometry = m$geometry[fill_pos]
+    m$X = m$X[fill_pos]
+    m$pop_total = m$pop_total[fill_pos]
+    m$pop_male = m$pop_male[fill_pos]
+    m$pop_female = m$pop_female[fill_pos]
+    m$pop_dens = m$pop_dens[fill_pos]
     
     m = m[, c(cn,
               "pm",
@@ -102,23 +102,27 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
   de_nuts3$nuts3Name = as.factor(unlist(de_nuts3$nuts3Name))
   de_nuts3$state = as.factor(unlist(de_nuts3$state))
   de_nuts3$note = as.factor(unlist(de_nuts3$note))
-  de_nuts3 = st_transform(de_nuts3, crs = 25832)
-  de_nuts3$area = st_area(de_nuts3)
-  de_nuts3 = st_transform(de_nuts3, crs = 4326)
-  
+
   
   # Compute mean air quality within each nuts 3 region -------------------------
   nuts3_names = sort(unique(de_nuts3$nuts3Name))
   
   de_nuts3_mean = lapply(nuts3_names, function(p){
     act = de_nuts3[de_nuts3$nuts3Name == p,]
-    pm = aggregate(list(act$pm),
+    
+    pm_mean = aggregate(list(act$pm),
                    by = list(act$date), FUN = mean, na.rm=TRUE)
-    names(pm) = c("date", "pm_mean")
+    names(pm_mean) = c("date", "pm_mean")
+
+    pm_median = aggregate(list(act$pm),
+                        by = list(act$date), FUN = median, na.rm=TRUE)
+    names(pm_median) = c("date", "pm_median")
+    
+    pm = merge(pm_mean, pm_median)
     
     u_stations = unique(act$stationname)
     
-    new_stationname = paste(length(u_stations), u_stations, collapse = "-")
+    new_stationname = paste(length(u_stations), paste(u_stations, collapse = "-"))
     
     act = merge(
       pm, act[seq(nrow(act[act$stationname == u_stations[1],])), ],
@@ -132,15 +136,15 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
   })
   
   names(de_nuts3_mean) = nuts3_names
+  tmp = de_nuts3_mean
   
-
   # Subset analysis regions to complete/valid ones -----------------------------
-  de_nuts3_mean = subsetAnalysisData (de_nuts3_mean, start_date, end_date)
+  de_nuts3_mean = subsetAnalysisData(de_nuts3_mean, start_date, end_date)
   
   # Exclude Böblingen because of obviously wrong PM2.5 observations.
   de_nuts3_mean = de_nuts3_mean[which(!names(de_nuts3_mean) == "LK Böblingen")]
   
-  
+  tmp = de_nuts3_mean
   # Compile data for overview maps ---------------------------------------------
   de_nuts3_map = compileMapDE(de_nuts3_mean)
   
