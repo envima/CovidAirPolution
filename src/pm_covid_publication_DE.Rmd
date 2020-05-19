@@ -136,43 +136,58 @@ de_clstr$weekday_cn = as.numeric(de_clstr$weekday_c)
 de_clstr$days_before_shutdown = difftime(de_clstr$date, as.POSIXct("2020-03-17"), units = "days")
 
 
-de_clstr = lapply(unique(de_clstr$nuts3Code), function(n){
+info = lapply(unique(de_clstr$nuts3Code), function(n){
   tmp = de_clstr[de_clstr$nuts3Code == n, ]
   tmp$date_numeric = seq(nrow(tmp))
   
-  date_start = tmp$date[which(tmp$cases > 0)[1]]
+  tmp = data.frame(nuts = tmp$nuts3Code[1],
+                   date_start = tmp$date[which(tmp$cases > 0)[1]],
+                   date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)])
   
-  
-  set.seed(01042020)
-  # glm_mod = glm(cases ~ date_numeric + I(date_numeric^2),
-  #               family = gaussian, 
-  #               data = tmp[tmp$weekday_c == "W" & tmp$date >= date_start,])
-  glm_mod <- zeroinfl(new_cases ~ date_numeric + weekday_c + pm_mean | days_before_shutdown, data = tmp)
-  tmp$cases_pred = 0
-  tmp$cases_pred[tmp$date >= date_start] = predict(glm_mod, tmp[tmp$date >= date_start,])
-  tmp$cases_pred[tmp$cases_pred < 0] = 0
+  # set.seed(01042020)
+  # # glm_mod = glm(cases ~ date_numeric + I(date_numeric^2),
+  # #               family = gaussian, 
+  # #               data = tmp[tmp$weekday_c == "W" & tmp$date >= date_start,])
+  # glm_mod <- zeroinfl(new_cases ~ date_numeric + weekday_c + pm_mean | days_before_shutdown, data = tmp)
+  # tmp$cases_pred = 0
+  # tmp$cases_pred[tmp$date >= date_start] = predict(glm_mod, tmp[tmp$date >= date_start,])
+  # tmp$cases_pred[tmp$cases_pred < 0] = 0
   # plot(tmp$cases_pred)
   # points(tmp$new_cases, col = "red")
+  
   return(tmp)
 })
-de_clstr = do.call("rbind", de_clstr)
+info = do.call("rbind", info)
+info$difftime = difftime(info$date_max, info$date_start, units = "days")
+ggplot(data = info, aes(x = difftime)) + geom_histogram(binwidth = 5)
+summary(as.numeric(info$difftime[info$cases_at_max > 100]))
+summary(info$cases_at_max)
+summary(info$daily_max)
+summary(info$cases_at_max[info$difftime>=30])
+summary(info$cases_at_max)
+summary(as.numeric(info$difftime))
 
 head(de_clstr)
 
+ggplot(data = de_clstr[de_clstr$weekday_c == "M",], aes(x = date, y = new_cases, color = as.factor(nuts3Code))) + geom_line() +  theme(legend.position = "none")
 
 ndays = c(-14, 35)
 ndays = c(-14, 20)
 ndays = c(0, 30)
 
-de_model_lag = compileLaggedGLM(data = de_clstr,  
+de_model_lag = compileLaggedGLM(data = de_clstr[de_clstr$nuts3Code %in% info$nuts[info$difftime>=30 & info$difftime<=99],],  
                                 pm = "org", 
-                                frml = "new_cases ~ date_numeric + weekday_c + pm_mean_lag",
-                                nlags = 40,
-                                min_cases = 1, individual = TRUE, ndays = c(-10, 15))
+                                frml = "new_cases ~ date + weekday_c + pm_mean_lag",
+                                nlags = 20,
+                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 35))
 
-# de_model_lag = compileLaggedGAM(data = de_clstr,
-#                                 target = "new_cases", nlags = 20,
-#                                 min_cases = 1, individual = TRUE, ndays = c(0, 40))
+de_model_lag = compileLaggedGAM(data = de_clstr,  
+                                pm = "org", 
+                                frml = "new_cases ~ seq(length(date)) + weekday_c + pm_mean_lag",
+                                nlags = 20,
+                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 35))
 
 de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
 
@@ -182,7 +197,7 @@ t.test(de_model_lag$t[de_model_lag$lag == -3])
 ```
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t)) + 
+ggplot(data = de_model_lag[abs(de_model_lag$t)<5,], aes(x = as.factor(lag), y = t)) + 
   geom_boxplot() + 
   stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="red", fill="red") +
   theme_bw() +

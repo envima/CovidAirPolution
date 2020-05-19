@@ -1,21 +1,26 @@
 #' Compile lagged glm models.
 
 compileLaggedGLM = function(data, pm = "org", frml, nlags = 14,
-                            min_cases = 1, individual = FALSE, ndays = c(-14, 32),
+                            subset_var = "cases", subset_thv = 1, 
+                            individual = "start", ndays = c(-14, 32),
                             obsprd_start = NULL, obsprd_end = NULL){
   
-  
-  model_lag = lapply(unique(data$nuts3Code), function(n){
+  model_lag = lapply(unique(data$nuts3Code[data[, subset_var] >= subset_thv]), function(n){
+    
+    tmp = data[data$nuts3Code == n, ]
 
-    if(individual){
-      obsprd_start = data$date[which(data[data$nuts3Code == n, "cases"] >= min_cases)[1] + ndays[1]]
-      obsprd_end = data$date[which(data[data$nuts3Code == n, "cases"] >= min_cases)[1] + ndays[2]]
+    if(individual == "start"){
+      obsprd_start = tmp$date[which(tmp$cases >= 1)[1] + ndays[1]]
+      obsprd_end = tmp$date[which(tmp$cases >= 1)[1] + ndays[2]]
+    } else if(individual == "max"){
+      obsprd_start = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1) + ndays[1]]
+      obsprd_end = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1) + ndays[2]]
     } else {
       obsprd_start = as.POSIXct("2020-02-15")
       obsprd_end =  as.POSIXct("2020-04-01")
-      
     }
-    
+    if(is.na(obsprd_end)) obsprd_end = 0
+
     if(obsprd_end > obsprd_start){
       
       model_lag = lapply(seq(0, nlags), function(l){
@@ -41,10 +46,10 @@ compileLaggedGLM = function(data, pm = "org", frml, nlags = 14,
                    cluster_pm = tmp$cluster_pm[1],
                    pm_mean_mean = mean(tmp$pm_mean),
                    lag = -l, 
-                   # t = test$coefficients["pm_mean_lag", "t value"], 
-                   # p = test$coefficients["pm_mean_lag", "Pr(>|t|)"],
-                   t = test$coefficients$count["pm_mean_lag", "z value"], 
-                   p = test$coefficients$count["pm_mean_lag", "Pr(>|z|)"],
+                   t = test$coefficients["pm_mean_lag", "t value"],
+                   p = test$coefficients["pm_mean_lag", "Pr(>|t|)"],
+                   # t = test$coefficients$count["pm_mean_lag", "z value"], 
+                   # p = test$coefficients$count["pm_mean_lag", "Pr(>|z|)"],
                    obsprd_start = obsprd_start,
                    obsprd_end = obsprd_end)
       })
