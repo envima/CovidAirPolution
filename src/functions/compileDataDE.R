@@ -69,14 +69,14 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
     m$note = m$note[fill_pos]
     m$new_cases[is.na(m$new_cases)] = 0
     m$new_deaths[is.na(m$new_deaths)] = 0
-    m$cases_glm_time[is.na(m$cases_glm_time)] = 0
-    m$cases_glm_time_residuals[is.na(m$cases_glm_time_residuals)] = 0
-    m$new_cases_glm_time[is.na(m$new_cases_glm_time)] = 0
-    m$new_cases_glm_time_residuals[is.na(m$new_cases_glm_time_residuals)] = 0
-    m$deaths_glm_time[is.na(m$deaths_glm_time)] = 0
-    m$deaths_glm_time_residuals[is.na(m$deaths_glm_time_residuals)] = 0
-    m$new_deaths_glm_time[is.na(m$new_deaths_glm_time)] = 0
-    m$new_deaths_glm_time_residuals[is.na(m$new_deaths_glm_time_residuals)] = 0
+    # m$cases_glm_time[is.na(m$cases_glm_time)] = 0
+    # m$cases_glm_time_residuals[is.na(m$cases_glm_time_residuals)] = 0
+    # m$new_cases_glm_time[is.na(m$new_cases_glm_time)] = 0
+    # m$new_cases_glm_time_residuals[is.na(m$new_cases_glm_time_residuals)] = 0
+    # m$deaths_glm_time[is.na(m$deaths_glm_time)] = 0
+    # m$deaths_glm_time_residuals[is.na(m$deaths_glm_time_residuals)] = 0
+    # m$new_deaths_glm_time[is.na(m$new_deaths_glm_time)] = 0
+    # m$new_deaths_glm_time_residuals[is.na(m$new_deaths_glm_time_residuals)] = 0
     m$cases_loess[is.na(m$cases_loess)] = 0
     m$new_cases_loess[is.na(m$new_cases_loess)] = 0
     m$deaths_loess[is.na(m$deaths_loess)] = 0
@@ -131,12 +131,11 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
     act$stationname = new_stationname
     
     act = st_set_geometry(act, act$geometry)
-    act = st_transform(act, crs = 4326)
+    act = st_transform(act, crs = 25832)
     return(act)
   })
   
   names(de_nuts3_mean) = nuts3_names
-  tmp = de_nuts3_mean
   
   # Subset analysis regions to complete/valid ones -----------------------------
   de_nuts3_mean = subsetAnalysisData(de_nuts3_mean, start_date, end_date)
@@ -144,7 +143,7 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
   # Exclude Böblingen because of obviously wrong PM2.5 observations.
   de_nuts3_mean = de_nuts3_mean[which(!names(de_nuts3_mean) == "LK Böblingen")]
   
-  tmp = de_nuts3_mean
+  
   # Compile data for overview maps ---------------------------------------------
   de_nuts3_map = compileMapDE(de_nuts3_mean)
   
@@ -152,8 +151,7 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
   # Compile data averaged over country -----------------------------------------
   de_avg = compileAvg(de_nuts3_mean)
   
-  # saveRDS(nuts3_names, file.path(envrmt$path_tm, "tmp.RDS"))
-  
+
   # Compile clusters based on DTW ----------------------------------------------
   de_clstr = compileDTW(de_nuts3_mean)
   

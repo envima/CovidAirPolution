@@ -213,8 +213,8 @@ effect size = t-value of the partial coefficient.
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 background_map = st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
-                              crs = "+init=epsg:32632")
-layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:32632")
+                              crs = "+init=epsg:25832")
+layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:25832")
 
 figure_2e = ggplot(data = background_map) +
   geom_sf() + 
@@ -234,9 +234,9 @@ figure_2e = ggplot(data = background_map) +
 
 
 background_map = st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
-                              crs = "+init=epsg:32632")
+                              crs = "+init=epsg:25832")
 layer = st_set_geometry(de_model_geo$test_geo[de_model_geo$test_geo$lag == -12, ], de_model_geo$test_geo$geometry[de_model_geo$test_geo$lag == -12, ])
-layer = st_transform(layer, crs = "+init=epsg:32632")
+layer = st_transform(layer, crs = "+init=epsg:25832")
 
 figure_2f = ggplot(data = background_map) +
   geom_sf() + 

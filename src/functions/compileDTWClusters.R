@@ -80,9 +80,9 @@ compileDTW = function(data){
                             unique(clstr_avg_pm$cluster_pm)[i] ,]
 
     tpm = compileDetrendedTimeSeries(data = tmp_pm,
-                                     vars = c("new_cases", "date", "weekday_c"),
+                                     frml = "new_cases ~ date + weekday",
                                      comp = "detr")
-    tmp_pm$new_cases_glm_time = tpm$fit_val
+    tmp_pm$new_cases_glm_time = tpm$pred_val
     tmp_pm$new_cases_glm_time_residuals = tpm$res_val
     
     return(tmp_pm)
@@ -95,12 +95,12 @@ compileDTW = function(data){
     tmp_covid = clstr_avg_covid[clstr_avg_covid$cluster_covid == 
                                   unique(clstr_avg_covid$cluster_covid)[i] ,]
     tpm = compileDetrendedTimeSeries(data = tmp_covid,
-                                     vars = c("new_cases", "date", "weekday_c"),
+                                     frml = "new_cases ~ date + weekday",
                                      comp = "detr")
-    tmp_covid$new_cases_glm_time = tpm$fit_val
+    tmp_covid$new_cases_glm_time = tpm$pred_val
     tmp_covid$new_cases_glm_time_residuals = tpm$res_val
     
-    return(tmp_pm)
+    return(tmp_covid)
   })
   clstr_avg_covid_glm_time = do.call("rbind", clstr_avg_covid_glm_time)
   
