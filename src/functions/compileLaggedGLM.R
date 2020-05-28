@@ -41,6 +41,7 @@ compileLaggedGLM = function(data, pm = "org", frml, nlags = 14,
         tmp_glm = glm(frml , family = quasipoisson, data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end,])
         # tmp_glm = zeroinfl(new_cases ~ date_numeric + weekday_c + pm_mean_lag | days_before_shutdown, data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end,])
         
+
         test = summary(tmp_glm)
         data.frame(nuts3Code = n,
                    cluster = tmp$cluster_covid[1],
