@@ -40,6 +40,8 @@ compileLaggedGLM = function(data, pm = "org", frml, nlags = 14,
         set.seed(01042020)
         tmp_glm = glm(frml , family = quasipoisson, data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end,])
         # tmp_glm = zeroinfl(new_cases ~ date_numeric + weekday_c + pm_mean_lag | days_before_shutdown, data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end,])
+        # plot(predict(tmp_glm, tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end,], type="response"), type = "l")
+        
         
 
         test = summary(tmp_glm)

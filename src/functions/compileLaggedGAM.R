@@ -5,6 +5,8 @@ compileLaggedGAM = function(data, pm = "org", frml, nlags = 14,
                             individual = "start", ndays = c(-14, 32),
                             obsprd_start = NULL, obsprd_end = NULL){
   
+  
+  data = st_drop_geometry(data)
   model_lag = lapply(unique(data$nuts3Code[data[, subset_var] >= subset_thv]), function(n){
     
     tmp = data[data$nuts3Code == n, ]
@@ -34,6 +36,9 @@ compileLaggedGAM = function(data, pm = "org", frml, nlags = 14,
             tmp = tmp %>%
               mutate(pm_mean_lag = dplyr::lag(pm_mean_dt, n = (l), default = NA))
           }
+          
+          
+          frml =  new_cases ~ s(seq(length(date))) + weekday + pm_mean_lag
           
           frml = as.formula(frml)      
           set.seed(01042020)

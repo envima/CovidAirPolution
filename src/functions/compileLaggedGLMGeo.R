@@ -2,7 +2,7 @@
 #' 
 
 compileLaggedGLMGeo = function(model_lag, map){
-  test_geo = merge(model_lag, map[, c("nuts3Code", "cases", "deaths", "nuts3Name", "state", "centroid_lat", "centroid_lon", "nuts3Area")], by.x = "nuts3_code", by.y = "nuts3Code")
+  test_geo = merge(model_lag, map[, c("nuts3Code", "cases", "deaths", "nuts3Name", "state", "centroid_lat", "centroid_lon", "nuts3Area")], by.x = "nuts3Code", by.y = "nuts3Code")
   
   test_geo_lag = lapply(unique(test_geo$lag), function(l){
     tmp = test_geo[test_geo$lag == l,]

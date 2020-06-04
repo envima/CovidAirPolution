@@ -9,8 +9,8 @@ compileDetrendedTimeSeries = function(data, frml = NA, comp = c("detr", "weekday
     set.seed(01042020)
     glmmod = glm(as.formula(frml), family = quasipoisson, data = data)
 
-    ret_val = list(pred_val = predict(glmmod, newdata = data), 
-                   res_val = residuals(glmmod))
+    ret_val = list(pred_val = predict(glmmod, newdata = data, type = "response"), 
+                   res_val = residuals(glmmod, type="response"))
   }
   
   if(comp == "weekday_c"){
@@ -28,4 +28,3 @@ compileDetrendedTimeSeries = function(data, frml = NA, comp = c("detr", "weekday
   
   return(ret_val)
 }  
-  
