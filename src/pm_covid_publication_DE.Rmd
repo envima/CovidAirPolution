@@ -173,21 +173,21 @@ ggplot() +
         legend.title = element_blank(), panel.background = element_blank(),
         panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
-de_model_lag_nc = compileLaggedGLM(data = de_clstr,  
+de_model_lag = compileLaggedGLM(data = de_clstr,  
                                 pm = "org", 
                                 frml = "new_cases ~ date + weekday + pm_mean_lag",
                                 nlags = 20,
                                 subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 30))
 
-de_model_lag_c = compileLaggedGLM(data = de_clstr,  
-                                pm = "org", 
-                                frml = "cases ~ date + weekday + pm_mean_lag",
-                                nlags = 20,
-                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 30))
-
-
-de_model_lag = de_model_lag_nc
-de_model_lag = de_model_lag_c
+# de_model_lag_c = compileLaggedGLM(data = de_clstr,  
+#                                 pm = "org", 
+#                                 frml = "cases ~ date + weekday + pm_mean_lag",
+#                                 nlags = 20,
+#                                 subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 30))
+# 
+# 
+# de_model_lag = de_model_lag_nc
+# de_model_lag = de_model_lag_c
 
 de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
 
@@ -203,7 +203,7 @@ ggplot(data = de_model_lag[abs(de_model_lag$t) < 5,], aes(x = as.factor(lag), y 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
   labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
 
-ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -1,]) + 
+ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -2,]) + 
   geom_point(aes(x = centroid_lat, y = t, color = as.factor(lag))) +
   theme_bw() + 
   geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
@@ -229,18 +229,22 @@ autoplot(pc, data = t_matrix, colour = "centroid_lat", loadings = TRUE, loadings
 
 
 
-rd = rda(t_matrix[, 2:22], t_matrix[, vars[c(1, 3, 8, 10)]])
+rd = rda(t_matrix[, 2:22], t_matrix[, c("pm_mean", "pop_dens", "cases_at_max", "centroid_lat")])
+
+plot(rd, type = "points", scaling = 0)
+
 
 scl = 5
 scl.txt = 0.2
 
-plot(rd, type='p', scaling = 0, xlim = c(-1.8, 1.8), ylim = c(-0.9, 0.9))
+plot(rd, type = 'points', scaling = 0, xlim = c(-1.8, 1.8), ylim = c(-0.9, 0.9), arrow=TRUE)
 
-orditorp(rd, display='sp', cex=0.5, scaling=1, col='blue')
+plot(rd, xlim = c(-1.8, 1.8), ylim = c(-0.9, 0.9))
+
+orditorp(rd, display='sp', cex=0.5, scaling=0, col='blue')
 text(rd, display='cn', col='red', scaling = 1)
 
-plot(rd)
-text(rd, display='cn', col='red')
+text(rd, display='lc', col='red')
 
 plot(scores(rd)$sites[,2] ~
      scores(rd)$sites[,1],
@@ -273,7 +277,7 @@ layer = st_transform(score_geo, crs = "+init=epsg:25832")
 
 ggplot(data = background_map) +
   geom_sf() + 
-  geom_sf(data = layer, aes(fill = RDA2)) +
+  geom_sf(data = layer, aes(fill = RDA1)) +
   theme(legend.position="bottom") +
   labs(fill = "RDA1") +
   coord_sf(xlim = c((st_bbox(layer)["xmin"] - 10000), 
