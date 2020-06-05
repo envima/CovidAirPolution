@@ -41,9 +41,51 @@ if(compile_data){
 
 # Compute additional datasets --------------------------------------------------
 de_clstr = germany$de_clstr$clstr
-de_model_lag = compileLaggedGLM(de_clstr)
+
+info = lapply(unique(de_clstr$nuts3Code), function(n){
+  tmp = de_clstr[de_clstr$nuts3Code == n, ]
+  tmp$date_numeric = seq(nrow(tmp))
+  
+  tmp = data.frame(nuts3Code = tmp$nuts3Code[1],
+                   date_start = tmp$date[which(tmp$cases > 0)[1]],
+                   date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)])
+  
+  return(tmp)
+})
+info = do.call("rbind", info)
+info$difftime_start_max = difftime(info$date_max, info$date_start, units = "days")
+info$first_shutdown = difftime(info$date_start, as.POSIXct("2020-03-17"), units = "days")
+info$max_shutdown = difftime(info$date_max, as.POSIXct("2020-03-17"), units = "days")
+
+summary(as.numeric(info$difftime_start_max))
+summary(as.numeric(info$first_shutdown))
+summary(as.numeric(info$max_shutdown))
+summary(info$daily_max)
+
+hist(as.numeric(info$difftime_start_max))
+hist(as.numeric(info$first_shutdown))
+hist(as.numeric(info$max_shutdown))
+
+de_model_lag = compileLaggedGLM(data = de_clstr,  
+                                pm = "org", 
+                                frml = "new_cases ~ date + weekday + pm_mean_lag",
+                                nlags = 14,
+                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 30))
+
 de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
 
+t_matrix = reshape(de_model_lag[, c("nuts3Code", "t", "lag")], idvar = "nuts3Code", timevar = "lag", direction = "wide")
+rownames(t_matrix) = t_matrix$nuts3Code
+vars = c("pm_mean", "pop_total", "pop_dens", "centroid_lat", "centroid_lon", "st_area")
+t_environment = aggregate(st_drop_geometry(de_clstr[, vars]), by = list(de_clstr$nuts3Code), FUN = mean)
+names(t_environment)[1] = "nuts3Code"
+t_environment = merge(t_environment, info)
+t_matrix = merge(t_matrix, t_environment, by = "nuts3Code")
+vars = c(vars, "date_start", "first_shutdown", "max_shutdown", "cases_at_max", "daily_max")
+rd = rda(t_matrix[, 2:22], t_matrix[, c("pm_mean", "pop_dens", "first_shutdown",
+                                        "cases_at_max", "centroid_lat")])
 
 ggplot(data = de_clstr, aes(x = date, y = cases, group = nuts3Code)) + geom_line()
 
@@ -53,6 +95,15 @@ start_date = lapply(unique(de_clstr$nuts3Code), function(n){
   which(tmp$new_cases > 0)[1]
 })
 summary(unlist(start_date))
+
+
+de_avg = germany$de_avg
+
+de_avg_glm_time = de_avg[de_avg$date >= as.POSIXct("2020-03-01") & de_avg$date <= as.POSIXct("2020-04-01"),]
+set.seed(01042020)
+de_avg_glm_time = glm(new_cases ~ date + weekday , family = quasipoisson, data = de_avg_glm_time)
+de_avg_glm_time$predicted = predict(de_avg_glm_time, de_avg_glm_time, type = "response")
+de_avg_glm_time$residuals = residuals(de_avg_glm_time, type="response")
 
 ```
 
@@ -74,23 +125,17 @@ Data on total daily COVID-19 cases and deaths has been provided by the Robert-Ko
 
 The following figure shows the countrywide average of daily PM2.5 and smoothed COVID-19 new infections. Black vertical dotted lines represent the start of the contact restrictions (March 14th) and shut down (March 17th).
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-de_avg = germany$de_avg
 
-tmp = de_avg[de_avg$date >= as.POSIXct("2020-03-01") & de_avg$date <= as.POSIXct("2020-04-01"),]
-set.seed(01042020)
-de_avg_glm_time = glm(new_cases ~ date + weekday , family = quasipoisson, data = tmp)
-tmp$predicted = predict(de_avg_glm_time, tmp, type = "response")
-tmp$residuals = residuals(de_avg_glm_time, type="response")
 
 figure_1a = ggplot() + 
   geom_line(data = de_avg, aes(x = date, y = pm_mean, color = "Daily mean PM10")) +
   geom_point(data = de_avg, aes(x = date, y = pm_mean, color = "Daily mean PM10")) + 
   geom_line(data = de_avg, aes(x = date, y = new_cases, color = "Daily new cases")) +
   geom_point(data = de_avg, aes(x = date, y = new_cases, color = "Daily new cases")) + 
-  geom_line(data = tmp, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
-  geom_point(data = tmp, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
-  geom_line(data = tmp, aes(x = date, y = new_cases, color = "Daily new cases")) +
-  geom_point(data = tmp, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_line(data = de_avg_glm_time, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_point(data = de_avg_glm_time, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_line(data = de_avg_glm_time, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_point(data = de_avg_glm_time, aes(x = date, y = new_cases, color = "Daily new cases")) +
   geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
   geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
   # geom_text(aes(x = as.POSIXct("2020-03-14"), label="Start of contact restrictions \n", y=-1), colour="black", angle=90, size = 3) +
@@ -154,23 +199,7 @@ ggsave(file.path(envrmt$path_figures, "figure_1.png"), plot = figure_1,
 # Figure 2
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-de_model_lag = compileLaggedGLM(data = de_clstr,  
-                                pm = "org", 
-                                frml = "new_cases ~ date + weekday + pm_mean_lag",
-                                nlags = 14,
-                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 30))
 
-
-t_matrix = reshape(de_model_lag[, c("nuts3Code", "t", "lag")], idvar = "nuts3Code", timevar = "lag", direction = "wide")
-rownames(t_matrix) = t_matrix$nuts3Code
-vars = c("pm_mean", "pop_total", "pop_dens", "centroid_lat", "centroid_lon", "st_area")
-t_environment = aggregate(st_drop_geometry(de_clstr[, vars]), by = list(de_clstr$nuts3Code), FUN = mean)
-names(t_environment)[1] = "nuts3Code"
-t_environment = merge(t_environment, info)
-t_matrix = merge(t_matrix, t_environment, by = "nuts3Code")
-vars = c(vars, "date_start", "first_shutdown", "max_shutdown", "cases_at_max", "daily_max")
-rd = rda(t_matrix[, 2:22], t_matrix[, c("pm_mean", "pop_dens", "first_shutdown",
-                                        "cases_at_max", "centroid_lat")])
 
 plot(rd, type = "points", scaling = 0)
 
@@ -253,7 +282,7 @@ background_map = st_transform(ne_countries(scale = "large", continent = "europe"
                               crs = "+init=epsg:25832")
 layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:25832")
 
-figure_2e = ggplot(data = background_map) +
+figure_04 = ggplot(data = background_map) +
   geom_sf() + 
   geom_sf(data = layer, aes(fill = cases)) +
   scale_fill_viridis_c(trans = "log10") +
