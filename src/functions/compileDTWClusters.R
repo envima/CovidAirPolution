@@ -74,38 +74,40 @@ compileDTW = function(data){
   clstr_avg_covid$weekday_c = compileDetrendedTimeSeries(data = clstr_avg_covid$weekday, comp = "weekday_c")
   
   # Compile detrended dataset with cluster information.
-  clstr_avg_pm_glm_time = lapply(seq(6), function(i){
-    
-    tmp_pm = clstr_avg_pm[clstr_avg_pm$cluster_pm == 
-                            unique(clstr_avg_pm$cluster_pm)[i] ,]
-
-    tmp = compileDetrendedTimeSeries(data = tmp_pm,
-                                     frml = "new_cases ~ date + weekday",
-                                     comp = "detr")
-    tmp_pm$new_cases_glm_time = tmp$pred_val
-    tmp_pm$new_cases_glm_time_residuals = tmp$res_val
-    
-    return(tmp_pm)
-  })
-  clstr_avg_pm_glm_time = do.call("rbind", clstr_avg_pm_glm_time)
-
+  # clstr_avg_pm_glm_time = lapply(seq(6), function(i){
+  #   
+  #   tmp_pm = clstr_avg_pm[clstr_avg_pm$cluster_pm == 
+  #                           unique(clstr_avg_pm$cluster_pm)[i] ,]
+  # 
+  #   tmp = compileDetrendedTimeSeries(data = tmp_pm,
+  #                                    frml = "new_cases ~ date + weekday",
+  #                                    comp = "detr")
+  #   tmp_pm$new_cases_glm_time = tmp$pred_val
+  #   tmp_pm$new_cases_glm_time_residuals = tmp$res_val
+  #   
+  #   return(tmp_pm)
+  # })
+  # clstr_avg_pm_glm_time = do.call("rbind", clstr_avg_pm_glm_time)
+  # 
+  # 
+  # clstr_avg_covid_glm_time = lapply(seq(6), function(i){
+  #   
+  #   tmp_covid = clstr_avg_covid[clstr_avg_covid$cluster_covid == 
+  #                                 unique(clstr_avg_covid$cluster_covid)[i] ,]
+  #   tmp = compileDetrendedTimeSeries(data = tmp_covid,
+  #                                    frml = "new_cases ~ date + weekday",
+  #                                    comp = "detr")
+  #   tmp_covid$new_cases_glm_time = tmp$pred_val
+  #   tmp_covid$new_cases_glm_time_residuals = tmp$res_val
+  #   
+  #   return(tmp_covid)
+  # })
+  # clstr_avg_covid_glm_time = do.call("rbind", clstr_avg_covid_glm_time)
   
-  clstr_avg_covid_glm_time = lapply(seq(6), function(i){
-    
-    tmp_covid = clstr_avg_covid[clstr_avg_covid$cluster_covid == 
-                                  unique(clstr_avg_covid$cluster_covid)[i] ,]
-    tmp = compileDetrendedTimeSeries(data = tmp_covid,
-                                     frml = "new_cases ~ date + weekday",
-                                     comp = "detr")
-    tmp_covid$new_cases_glm_time = tmp$pred_val
-    tmp_covid$new_cases_glm_time_residuals = tmp$res_val
-    
-    return(tmp_covid)
-  })
-  clstr_avg_covid_glm_time = do.call("rbind", clstr_avg_covid_glm_time)
-  
-  return(list(clstr = clstr, clstr_avg = clstr_avg, 
-              clstr_avg_pm_glm_time = clstr_avg_pm_glm_time, 
-              clstr_avg_covid_glm_time = clstr_avg_covid_glm_time,
+  return(list(clstr = clstr, 
+              clstr_avg_pm = clstr_avg_pm,
+              clstr_avg_covid = clstr_avg_covid, 
+              # clstr_avg_pm_glm_time = clstr_avg_pm_glm_time, 
+              # clstr_avg_covid_glm_time = clstr_avg_covid_glm_time,
               clstr_map = clstr_map))
 }

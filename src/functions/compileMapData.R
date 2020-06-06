@@ -4,9 +4,16 @@
 compileMapDE = function(nuts){
   
   map = lapply(nuts, function(n){
-    cbind(n[n$date == as.POSIXct("2020-04-01"),],
+    
+    tmp = cbind(n[n$date == as.POSIXct("2020-04-01"),],
           nuts3Area = st_area(n[1, c("nuts3Name", "nuts3Code")]))
+    tmp$pm_mean = mean(n$pm_mean[n$date >= as.POSIXct("2020-02-15") &
+                                   n$date <= as.POSIXct("2020-04-01")])
+    tmp$pm_median = mean(n$pm_median[n$date >= as.POSIXct("2020-02-15") &
+                                   n$date <= as.POSIXct("2020-04-01")])
+    return(tmp)
   })
   map = do.call("rbind", map)
   return(map)
 }
+

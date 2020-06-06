@@ -45,7 +45,7 @@ compileLaggedGAM = function(data, pm = "org", frml, nlags = 14,
           tmp_gam = gam(frml, family = quasipoisson(link = "log"), data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end,])
           
           test = summary(tmp_gam)
-          data.frame(nuts3_code = n,
+          data.frame(nuts3Code = n,
                      cluster = tmp$cluster_covid[1],
                      cluster_pm = tmp$cluster_pm[1],
                      pm_mean_mean = mean(tmp$pm_mean),

@@ -77,32 +77,32 @@ getCovidDE = function(){
     cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_loess"] = 
       c(0, diff(cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_loess"]))
     
-    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                     frml = "cases ~ date + weekday",
-                                     comp = "detr")
-    cov_nuts3[cov_nuts3$nuts3Code == c, "cases_glm_time"] = tmp$pred_val
-    cov_nuts3[cov_nuts3$nuts3Code == c, "cases_glm_time_residuals"] = tmp$res_val
-
-
-    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                     frml = "new_cases ~ date + weekday",
-                                     comp = "detr")
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_glm_time"] = tmp$pred_val
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_glm_time_residuals"] = tmp$res_val
-
-
-    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                     frml = "deaths ~ date + weekday",
-                                     comp = "detr")
-    cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_glm_time"] = tmp$pred_val
-    cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_glm_time_residuals"] = tmp$res_val
-
-
-    tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
-                                     frml = "new_deaths ~ date + weekday",
-                                     comp = "detr")
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_glm_time"] = tmp$pred_val
-    cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_glm_time_residuals"] = tmp$res_val
+    # tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+    #                                  frml = "new_cases ~ date + weekday",
+    #                                  comp = "detr")
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "cases_glm_time"] = tmp$pred_val
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "cases_glm_time_residuals"] = tmp$res_val
+    # 
+    # 
+    # tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+    #                                  frml = "new_cases ~ date + weekday",
+    #                                  comp = "detr")
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_glm_time"] = tmp$pred_val
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "new_cases_glm_time_residuals"] = tmp$res_val
+    # 
+    # 
+    # tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+    #                                  frml = "deaths ~ date + weekday",
+    #                                  comp = "detr")
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_glm_time"] = tmp$pred_val
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "deaths_glm_time_residuals"] = tmp$res_val
+    # 
+    # 
+    # tmp = compileDetrendedTimeSeries(data = cov_nuts3[cov_nuts3$nuts3Code == c, ],
+    #                                  frml = "new_deaths ~ date + weekday",
+    #                                  comp = "detr")
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_glm_time"] = tmp$pred_val
+    # cov_nuts3[cov_nuts3$nuts3Code == c, "new_deaths_glm_time_residuals"] = tmp$res_val
     
   }
   
