@@ -40,7 +40,7 @@ if(compile_data){
 
 # [1] "LK Böblingen"                "LK Breisgau-Hochschwarzwald" "LK Erzgebirgskreis"          "LK Esslingen"                "LK Ludwigsburg"             
 # [6] "LK Mansfeld-Südharz"         "LK Nordfriesland"            "LK Oberhavel"                "LK Schwarzwald-Baar-Kreis"   "LK Uelzen"                  
-# [11] "SK Freiburg i.Breisgau"      "SK Heidelberg"               "SK Heilbronn"                "SK Pforzheim"  
+# [11] "SK Freiburg i.Breisgau"      "SK Heidelberg"               "SK Heilbronn"                "SK Pforzheim"  "LK Reutlingen"
 ```
 
 
@@ -204,7 +204,8 @@ auxinf = lapply(unique(de_clstr$nuts3Code), function(n){
                    date_start = tmp$date[which(tmp$cases > 0)[1]],
                    date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
                    daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-                   cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)])
+                   cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-04-01")])
   
   return(tmp)
 })
@@ -276,19 +277,23 @@ ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -2,]) +
 t_matrix = reshape(de_model_lag[, c("nuts3Code", "t", "lag")], idvar = "nuts3Code", timevar = "lag", direction = "wide")
 rownames(t_matrix) = t_matrix$nuts3Code
 
-vars = c("pm_mean", "pop_total", "pop_dens", "centroid_lat", "centroid_lon", "st_area")
-t_environment = aggregate(st_drop_geometry(de_clstr[, vars]), by = list(de_clstr$nuts3Code), FUN = mean)
-names(t_environment)[1] = "nuts3Code"
-t_environment = merge(t_environment, auxinf)
+# vars = c("pm_mean", "pop_total", "pop_dens", "centroid_lat", "centroid_lon", "st_area")
+# t_environment = aggregate(st_drop_geometry(de_clstr[, vars]), by = list(de_clstr$nuts3Code), FUN = mean)
+# names(t_environment)[1] = "nuts3Code"
+# t_environment = merge(t_environment, auxinf)
+
+t_environment = merge(germany$de_nuts3_map, auxinf)
+t_environment = st_drop_geometry(t_environment)
 t_matrix = merge(t_matrix, t_environment, by = "nuts3Code")
-vars = c(vars, "date_start", "first_shutdown", "max_shutdown", "cases_at_max", "daily_max")
+# vars = c(vars, "date_start", "first_shutdown", "max_shutdown", "cases_at_max", "daily_max", "cases_on_0401")
 
 # pc = prcomp(t_matrix[, 2:22])
 # autoplot(pc, data = t_matrix, colour = "centroid_lat", loadings = TRUE, loadings.colour = 'blue',
 #          loadings.label = TRUE)
 
 set.seed(01042020)
-rd = rda(t_matrix[, 2:22], t_matrix[, c("pm_mean", "pop_dens", "centroid_lat", "centroid_lon")])
+rd = rda(t_matrix[, seq(which(colnames(t_matrix) == "t.0"), which(colnames(t_matrix) == "t.-14"))], 
+         t_matrix[, c("pm_mean", "pop_dens", "cases", "centroid_lat", "centroid_lon")])
 plot(rd, type = "points", scaling = 0)
 
 rd_scores = scores(rd)
@@ -411,20 +416,56 @@ map_rda1_score
 
 # Significant and positive t values
 p = 0.1
-layer1 = st_set_geometry(de_model_geo$test_geo[de_model_geo$test_geo$t > 0 &
+
+lag_analysis = st_set_geometry(de_model_geo$test_geo[de_model_geo$test_geo$t > 0 &
                                                 de_model_geo$test_geo$p < p, ], 
                         de_model_geo$test_geo$geometry[de_model_geo$test_geo$t > 0 &
                                                 de_model_geo$test_geo$p < p, ])
-layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:25832")
+
+lag_analysis = lapply(unique(lag_analysis$nuts3Code), function(n){
+  data.frame(nuts3Code = lag_analysis$nuts3Code[lag_analysis$nuts3Code == n][1],
+             min_lag = max(lag_analysis$lag[lag_analysis$nuts3Code == n]),
+             mean_lag = mean(lag_analysis$lag[lag_analysis$nuts3Code == n]),
+             max_lag = min(lag_analysis$lag[lag_analysis$nuts3Code == n]),
+             geometry = lag_analysis$geometry[lag_analysis$nuts3Code == n][1])
+})
+lag_analysis = do.call("rbind", lag_analysis)
+lag_analysis = merge(lag_analysis, germany$de_nuts3_map[, c("nuts3Code", "pm_mean", "cases", "pop_dens")])
+hist(lag_analysis$min_lag)
+hist(lag_analysis$mean_lag)
+hist(lag_analysis$max_lag)
+
+non_significant_regions = germany$de_nuts3_map[!(germany$de_nuts3_map$nuts3Code %in% lag_analysis$nuts3Code),]
+
+summary(germany$de_nuts3_map[,c("nuts3Code", "pm_mean", "cases", "pop_dens")])
+summary(lag_analysis)
+summary(non_significant_regions[,c("nuts3Code", "pm_mean", "cases", "pop_dens")])
+
+quantile(non_significant_regions$pop_dens, probs = seq(0, 1, 0.1))
+quantile(lag_analysis$pop_dens, probs = seq(0, 1, 0.1))
+
+wilcox.test(non_significant_regions$cases, lag_analysis$cases)
+wilcox.test(non_significant_regions$pm_mean, lag_analysis$pm_mean)
+wilcox.test(non_significant_regions$pop_dens, lag_analysis$pop_dens)
+
+t.test(non_significant_regions$cases, lag_analysis$cases)
+t.test(non_significant_regions$pm_mean, lag_analysis$pm_mean)
+t.test(non_significant_regions$pop_dens, lag_analysis$pop_dens)
+
+layer1 = st_set_geometry(lag_analysis, lag_analysis$geometry)
 layer1 = st_transform(layer1, crs = "+init=epsg:25832")
+
+background_map = st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
+                              crs = "+init=epsg:25832")
+layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:25832")
 
 map_t_sig = ggplot(data = background_map) +
   geom_sf() + 
   geom_sf(data = layer) +
-  geom_sf(data = layer1, aes(fill = lag)) +
+  geom_sf(data = layer1, aes(fill = mean_lag)) +
   scale_fill_viridis_c() +
   theme(legend.position="bottom") +
-  labs(fill = "Max. lag of positive effect size") +
+  labs(fill = "Mean lag of positive effect size") +
   coord_sf(xlim = c((st_bbox(layer)["xmin"] - 10000), 
                     (st_bbox(layer)["xmax"] + 10000)), 
            ylim = c((st_bbox(layer)["ymin"] - 25000),
@@ -434,7 +475,6 @@ map_t_sig = ggplot(data = background_map) +
                          pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
                          style = north_arrow_minimal)
 map_t_sig
-
 ```
 
 
