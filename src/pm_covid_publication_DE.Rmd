@@ -233,7 +233,7 @@ de_model_lag = compileLaggedGAM(data = de_clstr,
                                 pm = "org", 
                                 frml = "new_cases ~ s(seq(length(date))) + weekday + pm_mean_lag",
                                 nlags = 14,
-                                subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30))
+                                subset_var = "new_cases", subset_thv = 9, individual = "start", ndays = c(0, 30))
 
 de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
 
@@ -285,6 +285,7 @@ rownames(t_matrix) = t_matrix$nuts3Code
 t_environment = merge(germany$de_nuts3_map, auxinf)
 t_environment = st_drop_geometry(t_environment)
 t_matrix = merge(t_matrix, t_environment, by = "nuts3Code")
+t_matrix$pop_dens_log10 = log10(t_matrix$pop_dens)
 # vars = c(vars, "date_start", "first_shutdown", "max_shutdown", "cases_at_max", "daily_max", "cases_on_0401")
 
 # pc = prcomp(t_matrix[, 2:22])
@@ -293,7 +294,7 @@ t_matrix = merge(t_matrix, t_environment, by = "nuts3Code")
 
 set.seed(01042020)
 rd = rda(t_matrix[, seq(which(colnames(t_matrix) == "t.0"), which(colnames(t_matrix) == "t.-14"))], 
-         t_matrix[, c("pm_mean", "pop_dens", "cases", "centroid_lat", "centroid_lon")])
+         t_matrix[, c("pm_mean", "pop_dens_log10", "cases", "centroid_lat", "centroid_lon")])
 plot(rd, type = "points", scaling = 0)
 
 rd_scores = scores(rd)
