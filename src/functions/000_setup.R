@@ -18,13 +18,16 @@ project_folders = c("data/",
                     "data/report-data-platform-16133-94427-misc/",
                     "data/report-data-platform-16229-259611-lombardy",
                     "data/tmp/",
+                    "data/population/",
                     "data/figures/")
 
-libs = c("doParallel", "caret", "data.table", "dtwclust", "ggplot2", "htmlTable", "htmltools", 
+libs = c("doParallel", "caret", "ggfortify", "data.table", "dtwclust", "ggplot2", 
+         "htmlTable", "htmltools", 
          "jsonlite", "plotly", "mapview", "stringr", "sf",
          "sf", "wavelets", "wmtsa", "mgcv", "biwavelet", "rnaturalearth", 
          "rnaturalearthhires", "tidygeocoder", "ggspatial", "cowplot",
-         "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp")
+         "tidyverse","tidyquant","timetk","forcats","tidyr", "WaveletComp",
+         "vegan")
 
 envrmt = createEnvi(root_folder = root_folder,
                     fcts_folder = fcts_folder,

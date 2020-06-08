@@ -3,7 +3,7 @@
 compileDTW = function(data){
   
   new_cases = lapply(data, function(n){
-    as.data.frame(n[, "new_cases_detr"])[, -2]
+    as.data.frame(n[, "new_cases"])[, -2]
   })
   
   pm_mean = lapply(data, function(n){
@@ -11,25 +11,27 @@ compileDTW = function(data){
   })
   
   # Compute DTW clusters.
-  new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 4,
-                                  distance = "dtw_basic", centroid = "pam", seed=01042020, 
-                                  trace = TRUE,
+  new_cases_dtw_cluster = tsclust(new_cases, type = "partitional", k = 6,
+                                  distance = "dtw_basic", centroid = "pam", 
+                                  seed=01042020, trace = TRUE,
                                   args = tsclust_args(dist = list(window.size = 10)))
   
-  pm_dtw_cluster = tsclust(pm_mean, type = "partitional", k = 4,
-                             distance = "dtw_basic", centroid = "pam", seed=01042020, 
-                             trace = TRUE,
-                             args = tsclust_args(dist = list(window.size = 10))) 
+  pm_dtw_cluster = tsclust(pm_mean, type = "partitional", k = 6,
+                           distance = "dtw_basic", centroid = "pam", 
+                           seed=01042020, trace = TRUE,
+                           args = tsclust_args(dist = list(window.size = 10))) 
   
   # Create DTW cluster maps.
   clstr_map = lapply(seq(length(data)), function(c){
     tmp = data[[c]][1, ]
-    tmp$cluster_covid = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
-                                         new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
-                                         ")"))
-    tmp$cluster_pm = as.factor(paste0("c ", pm_dtw_cluster@cluster[c], " n=(", 
-                                        pm_dtw_cluster@clusinfo[pm_dtw_cluster@cluster[c], 1],
-                                        ")"))
+    tmp$cluster_covid = 
+      as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
+                       new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
+                       ")"))
+    tmp$cluster_pm = 
+      as.factor(paste0("c ", pm_dtw_cluster@cluster[c], " n=(", 
+                       pm_dtw_cluster@clusinfo[pm_dtw_cluster@cluster[c], 1],
+                       ")"))
     return(tmp)
   })
   clstr_map = do.call("rbind", clstr_map)
@@ -37,52 +39,75 @@ compileDTW = function(data){
   # Add cluster information to dataset.
   clstr = lapply(seq(length(data)), function(c){
     
-    tmp = data[[c]][, c("date", "pm_mean", "nuts3Code", "new_cases", 
-                            "new_cases_smooth", "cases", "cases_smooth", 
-                            "deaths_smooth", "new_deaths", "new_deaths_smooth")]
-    tmp$cluster_covid = as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
-                                         new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
-                                         ")"))
-    tmp$cluster_pm = as.factor(paste0("c ", pm_dtw_cluster@cluster[c], " n=(", 
-                                        pm_dtw_cluster@clusinfo[pm_dtw_cluster@cluster[c], 1],
-                                        ")"))
+    tmp = data[[c]]
+    tmp$cluster_covid = 
+      as.factor(paste0("c ", new_cases_dtw_cluster@cluster[c], " n=(", 
+                       new_cases_dtw_cluster@clusinfo[new_cases_dtw_cluster@cluster[c], 1],
+                       ")"))
+    tmp$cluster_pm = 
+      as.factor(paste0("c ", pm_dtw_cluster@cluster[c], " n=(", 
+                       pm_dtw_cluster@clusinfo[pm_dtw_cluster@cluster[c], 1],
+                       ")"))
     return(tmp)
   })
   clstr = do.call("rbind", clstr)
   
-  clstr = as.data.frame(clstr)[, -ncol(clstr)]
-  # clstr = clstr[clstr$date >= as.POSIXct("2020-02-15", tz = "CET"), ]
   clstr$cluster_covid = factor(clstr$cluster_covid, levels = sort(unique(as.character(clstr$cluster_covid))))
   clstr$cluster_pm = factor(clstr$cluster_pm, levels = sort(unique(as.character(clstr$cluster_pm))))
-  clstr$weekday = weekdays(clstr$date)
-  clstr$weekday_c = compileDetrendedTimeSeries(data = clstr$weekday, comp = "weekday_c")
   
   # Compile dataset averaged over each cluster
-  clstr_avg = clstr[, -which(names(clstr) %in% c("nuts3Code", "weekday", "weekday_c"))]
-  clstr_avg = aggregate(. ~ date + cluster_pm, data = clstr_avg, FUN = mean)
-  clstr_avg$date_day = paste(clstr_avg$date, substr(weekdays(clstr_avg$date), 1, 1))
+  clstr_avg = st_drop_geometry(clstr[, c("date", "pm_mean", "pm_median", "cases", 
+                                         "deaths", "new_cases", "new_deaths", 
+                                         "pop_total", "pop_male", "pop_female", "pop_dens",
+                                         "cluster_covid", "cluster_pm")])
+  
+  clstr_avg_pm = aggregate(. ~ date + cluster_pm, 
+                           data = clstr_avg[, -which((names(clstr_avg) == "cluster_covid"))], FUN = mean)
+  clstr_avg_pm$date_day = paste(clstr_avg_pm$date, substr(weekdays(clstr_avg_pm$date), 1, 1))
+  clstr_avg_pm$weekday = weekdays(clstr_avg_pm$date)
+  clstr_avg_pm$weekday_c = compileDetrendedTimeSeries(data = clstr_avg_pm$weekday, comp = "weekday_c")
+  
+  clstr_avg_covid = aggregate(. ~ date + cluster_covid, 
+                              data = clstr_avg[, -which((names(clstr_avg) == "cluster_pm"))], FUN = mean)
+  clstr_avg_covid$date_day = paste(clstr_avg_covid$date, substr(weekdays(clstr_avg_covid$date), 1, 1))
+  clstr_avg_covid$weekday = weekdays(clstr_avg_covid$date)
+  clstr_avg_covid$weekday_c = compileDetrendedTimeSeries(data = clstr_avg_covid$weekday, comp = "weekday_c")
   
   # Compile detrended dataset with cluster information.
-  clstr_avg_detr = lapply(unique(clstr_avg$cluster_pm), function(c){
-    tmp = clstr_avg[clstr_avg$cluster_pm == c,]
-    tmp$weekday = weekdays(tmp$date)
-    tmp$weekday_c = compileDetrendedTimeSeries(data = tmp$weekday, comp = "weekday_c")
-    detr = compileDetrendedTimeSeries(data = tmp,
-                                      vars = c("new_cases", "date", "weekday_c"),
-                                      comp = "detr")
-    clstr_avg[clstr_avg$cluster_pm == c, "new_cases_detr"] = detr
-    detr = compileDetrendedTimeSeries(data = tmp,
-                                      vars = c("new_cases_smooth", "date", "weekday_c"),
-                                      comp = "detr")
-    clstr_avg[clstr_avg$cluster_pm == c, "new_cases_smooth_detr"] = detr
-    return(clstr_avg[clstr_avg$cluster_pm == c,])
-  })
-  clstr_avg_detr = do.call("rbind", clstr_avg_detr)
+  # clstr_avg_pm_glm_time = lapply(seq(6), function(i){
+  #   
+  #   tmp_pm = clstr_avg_pm[clstr_avg_pm$cluster_pm == 
+  #                           unique(clstr_avg_pm$cluster_pm)[i] ,]
+  # 
+  #   tmp = compileDetrendedTimeSeries(data = tmp_pm,
+  #                                    frml = "new_cases ~ date + weekday",
+  #                                    comp = "detr")
+  #   tmp_pm$new_cases_glm_time = tmp$pred_val
+  #   tmp_pm$new_cases_glm_time_residuals = tmp$res_val
+  #   
+  #   return(tmp_pm)
+  # })
+  # clstr_avg_pm_glm_time = do.call("rbind", clstr_avg_pm_glm_time)
+  # 
+  # 
+  # clstr_avg_covid_glm_time = lapply(seq(6), function(i){
+  #   
+  #   tmp_covid = clstr_avg_covid[clstr_avg_covid$cluster_covid == 
+  #                                 unique(clstr_avg_covid$cluster_covid)[i] ,]
+  #   tmp = compileDetrendedTimeSeries(data = tmp_covid,
+  #                                    frml = "new_cases ~ date + weekday",
+  #                                    comp = "detr")
+  #   tmp_covid$new_cases_glm_time = tmp$pred_val
+  #   tmp_covid$new_cases_glm_time_residuals = tmp$res_val
+  #   
+  #   return(tmp_covid)
+  # })
+  # clstr_avg_covid_glm_time = do.call("rbind", clstr_avg_covid_glm_time)
   
-  # clstr_avg_detr = clstr_avg_detr[
-  #   clstr_avg_detr$date >= as.POSIXct("2020-02-15 CET") & 
-  #     clstr_avg_detr$date <= as.POSIXct("2020-04-01 CEST"), ]
-  
-  return(list(clstr = clstr, clstr_avg = clstr_avg, 
-              clstr_avg_detr = clstr_avg_detr, clstr_map = clstr_map))
+  return(list(clstr = clstr, 
+              clstr_avg_pm = clstr_avg_pm,
+              clstr_avg_covid = clstr_avg_covid, 
+              # clstr_avg_pm_glm_time = clstr_avg_pm_glm_time, 
+              # clstr_avg_covid_glm_time = clstr_avg_covid_glm_time,
+              clstr_map = clstr_map))
 }

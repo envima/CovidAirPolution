@@ -5,7 +5,7 @@
 #' Start date of the time series is set to 2020-02-15.
 #' 
 
-makedfUBA = function(flist){
+makedfUBA = function(flist, start_date = as.POSIXct("2020-01-01")){
   
   geo = read.table(file.path(envrmt$path_DE, "station_All_convert.csv"), 
                    skip = 1, header = TRUE, sep = ";", dec = ",")
@@ -56,7 +56,7 @@ makedfUBA = function(flist){
       }
     } 
     act$pm = filled
-    act = act[act$date >= as.POSIXct("2020-02-15"), ]
+    act = act[act$date >= start_date, ]
     if(any(is.na(act$pm))){
       print(act$stationcode)
     }
