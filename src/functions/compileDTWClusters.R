@@ -6,8 +6,8 @@ compileDTW = function(data){
     as.data.frame(n[, "new_cases"])[, -2]
   })
   
-  pm_mean = lapply(data, function(n){
-    as.data.frame(n[, "pm_mean"])[, -2]
+  pm_median = lapply(data, function(n){
+    as.data.frame(n[, "pm_median"])[, -2]
   })
   
   # Compute DTW clusters.
@@ -16,7 +16,7 @@ compileDTW = function(data){
                                   seed=01042020, trace = TRUE,
                                   args = tsclust_args(dist = list(window.size = 10)))
   
-  pm_dtw_cluster = tsclust(pm_mean, type = "partitional", k = 6,
+  pm_dtw_cluster = tsclust(pm_median, type = "partitional", k = 6,
                            distance = "dtw_basic", centroid = "pam", 
                            seed=01042020, trace = TRUE,
                            args = tsclust_args(dist = list(window.size = 10))) 

@@ -31,14 +31,14 @@ compileLaggedGAM = function(data, pm = "org", frml, nlags = 14,
           
           if(pm == "org"){
             tmp = tmp %>%
-              mutate(pm_mean_lag = dplyr::lag(pm_mean, n = (l), default = NA))
+              mutate(pm_median_lag = dplyr::lag(pm_median, n = (l), default = NA))
           } else {
             tmp = tmp %>%
-              mutate(pm_mean_lag = dplyr::lag(pm_mean_dt, n = (l), default = NA))
+              mutate(pm_median_lag = dplyr::lag(pm_median_dt, n = (l), default = NA))
           }
           
           
-          frml =  new_cases ~ s(seq(length(date))) + weekday + pm_mean_lag
+          frml =  new_cases ~ s(seq(length(date))) + weekday + pm_median_lag
           
           frml = as.formula(frml)      
           set.seed(01042020)
@@ -48,10 +48,10 @@ compileLaggedGAM = function(data, pm = "org", frml, nlags = 14,
           data.frame(nuts3Code = n,
                      cluster = tmp$cluster_covid[1],
                      cluster_pm = tmp$cluster_pm[1],
-                     pm_mean_mean = mean(tmp$pm_mean),
+                     pm_median_mean = mean(tmp$pm_median),
                      lag = -l, 
-                     t = test$p.t["pm_mean_lag"],
-                     p = test$p.pv["pm_mean_lag"],
+                     t = test$p.t["pm_median_lag"],
+                     p = test$p.pv["pm_median_lag"],
                      obsprd_start = obsprd_start,
                      obsprd_end = obsprd_end)
         })

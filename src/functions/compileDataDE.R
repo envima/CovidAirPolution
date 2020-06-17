@@ -140,10 +140,6 @@ compileDataDE = function(start_date = as.POSIXct("2020-01-15"),
   # Subset analysis regions to complete/valid ones -----------------------------
   de_nuts3_mean = subsetAnalysisData(de_nuts3_mean, start_date, end_date)
   
-  # Exclude Böblingen because of obviously wrong PM2.5 observations.
-  de_nuts3_mean = de_nuts3_mean[which(!names(de_nuts3_mean) == "LK Böblingen")]
-  de_nuts3_mean = de_nuts3_mean[which(!names(de_nuts3_mean) == "LK Reutlingen")]
-  
   
   # Compile data for overview maps ---------------------------------------------
   de_nuts3_map = compileMapDE(de_nuts3_mean)
