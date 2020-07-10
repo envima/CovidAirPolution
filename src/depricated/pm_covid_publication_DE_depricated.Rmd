@@ -1,0 +1,775 @@
+---
+title: "Correlation of PM concentrations and SARS-CoV-2 infection"
+always_allow_html: true
+editor_options:
+  chunk_output_type: console
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Set up working environment and defaults --------------------------------------
+library(envimaR)
+if(Sys.info()[["nodename"]] == "PC19616"){
+  source("~/plygrnd/CovidAirPolution/CovidAirPolution/src/functions/000_setup.R")
+} else {
+  source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")  
+}
+compile_data = FALSE
+
+start_date = as.POSIXct("2020-02-15")
+end_date = as.POSIXct("2020-04-20")
+pm = "PM10"  # PM10
+Sys.setlocale("LC_TIME", "English") 
+
+# Load Germany -----------------------------------------------------------------
+if(pm == "PM2.5"){
+  savefile = "germany_extended_025.RDS"
+} else {
+  savefile = "germany_extended_100.RDS"
+}
+if(compile_data){
+  germany = compileDataDE(start_date = start_date, end_date = end_date,
+                                  pm = pm)
+  saveRDS(germany, file.path(envrmt$path_tmp, savefile))
+} else {
+  germany = readRDS(file.path(envrmt$path_tmp, savefile))
+}
+
+#  [1] "LK Böblingen"                "LK Breisgau-Hochschwarzwald" "LK Erzgebirgskreis"          "LK Esslingen"               
+#  [5] "LK Ludwigsburg"              "LK Mansfeld-Südharz"         "LK Nordfriesland"            "LK Oberhavel"               
+#  [9] "LK Schwarzwald-Baar-Kreis"   "LK Uelzen"                   "SK Freiburg i.Breisgau"      "SK Heidelberg"              
+# [13] "SK Heilbronn"                "SK Pforzheim" 
+```
+
+
+
+# Geographical distribution of SARS-CoV2 infections in Germany
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
+print(paste("Start date for analysis: ", start_date))
+print(paste("End date for analysis:   ", end_date))
+print(paste("PM values:               ", pm))
+
+germany$de_nuts3_map$log_cases = log10(germany$de_nuts3_map$cases)
+mapview(germany$de_nuts3_map, zcol = "log_cases")
+```
+
+
+
+# Countrywide temporal development of PM values and SARS-CoV2 infections in Germany
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_avg = germany$de_avg
+
+de_avg_gam_time_03 = de_avg[de_avg$date >= as.POSIXct("2020-02-15") & de_avg$date <= as.POSIXct("2020-04-20"),]
+set.seed(01042020)
+# de_avg_gam_time = glm(new_cases ~ date + weekday , family = quasipoisson, data = de_avg_gam_time_03)
+de_avg_gam_time = gam(new_cases ~ s(seq(length(date))) + weekday , family = quasipoisson, data = de_avg_gam_time_03)
+de_avg_gam_time_03$predicted = predict(de_avg_gam_time, de_avg_gam_time_03, type = "response")
+de_avg_gam_time_03$residuals = residuals(de_avg_gam_time, type="response")
+
+figure_de_avg = ggplot() + 
+  geom_line(data = de_avg, aes(x = date, y = pm_median, color = "Daily median PM10")) +
+  geom_point(data = de_avg, aes(x = date, y = pm_median, color = "Daily median PM10")) + 
+  geom_line(data = de_avg, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_point(data = de_avg, aes(x = date, y = new_cases, color = "Daily new cases")) + 
+  geom_line(data = de_avg_gam_time_03, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_point(data = de_avg_gam_time_03, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_line(data = de_avg_gam_time_03, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_point(data = de_avg_gam_time_03, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  # geom_text(aes(x = as.POSIXct("2020-03-14"), label="Start of contact restrictions \n", y=-1), colour="black", angle=90, size = 3) +
+  # geom_text(aes(x = as.POSIXct("2020-03-17"), label="Start of shut down \n", y=-1), colour="black", angle=90, size = 3) +
+  labs(x = "Date and day of week", y = bquote("Infections, PM10 " ~µm/m^3)) +
+  theme_bw() + 
+  scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") + 
+  scale_color_manual(values=c("#b2df8a", "#1f78b4", "#a6cee3")) +
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        legend.position = c(0.2, 0.7), axis.text.x = element_text(angle=90, hjust=0.95, vjust=0.2), 
+        legend.title = element_blank(), panel.background = element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+figure_de_avg
+
+
+lims <- as.POSIXct(c(min(de_avg$date), max(de_avg$date)))
+
+figure_de_avg_res = ggplot() + 
+  geom_line(data = de_avg_gam_time_03, aes(x = date, y = residuals, color = "Daily new cases, residuals")) +
+  geom_point(data = de_avg_gam_time_03, aes(x = date, y = residuals, color = "Daily new cases, residuals")) +
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  geom_text(aes(x = as.POSIXct("2020-03-14"), label="Start of contact restrictions \n", y=-0.6), colour="black", angle=90, size = 2) +
+  geom_text(aes(x = as.POSIXct("2020-03-17"), label="Start of shut down \n", y=-0.65), colour="black", angle=90, size = 2) +
+  labs(x = "Date and day of week", y = "Residuals") +
+  theme_bw() + 
+  scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day", limits = lims) +
+  scale_color_manual(values=c("#d95f02")) +
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        legend.position = "none", axis.text.x = element_text(angle=90, hjust=0.95, vjust=0.2), 
+        legend.title = element_blank(), panel.background = element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+figure_de_avg_res
+```
+
+
+
+
+
+
+
+# Correlation of PM and SARS-CoV2 infections
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_clstr = germany$de_clstr$clstr
+
+auxinf = lapply(unique(de_clstr$nuts3Code), function(n){
+  tmp = de_clstr[de_clstr$nuts3Code == n, ]
+  tmp$date_numeric = seq(nrow(tmp))
+  
+  tmp = data.frame(nuts3Code = tmp$nuts3Code[1],
+                   date_start = tmp$date[which(tmp$cases > 0)[1]],
+                   date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-04-01")])
+  
+  return(tmp)
+})
+auxinf = do.call("rbind", auxinf)
+auxinf$difftime_start_max = difftime(auxinf$date_max, auxinf$date_start, units = "days")
+auxinf$first_shutdown = difftime(auxinf$date_start, as.POSIXct("2020-03-17"), units = "days")
+auxinf$max_shutdown = difftime(auxinf$date_max, as.POSIXct("2020-03-17"), units = "days")
+
+summary(as.numeric(auxinf$difftime_start_max))
+summary(as.numeric(auxinf$first_shutdown))
+summary(as.numeric(auxinf$max_shutdown))
+summary(auxinf$daily_max)
+
+hist(as.numeric(auxinf$difftime_start_max))
+hist(as.numeric(auxinf$first_shutdown))
+hist(as.numeric(auxinf$max_shutdown))
+
+# de_model_lag = compileLaggedGLM(data = de_clstr,  
+#                                 pm = "org", 
+#                                 frml = "new_cases ~ date + weekday + pm_median_lag",
+#                                 nlags = 14,
+#                                 subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30))
+
+de_model_lag = compileLaggedGAM(data = de_clstr,  
+                                pm = "org", 
+                                frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
+                                nlags = 15,
+                                subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30))
+
+de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
+
+tstat = lapply(seq(0, -15), function(i){
+  tmp = t.test(de_model_lag$t[de_model_lag$lag == i])
+  data.frame(lag = i,
+             t = tmp$statistic,
+             p = tmp$p.value,
+             estimate = tmp$estimate,
+             conf_min = tmp$conf.int[1],
+             conf_max = tmp$conf.int[2])
+  
+})
+tstat = do.call("rbind", tstat)
+tstat[tstat$p < 0.1,]
+
+de_model_lag$fillcol = FALSE
+de_model_lag$fillcol[de_model_lag$lag %in% tstat[tstat$p < 0.1, "lag"]] = TRUE
+
+figure_effectsize =  ggplot(data = de_model_lag, aes(x = as.factor(lag), y = t, fill = fillcol, alpha = fillcol)) + 
+  geom_boxplot() + 
+  theme_bw() +
+  geom_hline(yintercept = c(0), linetype="dashed", color = "black") + 
+  labs(x = "Time lag [days]", y = "Effect size") + 
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        panel.background = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_fill_manual(values=c("grey", "darkgreen")) +
+  scale_alpha_manual(values=c(0.2,0.6)) + 
+  theme(legend.position = "none")
+figure_effectsize
+
+
+de_model_lag_mean = aggregate(de_model_lag$t ~ de_model_lag$lag, FUN = mean)
+de_model_lag_sd = aggregate(de_model_lag$t ~ de_model_lag$lag, FUN = sd)
+colnames(de_model_lag_mean) = c("lag", "t_mean")
+colnames(de_model_lag_sd) = c("lag", "t_sd")
+
+de_model_lag_mean_sd = merge(de_model_lag_mean, de_model_lag_sd)
+de_model_lag_mean_sd$sig = NA
+de_model_lag_mean_sd$sig[match(tstat[tstat$p < 0.1, "lag"], de_model_lag_mean_sd$lag)] =
+  de_model_lag_mean_sd$t_mean[match(tstat[tstat$p < 0.1, "lag"], de_model_lag_mean_sd$lag)]
+
+figure_effectsize_errorbars =  ggplot(data = de_model_lag_mean_sd, aes(x = as.factor(lag), y = t_mean)) + 
+  geom_point() + 
+  geom_point(aes(x = as.factor(lag), y = sig), color = "red") +
+  geom_line() + 
+  geom_errorbar(aes(ymin = t_mean - t_sd, ymax = t_mean + t_sd)) +
+  theme_bw() +
+  geom_hline(yintercept = c(0), linetype="dashed", color = "black") + 
+  labs(x = "Time lag [days]", y = "Effect size") + 
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        panel.background = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+figure_effectsize_errorbars
+
+ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -2,]) + 
+  geom_point(aes(x = centroid_lat, y = t, color = as.factor(lag))) +
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(47, 55, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(title = paste("Effect size of lagged ", pm), 
+       x = "Latitude [degrees]", y = "Effect size", color = "Lag of PM")
+```
+
+
+# Dependence of correlation of PM and SARS-CoV2 infections
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+t_matrix = reshape(de_model_lag[, c("nuts3Code", "t", "lag")], idvar = "nuts3Code", timevar = "lag", direction = "wide")
+rownames(t_matrix) = t_matrix$nuts3Code
+
+t_environment = merge(germany$de_nuts3_map, auxinf)
+t_environment = st_drop_geometry(t_environment)
+t_matrix = merge(t_matrix, t_environment, by = "nuts3Code")
+t_matrix$pm_median_log10 = log10(t_matrix$pm_median)
+t_matrix$pop_total_log10 = log10(t_matrix$pop_total)
+t_matrix$area_log10 = log10(t_matrix$st_area)
+t_matrix$cases_log10 = log10(t_matrix$cases)
+
+set.seed(01042020)
+rd = rda(t_matrix[, seq(which(colnames(t_matrix) == "t.0"), which(colnames(t_matrix) == "t.-14"))], 
+         t_matrix[, c("pm_median_log10", "cases_log10", "pop_total_log10", "area_log10", "centroid_lat", "centroid_lon")])
+plot(rd, type = "points", scaling = 0)
+```
+
+
+# Maps
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+# SARS-CoV2 infections on 2020-04-01
+background_map = st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
+                             crs = "+init=epsg:25832")
+layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:25832")
+map_covid_infections = ggplot(data = background_map) +
+  geom_sf() + 
+  geom_sf(data = layer, aes(fill = cases)) +
+  scale_fill_viridis_c(trans = "log10") +
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        legend.position="bottom") +
+  labs(fill = "Infections (01.04.2020)") +
+  coord_sf(xlim = c((st_bbox(layer)["xmin"] - 10000), 
+                    (st_bbox(layer)["xmax"] + 10000)), 
+           ylim = c((st_bbox(layer)["ymin"] - 25000),
+                    (st_bbox(layer)["ymax"] + 10000)), expand = FALSE) + 
+  annotation_north_arrow(location = "tl", which_north = "true",
+                         height = unit(0.75, "cm"), width = unit(0.75, "cm"),
+                         pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
+                         style = north_arrow_minimal)
+map_covid_infections
+
+
+# Long-term PM median between 2020-02-15 and 2020-04-01
+background_map = st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
+                             crs = "+init=epsg:25832")
+layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:25832")
+map_pm_median = ggplot(data = background_map) +
+  geom_sf() + 
+  geom_sf(data = layer, aes(fill = pm_median)) +
+  scale_fill_viridis_c(trans = "log10") +
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        legend.position="bottom") +
+  labs(fill = "PM10 median 15.02.2020 - 01.04.2020") +
+  coord_sf(xlim = c((st_bbox(layer)["xmin"] - 10000), 
+                    (st_bbox(layer)["xmax"] + 10000)), 
+           ylim = c((st_bbox(layer)["ymin"] - 25000),
+                    (st_bbox(layer)["ymax"] + 10000)), expand = FALSE) + 
+  annotation_north_arrow(location = "tl", which_north = "true",
+                         height = unit(0.75, "cm"), width = unit(0.75, "cm"),
+                         pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
+                         style = north_arrow_minimal)
+map_pm_median
+
+
+
+# RDA1 values
+score_geo = cbind(t_matrix$nuts3Code, scores(rd)$sites)
+colnames(score_geo)[1] = "nuts3Code"
+score_geo = merge(score_geo, unique(de_clstr[, "nuts3Code"]))
+st_geometry(score_geo) = score_geo$geometry
+
+background_map = st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
+                              crs = "+init=epsg:25832")
+layer = st_transform(score_geo, crs = "+init=epsg:25832")
+map_rda1_score = ggplot(data = background_map) +
+  geom_sf() + 
+  geom_sf(data = layer, aes(fill = RDA1)) +
+  theme(legend.position="bottom") +
+  labs(fill = "RDA1") +
+  coord_sf(xlim = c((st_bbox(layer)["xmin"] - 10000), 
+                    (st_bbox(layer)["xmax"] + 10000)), 
+           ylim = c((st_bbox(layer)["ymin"] - 25000),
+                    (st_bbox(layer)["ymax"] + 10000)), expand = FALSE) + 
+  annotation_north_arrow(location = "tl", which_north = "true",
+                         height = unit(0.75, "cm"), width = unit(0.75, "cm"),
+                         pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
+                         style = north_arrow_minimal)
+map_rda1_score
+
+
+
+# Significant and positive t values
+p = 0.1
+
+lag_analysis = st_set_geometry(de_model_geo$test_geo[de_model_geo$test_geo$t > 0 &
+                                                de_model_geo$test_geo$p < p, ], 
+                        de_model_geo$test_geo$geometry[de_model_geo$test_geo$t > 0 &
+                                                de_model_geo$test_geo$p < p, ])
+
+lag_analysis = lapply(unique(lag_analysis$nuts3Code), function(n){
+  data.frame(nuts3Code = lag_analysis$nuts3Code[lag_analysis$nuts3Code == n][1],
+             min_lag = max(lag_analysis$lag[lag_analysis$nuts3Code == n]),
+             mean_lag = mean(lag_analysis$lag[lag_analysis$nuts3Code == n]),
+             max_lag = min(lag_analysis$lag[lag_analysis$nuts3Code == n]),
+             geometry = lag_analysis$geometry[lag_analysis$nuts3Code == n][1])
+})
+lag_analysis = do.call("rbind", lag_analysis)
+lag_analysis = merge(lag_analysis, germany$de_nuts3_map[, c("nuts3Code", "pm_median", "cases", "pop_dens")])
+hist(lag_analysis$min_lag)
+hist(lag_analysis$mean_lag)
+hist(lag_analysis$max_lag)
+
+non_significant_regions = germany$de_nuts3_map[!(germany$de_nuts3_map$nuts3Code %in% lag_analysis$nuts3Code),]
+
+summary(germany$de_nuts3_map[,c("nuts3Code", "pm_median", "cases", "pop_dens")])
+summary(lag_analysis)
+summary(non_significant_regions[,c("nuts3Code", "pm_median", "cases", "pop_dens")])
+
+quantile(non_significant_regions$pop_dens, probs = seq(0, 1, 0.1))
+quantile(lag_analysis$pop_dens, probs = seq(0, 1, 0.1))
+
+wilcox.test(non_significant_regions$cases, lag_analysis$cases)
+wilcox.test(non_significant_regions$pm_median, lag_analysis$pm_median)
+wilcox.test(non_significant_regions$pop_dens, lag_analysis$pop_dens)
+
+t.test(non_significant_regions$cases, lag_analysis$cases)
+t.test(non_significant_regions$pm_median, lag_analysis$pm_median)
+t.test(non_significant_regions$pop_dens, lag_analysis$pop_dens)
+
+layer1 = st_set_geometry(lag_analysis, lag_analysis$geometry)
+layer1 = st_transform(layer1, crs = "+init=epsg:25832")
+
+background_map = st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
+                              crs = "+init=epsg:25832")
+layer = st_transform(germany$de_nuts3_map, crs = "+init=epsg:25832")
+
+map_t_sig = ggplot(data = background_map) +
+  geom_sf() + 
+  geom_sf(data = layer) +
+  geom_sf(data = layer1, aes(fill = mean_lag)) +
+  scale_fill_viridis_c() +
+  theme(legend.position="bottom") +
+  labs(fill = "Mean lag of positive effect size") +
+  coord_sf(xlim = c((st_bbox(layer)["xmin"] - 10000), 
+                    (st_bbox(layer)["xmax"] + 10000)), 
+           ylim = c((st_bbox(layer)["ymin"] - 25000),
+                    (st_bbox(layer)["ymax"] + 10000)), expand = FALSE) + 
+  annotation_north_arrow(location = "tl", which_north = "true",
+                         height = unit(0.5, "cm"), width = unit(0.5, "cm"),
+                         pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
+                         style = north_arrow_minimal)
+map_t_sig
+```
+
+
+# Figures for publication
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+
+figure_effectsize
+plot(rd)
+map_covid_infections
+map_pm_median
+
+
+figure_1_1 = plot_grid(figure_de_avg, figure_de_avg_res, 
+                       labels = c("a", "b"), label_size = 10, ncol = 1)
+figure_1_2 = plot_grid(map_covid_infections, map_pm_median, 
+                       labels = c("c", "d"), label_size = 10, ncol = 2)
+figure_1 = plot_grid(figure_1_1, figure_1_2, 
+                     labels = NULL, ncol = 1)
+
+# ggsave(file.path(envrmt$path_figures, "figure_de_avg.png"), plot = figure_de_avg,
+#        width = 216, height = 279, units = "mm", dpi = 300)
+# ggsave(file.path(envrmt$path_figures, "figure_de_avg_res.png"), plot = figure_de_avg_res,
+#        width = 216, height = 279, units = "mm", dpi = 300)
+# ggsave(file.path(envrmt$path_figures, "map_covid_infections.png"), plot = map_covid_infections,
+#        width = 279, height = 216, units = "mm", dpi = 300)
+# ggsave(file.path(envrmt$path_figures, "map_pm_median.png"), plot = map_pm_median,
+#        width = 279, height = 216, units = "mm", dpi = 300)
+
+ggsave(file.path(envrmt$path_figures, "figure_1.png"), plot = figure_1, 
+       width = 216, height = 279, units = "mm", dpi = 300)
+
+
+
+pdf(NULL, width=5, height=10)
+dev.control(displaylist="enable")
+plot(rd, type = "points", scaling = 0)
+figure_rda = recordPlot()
+invisible(dev.off())
+
+figure_2_1 = plot_grid(figure_effectsize, figure_rda, 
+                       labels = c("a", "b"), label_size = 10, 
+                       rel_widths = c(1,2))
+
+figure_2_2 = plot_grid(map_rda1_score, map_t_sig, 
+                       labels = c("c", "d"), label_size = 10, ncol = 2)
+
+figure_2 = plot_grid(figure_2_1, figure_2_2, 
+                     labels = NULL, ncol = 1)
+
+
+# ggsave(file.path(envrmt$path_figures, "figure_effectsize.png"), plot = figure_effectsize,
+#        width = 216, height = 279, units = "mm", dpi = 300)
+# figure_rda_tmp = plot_grid(figure_rda, labels = "")
+# 
+# ggsave(file.path(envrmt$path_figures, "figure_rda.png"), plot = figure_rda_tmp,
+#        width = 279, height = 216, units = "mm", dpi = 300)
+# ggsave(file.path(envrmt$path_figures, "map_rda1_score.png"), plot = map_rda1_score,
+#        width = 279, height = 216, units = "mm", dpi = 300)
+# ggsave(file.path(envrmt$path_figures, "map_t_sig.png"), plot = map_t_sig,
+#        width = 279, height = 216, units = "mm", dpi = 300)
+
+
+ggsave(file.path(envrmt$path_figures, "figure_2.png"), plot = figure_2, 
+       width = 216, height = 279, units = "mm", dpi = 300)
+
+```
+
+
+
+
+
+
+# Dynmiac time warp clustering on countrywide average
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
+mapview(germany$de_clstr$clstr_map, zcol = "cluster_covid")
+mapview(germany$de_clstr$clstr_map, zcol = "cluster_pm")
+```
+
+```{r, eval = TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+de_clstr = germany$de_clstr
+
+clstr_avg_pm_gam_time = de_clstr$clstr_avg_pm[
+  de_clstr$clstr_avg_pm$date >= as.POSIXct("2020-02-15") & 
+    de_clstr$clstr_avg_pm$date <= as.POSIXct("2020-04-01"),]
+clstr_avg_pm_gam_time$weekday = weekdays(clstr_avg_pm_gam_time$date)
+clstr_avg_pm_gam_time$predicted = NA
+clstr_avg_pm_gam_time$residuals = NA
+
+
+for(c in unique(clstr_avg_pm_gam_time$cluster_pm)){
+  set.seed(01042020)
+  gam_time = gam(new_cases ~ s(seq(length(date))) + weekday , 
+                 family = quasipoisson, 
+                 data = clstr_avg_pm_gam_time[clstr_avg_pm_gam_time$cluster_pm == c, ])
+  clstr_avg_pm_gam_time[clstr_avg_pm_gam_time$cluster_pm == c, "predicted"] = predict(gam_time, type = "response")
+  clstr_avg_pm_gam_time[clstr_avg_pm_gam_time$cluster_pm == c, "residuals"] = residuals(gam_time, type = "response")
+}
+
+clstr_avg_covid_gam_time = de_clstr$clstr_avg_covid[
+  de_clstr$clstr_avg_covid$date >= as.POSIXct("2020-02-15") & 
+    de_clstr$clstr_avg_covid$date <= as.POSIXct("2020-04-01"),]
+clstr_avg_covid_gam_time$weekday = weekdays(clstr_avg_covid_gam_time$date)
+clstr_avg_covid_gam_time$predicted = NA
+clstr_avg_covid_gam_time$residuals = NA
+
+for(c in unique(clstr_avg_covid_gam_time$cluster_covid)){
+  set.seed(01042020)
+  gam_time = gam(new_cases ~ s(seq(length(date))) + weekday , 
+                 family = quasipoisson, 
+                 data = clstr_avg_covid_gam_time[clstr_avg_covid_gam_time$cluster_covid == c, ])
+  clstr_avg_covid_gam_time[clstr_avg_covid_gam_time$cluster_covid == c, "predicted"] = predict(gam_time, type = "response")
+  clstr_avg_covid_gam_time[clstr_avg_covid_gam_time$cluster_covid == c, "residuals"] = residuals(gam_time, type = "response")
+}
+
+ggplot() + 
+  geom_line(data = clstr_avg_pm_gam_time, aes(x = date, y = pm_median, color = "Daily median PM10")) + 
+  geom_line(data = clstr_avg_pm_gam_time, aes(x = date, y = new_cases, color = "Daily new cases")) + 
+  geom_line(data = clstr_avg_pm_gam_time, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  labs(x = "Date and day of week", y = bquote("Infections, PM10 " ~µm/m^3)) +
+  theme_bw() + 
+  scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "5 day", date_minor_breaks = "1 day") + 
+  scale_color_manual(values=c("#b2df8a", "#1f78b4", "#a6cee3")) +
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        axis.text.x = element_text(angle=90, hjust=0.95, vjust=0.2), 
+        legend.title = element_blank(), panel.background = element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
+  facet_wrap(~cluster_pm, ncol =2, nrow = 6, scales = "fix")
+
+ggplot() + 
+  geom_line(data = clstr_avg_covid_gam_time, aes(x = date, y = pm_median, color = "Daily median PM10")) + 
+  geom_line(data = clstr_avg_covid_gam_time, aes(x = date, y = new_cases, color = "Daily new cases")) + 
+  geom_line(data = clstr_avg_covid_gam_time, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  labs(x = "Date and day of week", y = bquote("Infections, PM10 " ~µm/m^3)) +
+  theme_bw() + 
+  scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "5 day", date_minor_breaks = "1 day") + 
+  scale_color_manual(values=c("#b2df8a", "#1f78b4", "#a6cee3")) +
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        axis.text.x = element_text(angle=90, hjust=0.95, vjust=0.2), 
+        legend.title = element_blank(), panel.background = element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
+  facet_wrap(~cluster_covid, ncol =2, nrow = 6, scales = "fix")
+```
+
+
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_clstr = germany$de_clstr$clstr
+# pdata = compilePopulation()
+# de_clstr = merge(de_clstr, pdata, by = "nuts3Code")
+# 
+# de_clstr = merge(de_clstr, st_set_geometry(germany$de_nuts3_map[, c("nuts3Code", "nuts3Name", "centroid_lat", "centroid_lon", "nuts3Area")], NULL), by.x = "nuts3Code", by.y = "nuts3Code")
+# 
+# de_clstr$nuts3Area = as.numeric(de_clstr$nuts3Area)
+# de_clstr$cases_per_area = de_clstr$cases / de_clstr$nuts3Area
+# de_clstr$cases_per_pop = de_clstr$cases / de_clstr$pop_total
+# de_clstr$cases_per_pop_dens = de_clstr$cases / de_clstr$pop_dens
+# de_clstr$new_cases_per_area = de_clstr$new_cases / de_clstr$nuts3Area
+# de_clstr$new_cases_per_pop = de_clstr$new_cases / de_clstr$pop_total
+# de_clstr$new_cases_per_pop_dens = de_clstr$new_cases / de_clstr$pop_dens
+# de_clstr$pm_mean_dt = c(0, diff(de_clstr$pm_mean))
+# de_clstr$weekday_cn = as.numeric(de_clstr$weekday_c)
+# de_clstr$days_before_shutdown = difftime(de_clstr$date, as.POSIXct("2020-03-17"), units = "days")
+
+
+info = lapply(unique(de_clstr$nuts3Code), function(n){
+  tmp = de_clstr[de_clstr$nuts3Code == n, ]
+  tmp$date_numeric = seq(nrow(tmp))
+  
+  tmp = data.frame(nuts = tmp$nuts3Code[1],
+                   date_start = tmp$date[which(tmp$cases > 0)[1]],
+                   date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+                   cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)])
+  
+  # set.seed(01042020)
+  # # glm_mod = glm(cases ~ date_numeric + I(date_numeric^2),
+  # #               family = gaussian, 
+  # #               data = tmp[tmp$weekday_c == "W" & tmp$date >= date_start,])
+  # glm_mod <- zeroinfl(new_cases ~ date_numeric + weekday_c + pm_mean | days_before_shutdown, data = tmp)
+  # tmp$cases_pred = 0
+  # tmp$cases_pred[tmp$date >= date_start] = predict(glm_mod, tmp[tmp$date >= date_start,])
+  # tmp$cases_pred[tmp$cases_pred < 0] = 0
+  # plot(tmp$cases_pred)
+  # points(tmp$new_cases, col = "red")
+  
+  return(tmp)
+})
+info = do.call("rbind", info)
+info$difftime = difftime(info$date_max, info$date_start, units = "days")
+ggplot(data = info, aes(x = difftime)) + geom_histogram(binwidth = 5)
+summary(as.numeric(info$difftime[info$cases_at_max > 100]))
+summary(info$cases_at_max)
+summary(info$daily_max)
+summary(info$cases_at_max[info$difftime>=30])
+summary(info$cases_at_max)
+summary(as.numeric(info$difftime))
+
+head(de_clstr)
+
+ggplot(data = de_clstr[de_clstr$weekday_c == "M",], aes(x = date, y = new_cases, color = as.factor(nuts3Code))) + geom_line() +  theme(legend.position = "none")
+
+ndays = c(-14, 35)
+ndays = c(-14, 20)
+ndays = c(0, 30)
+
+de_model_lag = compileLaggedGLM(data = de_clstr[de_clstr$nuts3Code %in% info$nuts[info$difftime>=30 & info$difftime<=99],],  
+                                pm = "org", 
+                                frml = "new_cases ~ date + weekday_c + pm_mean_lag",
+                                nlags = 20,
+                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 35))
+
+de_model_lag = compileLaggedGAM(data = de_clstr,  
+                                pm = "org", 
+                                frml = "new_cases ~ seq(length(date)) + weekday_c + pm_mean_lag",
+                                nlags = 20,
+                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 35))
+
+
+
+de_model_lag = compileLaggedGLM(data = de_clstr,  
+                                pm = "org", 
+                                frml = "new_cases ~ date + weekday_c + pm_mean_lag",
+                                nlags = 20,
+                                subset_var = "new_cases", subset_thv = 1, individual = "start", ndays = c(0, 35))
+
+
+
+de_model_geo = compileLaggedGLMGeo(de_model_lag, germany$de_nuts3_map)
+
+t.test(de_model_lag$t[de_model_lag$lag == -3])
+
+# de_model_lag = de_model_lag_org
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+ggplot(data = de_model_lag[abs(de_model_lag$t)<5,], aes(x = as.factor(lag), y = t)) + 
+  geom_boxplot() + 
+  stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="red", fill="red") +
+  theme_bw() +
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+ggplot(data = de_model_lag[abs(de_model_lag$t)<5,], aes(x = as.factor(lag), y = t, fill = cluster_pm)) + 
+  geom_boxplot() + 
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "red") + 
+  labs(title = paste("Dependence of individual COVID-19 time series and lagged ", pm, " concentrations by PM clusters"),x = "Time lag PM [days]", y = "t value of the partial coefficient")
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+ggplot(data = de_model_geo$test_geo_lag) + 
+  geom_line(aes(x = lag, y = rsq, color = "R squared")) +
+  geom_point(aes(x = lag, y = rsq, color = "R squared")) +
+  theme_bw() + 
+  scale_x_continuous(breaks = seq(-15, 0, 1), minor_breaks = seq(-15, 0, 1)) + 
+  labs(title = paste("R squared values of lagged ", pm, " concentrations based on latitude, longitude and area",x = "Time lag PM [days]"), y = "R squared", color = "R squared")
+
+ggplot(data = de_model_geo$test_geo_lag) + 
+  geom_line(aes(x = lag, y = centroid_lat_t, color = "latitude")) +
+  geom_point(aes(x = lag, y = centroid_lat_t, color = "latitude")) +
+  geom_line(aes(x = lag, y = centroid_lon_t, color = "longitude")) +
+  geom_point(aes(x = lag, y = centroid_lon_t, color = "longitude")) +
+  geom_line(aes(x = lag, y = area_t, color = "log10(area)")) +
+  geom_point(aes(x = lag, y = area_t, color = "log10(area)")) +
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(-15, 0, 1), minor_breaks = seq(-15, 0, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(title = paste("t values of lagged ", pm, " concentrations for latitude, longitude and area"),x = "Time lag PM [days]", y = "t value of the partial coefficient", color = "Partial coefficient")
+
+ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag == -9,]) + 
+  geom_point(aes(x = centroid_lat, y = t, color = as.factor(lag))) +
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(47, 55, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(title = paste("t values of lagged ", pm, " concentrations for latitude"),x = "Latitude [degrees]", y = "t value of the partial coefficient for PM (glm model)", color = "Lag of PM")
+
+ggplot(data = de_model_geo$test_geo[de_model_geo$test_geo$lag >= -7 & de_model_geo$test_geo$lag <= -4,]) + 
+  geom_point(aes(x = centroid_lat, y = t, color = as.factor(lag))) +
+  theme_bw() + 
+  geom_hline(yintercept = c(-2, 2), linetype="dashed", color = "black") + 
+  scale_x_continuous(breaks = seq(47, 55, 1)) + 
+  scale_y_continuous(breaks = seq(-10, 20, 2)) +
+  labs(title = paste("t values of lagged ", pm, " concentrations for latitude"),x = "Latitude [degrees]", y = "t value of the partial coefficient for PM (glm model)", color = "Lag of PM")
+```
+
+Hier mal ein Versuch, die "Italien-Grafik" aus dem  etwas nachzubauen. Die Signifikanz ist bei PM10 für längere Zeitintervalle gegeben, für PM2.5 praktisch nicht (Setti, L. et al. The Potential role of Particulate Matter in the Spreading of COVID-19 in Northern Italy: First Evidence-based Research Hypotheses. medRxiv, https://www.medrxiv.org/content/10.1101/2020.04.11.20061713v1 (2020).)
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+# 10, 12
+test = germany$de_clstr$clstr[germany$de_clstr$clstr$date < as.POSIXct("2020-03-17"),] %>%
+  group_by(nuts3Code) %>%
+  summarize(n_days = n(),
+            pm_gt_10 = sum(pm_mean > 10),
+            pm_gt_10_rel = pm_gt_10 / n_days)
+test_merge = merge(test, germany$de_clstr$clstr[germany$de_clstr$clstr$date == as.POSIXct("2020-04-01"),])
+test_merge = merge(test_merge, st_set_geometry(germany$de_nuts3_map, NULL)[, c("nuts3Code", "area")])
+test_merge$ratio = as.numeric(test_merge$cases/test_merge$area)
+
+ggplot(data = test_merge, aes(x = pm_gt_10, y = ratio)) + 
+  geom_point() +
+  geom_smooth(method = "glm") +
+  theme_bw() + 
+  scale_y_log10() +
+  labs(title = paste("COVID-19 infections per province area (01.04.) and days exceeding" , pm, " > 10 from 15.2. to 17.03."))
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = TRUE}
+model = glm(test_merge$ratio ~ test_merge$pm_gt_10, family = quasipoisson)
+summary(model)
+```
+
+
+
+```{r, eval = FALSE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+# Wavelet coherence analysis
+
+## Wavelet coherence analysis on countrywide average
+de_avg = germany$de_avg
+wc = compileWC(de_avg)
+
+wc.image(wc, which.image = "wc",
+         n.levels = 250, color.key = "interval",
+         siglvl.contour = 0.1, siglvl.arrow = 0.1,
+         legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE,
+         spec.period.axis = list(at = seq(15)),
+         main = paste("Wavelet coherence Germany, ", pm, " x detrended daily COVID-19 cases"))
+
+# wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
+```
+
+
+
+```{r, eval = FALSE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+## Wavelet coherence analysis on cluster averages
+de_clstr = germany$de_clstr
+for(c in unique(de_clstr$clstr_avg_detr$cluster_pm)){
+  tmp = de_clstr$clstr_avg_detr[de_clstr$clstr_avg_detr$cluster_pm == c,]
+  wc = compileWC(tmp)
+  
+  wc.image(wc, which.image = "wc",
+           n.levels = 250, color.key = "interval",
+           siglvl.contour = 0.1, siglvl.arrow = 0.1,
+           legend.params = list(lab = "cross-wavelet power levels"), show.date = TRUE,
+           spec.period.axis = list(at = seq(15)),
+           main = paste("Germany, ", pm, " x detrended daily COVID-19 cases, cluster ", c))
+  
+  # wc.sel.phases(wc, sel.period = 4, siglvl = 1, show.date = TRUE)
+}
+```
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+de_avg_glm_time_03 = de_avg[de_avg$date >= as.POSIXct("2020-03-01") & de_avg$date <= as.POSIXct("2020-04-20"),]
+set.seed(01042020)
+de_avg_glm_time = gam(new_cases ~ s(seq(length(date))) + weekday, family = quasipoisson, data = de_avg_glm_time_03)
+de_avg_glm_time = glm(new_cases ~ seq(length(date)) + weekday, family = quasipoisson, data = de_avg_glm_time_03)
+de_avg_glm_time_03$predicted = predict(de_avg_glm_time, de_avg_glm_time_03, type = "response")
+de_avg_glm_time_03$residuals = residuals(de_avg_glm_time, type="response")
+
+figure_01 = ggplot() + 
+  geom_line(data = de_avg, aes(x = date, y = pm_mean, color = "Daily mean PM10")) +
+  geom_point(data = de_avg, aes(x = date, y = pm_mean, color = "Daily mean PM10")) + 
+  geom_line(data = de_avg, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_point(data = de_avg, aes(x = date, y = new_cases, color = "Daily new cases")) + 
+  geom_line(data = de_avg_glm_time_03, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_point(data = de_avg_glm_time_03, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+  geom_line(data = de_avg_glm_time_03, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_point(data = de_avg_glm_time_03, aes(x = date, y = new_cases, color = "Daily new cases")) +
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype="dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype="dotted", color = "black") +
+  # geom_text(aes(x = as.POSIXct("2020-03-14"), label="Start of contact restrictions \n", y=-1), colour="black", angle=90, size = 3) +
+  # geom_text(aes(x = as.POSIXct("2020-03-17"), label="Start of shut down \n", y=-1), colour="black", angle=90, size = 3) +
+  labs(x = "Date and day of week", y = expression("Infections, PM10 ~µm/m^{3}")) +
+  theme_bw() + 
+  scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") + 
+  scale_color_manual(values=c("#b2df8a", "#1f78b4", "#a6cee3")) +
+  theme(text = element_text(size = 10), axis.title = element_text(size = 10),
+        legend.position = c(0.35, 0.75), axis.text.x = element_text(angle=90, hjust=0.95, vjust=0.2), 
+        legend.title = element_blank(), panel.background = element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+figure_01
+
+```
