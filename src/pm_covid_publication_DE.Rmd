@@ -22,6 +22,7 @@ if (Sys.info()[["nodename"]] == "PC19616") {
 }
 
 compile_data <- FALSE
+compile_models <- FALSE
 start_date <- as.POSIXct("2020-02-15")
 end_date <- as.POSIXct("2020-04-20")
 pm <- "PM10"
@@ -129,12 +130,18 @@ This analysis part is based on individual rural district data. A GAM model is co
 
 cntry_indv <- cmpldata$de_clstr$clstr
 
-gam_lag <- compileLaggedGAM(
-  data = cntry_indv, pm = "org",
-  frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
-  nlags = 15,
-  subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
-)
+if (compile_models) {
+  gam_lag <- compileLaggedGAM(
+    data = cntry_indv, pm = "org",
+    frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
+    nlags = 15,
+    subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
+  )
+  saveRDS(gam_lag, file.path(envrmt$path_tmp, "gam_lag.rds"))
+} else {
+  gam_lag <- readRDS(file.path(envrmt$path_tmp, "gam_lag.rds"))
+}
+
 
 tstat <- lapply(seq(0, -15), function(i) {
   tmp <- t.test(gam_lag$t[gam_lag$lag == i])
@@ -190,17 +197,41 @@ if (mlm == "gamm") {
   frml <- 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")'
 }
 
-gam_lag_mixed <- compileLaggedMixedModel(
-  data = cntry_indv, pm = "org",
-  frml = 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")',
-  nlags = 15,
-  subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30), model = mlm
-)
+if (compile_models) {
+  gam_lag_mixed <- compileLaggedMixedModel(
+    data = cntry_indv, pm = "org",
+    frml = 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")',
+    nlags = 15,
+    subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30), model = mlm
+  )
+  saveRDS(gam_lag_mixed, file.path(envrmt$path_tmp, paste0("gam_lag_mixed_", mlm, ".rds")))
+} else {
+  gam_lag_mixed <- readRDS(file.path(envrmt$path_tmp, paste0("gam_lag_mixed_", mlm, ".rds")))
+}
 
 gam_lag_mixed$fillcol <- FALSE
 gam_lag_mixed$fillcol[gam_lag_mixed$p_lme < 0.1] <- TRUE
 
 figure_effectsize_mixed <- ggplot(
+  data = gam_lag_mixed,
+  aes(x = as.factor(lag), y = t_lme, color = fillcol, fill = fillcol, alpha = fillcol)
+) +
+  geom_point(size = 3) +
+  theme_bw() +
+  geom_hline(yintercept = c(0), linetype = "dashed", color = "black") +
+  labs(x = "Time lag [days]", y = "Effect size") +
+  theme(
+    text = element_text(size = 10), axis.title = element_text(size = 10),
+    panel.background = element_blank(), panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_fill_manual(values = c("black", "red")) +
+  scale_color_manual(values = c("black", "red")) +
+  scale_alpha_manual(values = c(1, 1)) +
+  theme(legend.position = "none")
+figure_effectsize_mixed
+
+figure_estimate_mixed <- ggplot(
   data = gam_lag_mixed,
   aes(x = as.factor(lag), y = pm_lme_estimate, color = fillcol, fill = fillcol, alpha = fillcol)
 ) +
@@ -219,8 +250,72 @@ figure_effectsize_mixed <- ggplot(
   scale_color_manual(values = c("black", "red")) +
   scale_alpha_manual(values = c(1, 1)) +
   theme(legend.position = "none")
-figure_effectsize_mixed
-  ```
+figure_estimate_mixed
+```
+
+
+
+
+
+# Longer-term correlation of PM and SARS-CoV2 infections
+
+This analysis part is based on individual rural district data that is averaged over time from the start of the data series to April 1st. A linear model is computed to evaluate the influence of longer-term averaged PM concentrations on cummulative SARS-CoV2 infections on April 1st. The figure shows scatterplots between the cumulative infection number and a set of explanatory variables used within the linear model.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+tmp <- cmpldata$de_clstr$clstr[cmpldata$de_clstr$clstr$date <= as.POSIXct("2020-04-01"), ]
+
+cntry_agg <- aggregate(tmp$pm_median, by = list(tmp$nuts3Code), FUN = mean)
+colnames(cntry_agg) <- c("nuts3Code", "PM_tavrg")
+
+tmp <- tmp[tmp$date == as.POSIXct("2020-04-01"), ]
+cntry_agg <- merge(cntry_agg, tmp)
+cntry_agg <- merge(cntry_agg, add_info)
+
+cntry_agg$cases_log10 <- log10(cntry_agg$cases)
+cntry_agg$PM_tavrg_log10 <- log10(cntry_agg$PM_tavrg)
+cntry_agg$pop_total_log10 <- log10(cntry_agg$pop_total)
+cntry_agg$st_area_log10 <- log10(cntry_agg$st_area)
+
+# Test of the long-term correlation between PM and SARS-CoV2 infections
+tavrg <- cntry_agg[, c("cases_log10", "centroid_lat", "centroid_lon", "pop_total_log10", "st_area_log10", "difftime_first_shutdown", "PM_tavrg_log10")]
+
+# lm_tavrg <- lm(cases_log10 ~ PM_tavrg_log10 + centroid_lat + centroid_lon +
+#       pop_total_log10 + st_area_log10 + difftime_first_shutdown, data = tavrg)
+
+lm_tavrg <- lm(cases_log10 ~ 1, data = tavrg)
+lm_tavrg_stpAIC <- stepAIC(lm_tavrg,
+  direction = "both",
+  scope = list(
+    lower = lm_tavrg,
+    upper = ~ PM_tavrg_log10 + centroid_lat + centroid_lon +
+      pop_total_log10 + st_area_log10 + difftime_first_shutdown
+  )
+)
+summary(lm_tavrg_stpAIC)
+
+tavrg_long <- gather(tavrg, key = "var", value = "value", -cases_log10)
+tavrg_long$var <- factor(tavrg_long$var,
+  levels = c(
+    "PM_tavrg_log10", "centroid_lat", "centroid_lon",
+    "pop_total_log10", "st_area_log10",
+    "difftime_first_shutdown"
+  ),
+  labels = c(
+    "log10(PM)", "Latitude", "Longitude",
+    "log10(Population)", "log10(Area)",
+    "Time difference first case and shutdown"
+  )
+)
+
+figure_cumulative_effect <- ggplot(tavrg_long, aes(x = value, y = cases_log10)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "", y = bquote(log[10] ~ "(Cumulative COVID-19 cases)")) +
+  facet_wrap(~var, scales = "free") +
+  theme_bw()
+figure_cumulative_effect
+```
 
 
 
@@ -289,58 +384,146 @@ plot(rd, type = "points", scaling = 0)
 
 
 
-# Meta-analysis of correlation between PM and SARS-CoV2 infections
 
-The analysis part is based on former and additional results and aims in providing additional information regarding the dependencies of SARS-CoV2 infections. The figure shows the results of a redundancy analysis of the lagged effect sizes.
+# Maps
+
+Create some maps based on previous results.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-tmp <- cmpldata$de_clstr$clstr[cmpldata$de_clstr$clstr$date <= as.POSIXct("2020-04-01"), ]
+# SARS-CoV2 infections on 2020-04-01
+background_map <- st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
+  crs = "+init=epsg:25832"
+)
+layer <- st_transform(cmpldata$de_nuts3_map, crs = "+init=epsg:25832")
+map_covid_infections <- ggplot(data = background_map) +
+  geom_sf() +
+  geom_sf(data = layer, aes(fill = cases)) +
+  scale_fill_viridis_c(trans = "log10") +
+  theme(
+    text = element_text(size = 10), axis.title = element_text(size = 10),
+    legend.position = "bottom"
+  ) +
+  labs(fill = "Cumulative infections on 01.04.2020") +
+  coord_sf(
+    xlim = c(
+      (st_bbox(layer)["xmin"] - 10000),
+      (st_bbox(layer)["xmax"] + 10000)
+    ),
+    ylim = c(
+      (st_bbox(layer)["ymin"] - 25000),
+      (st_bbox(layer)["ymax"] + 10000)
+    ), expand = FALSE
+  ) +
+  annotation_north_arrow(
+    location = "tl", which_north = "true",
+    height = unit(0.75, "cm"), width = unit(0.75, "cm"),
+    pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
+    style = north_arrow_minimal
+  )
+map_covid_infections
 
-cntry_agg <- aggregate(tmp$pm_median, by = list(tmp$nuts3Code), FUN = mean)
-colnames(cntry_agg) <- c("nuts3Code", "PM_tavrg")
 
-tmp <- tmp[tmp$date == as.POSIXct("2020-04-01"), ]
-cntry_agg <- merge(cntry_agg, tmp)
-cntry_agg <- merge(cntry_agg, add_info)
+# Long-term PM median between 2020-02-15 and 2020-04-01
+background_map <- st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
+  crs = "+init=epsg:25832"
+)
+layer <- st_transform(cmpldata$de_nuts3_map, crs = "+init=epsg:25832")
+map_pm_median <- ggplot(data = background_map) +
+  geom_sf() +
+  geom_sf(data = layer, aes(fill = pm_median)) +
+  scale_fill_viridis_c(trans = "log10") +
+  theme(
+    text = element_text(size = 10), axis.title = element_text(size = 10),
+    legend.position = "bottom"
+  ) +
+  labs(fill = "Median PM 15.02.2020 to 01.04.2020") +
+  coord_sf(
+    xlim = c(
+      (st_bbox(layer)["xmin"] - 10000),
+      (st_bbox(layer)["xmax"] + 10000)
+    ),
+    ylim = c(
+      (st_bbox(layer)["ymin"] - 25000),
+      (st_bbox(layer)["ymax"] + 10000)
+    ), expand = FALSE
+  ) +
+  annotation_north_arrow(
+    location = "tl", which_north = "true",
+    height = unit(0.75, "cm"), width = unit(0.75, "cm"),
+    pad_x = unit(0.0, "in"), pad_y = unit(0.1, "in"),
+    style = north_arrow_minimal
+  )
+map_pm_median
 
-cntry_agg$cases_log10 <- log10(cntry_agg$cases)
-cntry_agg$PM_tavrg_log10 <- log10(cntry_agg$PM_tavrg)
-cntry_agg$pop_total_log10 <- log10(cntry_agg$pop_total)
-cntry_agg$st_area_log10 <- log10(cntry_agg$st_area)
-
-
-
-# Test of the slope between population and SARS-CoV2 infections
-t <- lm(cases_log10 ~ pop_total_log10, offset = pop_total_log10, data = cntry_agg)
-summary(t)
-
-
-
-# Test of the long-term correlation between PM and SARS-CoV2 infections
-lm_tavrg <- lm(cases_log10 ~ centroid_lat + centroid_lon + pop_total_log10 + st_area_log10 +
-  difftime_first_shutdown + PM_tavrg_log10, data = cntry_agg)
-
-summary(lm_tavrg)
-summary(stepAIC(lm_tavrg))
 ```
 
 
 
 
 
+# Figures for publication
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+# names(.GlobalEnv)[grep("figure", names(.GlobalEnv))]
+# names(.GlobalEnv)[grep("map", names(.GlobalEnv))]
+# plot(rd)
+
+
+figure_1_1 <- plot_grid(figure_cntry_avg, figure_cntry_avg_res,
+  labels = c("a", "b"), label_size = 10, ncol = 1
+)
+figure_1_2 <- plot_grid(map_covid_infections, map_pm_median,
+  labels = c("c", "d"), label_size = 10, ncol = 2
+)
+figure_1 <- plot_grid(figure_1_1, figure_1_2,
+  labels = NULL, ncol = 1
+)
+
+ggsave(file.path(envrmt$path_figures, "figure_1.png"),
+  plot = figure_1,
+  width = 216, height = 279, units = "mm", dpi = 300
+)
 
 
 
+pdf(NULL, width = 5, height = 10)
+dev.control(displaylist = "enable")
+plot(rd, type = "points", scaling = 0)
+figure_rda <- recordPlot()
+invisible(dev.off())
 
+figure_2_1 <- plot_grid(figure_cumulative_effect, 
+  labels = c("a"), label_size = 10, ncol = 1
+)
 
+figure_2_2 <- plot_grid(figure_effectsize, figure_estimate_mixed,
+  labels = c("b", "c"), label_size = 10, ncol = 2
+)
 
+figure_2_2_alternative <- plot_grid(figure_effectsize, figure_effectsize_mixed,
+  labels = c("b", "c"), label_size = 10, ncol = 2
+)
 
+figure_2 <- plot_grid(figure_2_1, figure_2_2,
+  labels = NULL, ncol = 1
+)
 
+figure_2_alternative <- plot_grid(figure_2_1, figure_2_2_alternative,
+  labels = NULL, ncol = 1
+)
 
+ggsave(file.path(envrmt$path_figures, "figure_2.png"),
+  plot = figure_2,
+  width = 216, height = 279, units = "mm", dpi = 300
+)
 
+ggsave(file.path(envrmt$path_figures, "figure_2_alternative.png"),
+  plot = figure_2_alternative,
+  width = 216, height = 279, units = "mm", dpi = 300
+)
 
-
+```
 
 
 
