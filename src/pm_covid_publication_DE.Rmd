@@ -220,7 +220,7 @@ figure_effectsize_mixed <- ggplot(
   scale_alpha_manual(values = c(1, 1)) +
   theme(legend.position = "none")
 figure_effectsize_mixed
-```
+  ```
 
 
 
