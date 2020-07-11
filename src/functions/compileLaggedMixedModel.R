@@ -1,6 +1,6 @@
 #' Compile lagged mixed effect model.
 
-compileLaggedGAM <- function(data, pm = "org", frml, nlags = 14,
+compileLaggedMixedModel <- function(data, pm = "org", frml, nlags = 14,
                              subset_var = "cases", subset_thv = 1,
                              individual = "start", ndays = c(-14, 32),
                              obsprd_start = NULL, obsprd_end = NULL,
@@ -67,6 +67,7 @@ compileLaggedGAM <- function(data, pm = "org", frml, nlags = 14,
     frml <- as.formula(frml)
     
     if(model == "gamm"){
+      set.seed(01042020)
       gamm_mixed <- gamm(frml,
                          random = list(nuts3CodeFactor=~1),
                          family = quasipoisson(link = "log"),
@@ -84,11 +85,16 @@ compileLaggedGAM <- function(data, pm = "org", frml, nlags = 14,
         lag = l,
         t_gam = test_gam$p.t["pm_median_lag"],
         p_gam = test_gam$p.pv["pm_median_lag"],
+        pm_gam_estimate = test_gam$p.table["pm_median_lag", "Estimate"],
+        pm_gam_std_error = test_gam$p.table["pm_median_lag", "Std. Error"],
         t_lme = test_lme$tTable["Xpm_median_lag", "t-value"],
-        p_lme = test_lme$tTable["Xpm_median_lag", "p-value"]
+        p_lme = test_lme$tTable["Xpm_median_lag", "p-value"],
+        pm_lme_estimate = test_lme$tTable["Xpm_median_lag", "Value"],
+        pm_lme_std_error = test_lme$tTable["Xpm_median_lag", "Std.Error"]
       )
       
       } else if(model == "gam"){
+        set.seed(01042020)
         gam_mixed <- gam(frml,
                          data = tmp,method = "REML",
                          family = quasipoisson(link = "log"))

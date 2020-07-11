@@ -1,4 +1,6 @@
-#' Compile lagged gam models.
+#' Compile lagged GAM models.
+#' 
+#' Compile GAM models with time lags for PM data.
 
 compileLaggedGAM <- function(data, pm = "org", frml, nlags = 14,
                              subset_var = "cases", subset_thv = 1,
@@ -58,7 +60,6 @@ compileLaggedGAM <- function(data, pm = "org", frml, nlags = 14,
     }
   })
   model_lag <- do.call("rbind", model_lag)
-
 
   return(model_lag)
 }
