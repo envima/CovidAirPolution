@@ -5,8 +5,8 @@ compileDTWClusters <- function(data) {
     as.data.frame(n[, "new_cases"])[, -2]
   })
 
-  pm_median <- lapply(data, function(n) {
-    as.data.frame(n[, "pm_median"])[, -2]
+  pm_median_estm <- lapply(data, function(n) {
+    as.data.frame(n[, "pm_median_estm"])[, -2]
   })
 
   # Compute DTW clusters.
@@ -17,7 +17,7 @@ compileDTWClusters <- function(data) {
     args = tsclust_args(dist = list(window.size = 10))
   )
 
-  pm_dtw_cluster <- tsclust(pm_median,
+  pm_dtw_cluster <- tsclust(pm_median_estm,
     type = "partitional", k = 6,
     distance = "dtw_basic", centroid = "pam",
     seed = 01042020, trace = TRUE,
@@ -67,7 +67,7 @@ compileDTWClusters <- function(data) {
 
   # Compile dataset averaged over each cluster
   clstr_avg <- st_drop_geometry(clstr[, c(
-    "date", "pm_mean", "pm_median", "cases",
+    "date", "pm_mean", "pm_mean_estm", "pm_median", "pm_median_estm", "cases",
     "deaths", "new_cases", "new_deaths",
     "pop_total", "pop_male", "pop_female", "pop_dens",
     "cluster_covid", "cluster_pm"

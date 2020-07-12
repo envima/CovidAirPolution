@@ -1,8 +1,8 @@
 #' Compile lagged GAM models.
-#' 
+#'
 #' Compile GAM models with time lags for PM data.
 
-compileLaggedGAM <- function(data, pm = "org", frml, nlags = 14,
+compileLaggedGAM <- function(data, frml, lag_var = "pm_median", nlags = 14,
                              subset_var = "cases", subset_thv = 1,
                              individual = "start", ndays = c(-14, 32),
                              obsprd_start = NULL, obsprd_end = NULL) {
@@ -26,13 +26,8 @@ compileLaggedGAM <- function(data, pm = "org", frml, nlags = 14,
       model_lag <- lapply(seq(0, nlags), function(l) {
         tmp <- data[data$nuts3Code == n, ]
 
-        if (pm == "org") {
-          tmp <- tmp %>%
-            mutate(pm_median_lag = dplyr::lag(pm_median, n = (l), default = NA))
-        } else {
-          tmp <- tmp %>%
-            mutate(pm_median_lag = dplyr::lag(pm_median_dt, n = (l), default = NA))
-        }
+        tmp <- tmp %>%
+          mutate(pm_median_lag = dplyr::lag(get(lag_var), n = (l), default = NA))
 
         frml <- as.formula(frml)
         set.seed(01042020)

@@ -1,6 +1,6 @@
 #' Compile lagged mixed effect model.
 
-compileLaggedMixedModel <- function(data, pm = "org", frml, nlags = 14,
+compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 14,
                              subset_var = "cases", subset_thv = 1,
                              individual = "start", ndays = c(-14, 32),
                              obsprd_start = NULL, obsprd_end = NULL,
@@ -27,13 +27,8 @@ compileLaggedMixedModel <- function(data, pm = "org", frml, nlags = 14,
       data_lag <- lapply(seq(0, nlags), function(l) {
         tmp <- data[data$nuts3Code == n, ]
 
-        if (pm == "org") {
-          tmp <- tmp %>%
-            mutate(pm_median_lag = dplyr::lag(pm_median, n = (l), default = NA))
-        } else {
-          tmp <- tmp %>%
-            mutate(pm_median_lag = dplyr::lag(pm_median_dt, n = (l), default = NA))
-        }
+        tmp <- tmp %>%
+          mutate(pm_median_lag = dplyr::lag(get(lag_var), n = (l), default = NA))
         
         tmp_data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end, ]
         

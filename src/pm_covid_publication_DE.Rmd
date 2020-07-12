@@ -71,6 +71,9 @@ gam_model <- gam(new_cases ~ s(seq(length(date))) + weekday, family = quasipoiss
 cntry_avg_gam$predicted <- predict(gam_model, cntry_avg_gam, type = "response")
 cntry_avg_gam$residuals <- residuals(gam_model, type = "response")
 
+
+ggplot(cntry_indv[cntry_indv$nuts3Code != 5162,], aes(x = date, y = pm_median, group = nuts3Code)) + geom_line()
+
 figure_cntry_avg <- ggplot() +
   geom_line(data = cntry_avg_gam, aes(x = date, y = pm_median, color = "Daily median PM10")) +
   geom_point(data = cntry_avg_gam, aes(x = date, y = pm_median, color = "Daily median PM10")) +
@@ -132,7 +135,7 @@ cntry_indv <- cmpldata$de_clstr$clstr
 
 if (compile_models) {
   gam_lag <- compileLaggedGAM(
-    data = cntry_indv, pm = "org",
+    data = cntry_indv, lag_var = "pm_median",
     frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
     nlags = 15,
     subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
@@ -315,70 +318,6 @@ figure_cumulative_effect <- ggplot(tavrg_long, aes(x = value, y = cases_log10)) 
   facet_wrap(~var, scales = "free") +
   theme_bw()
 figure_cumulative_effect
-```
-
-
-
-
-
-# Redundancy analysis of the lagged effect sizes
-
-The analysis part is based on former and additional results and aims in providing additional information regarding the dependencies of SARS-CoV2 infections. The figure shows the results of a redundancy analysis of the lagged effect sizes.
-
-```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-
-cntry_indv <- cmpldata$de_clstr$clstr
-
-add_info <- lapply(unique(cntry_indv$nuts3Code), function(n) {
-  tmp <- cntry_indv[cntry_indv$nuts3Code == n, ]
-  tmp$date_numeric <- seq(nrow(tmp))
-
-  tmp <- data.frame(
-    nuts3Code = tmp$nuts3Code[1],
-    date_start = tmp$date[which(tmp$cases > 0)[1]],
-    date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-    daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-    cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-    cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-04-01")]
-  )
-  return(tmp)
-})
-
-add_info <- do.call("rbind", add_info)
-add_info$difftime_start_max <- difftime(add_info$date_max, add_info$date_start, units = "days")
-add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-17"), units = "days")
-add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-17"), units = "days")
-
-# summary(as.numeric(add_info$difftime_start_max))
-# summary(as.numeric(add_info$first_shutdown))
-# summary(as.numeric(add_info$max_shutdown))
-# summary(add_info$daily_max)
-#
-# hist(as.numeric(add_info$difftime_start_max))
-# hist(as.numeric(add_info$first_shutdown))
-# hist(as.numeric(add_info$max_shutdown))
-
-t_matrix <- reshape(gam_lag[, c("nuts3Code", "t", "lag")], idvar = "nuts3Code", timevar = "lag", direction = "wide")
-rownames(t_matrix) <- t_matrix$nuts3Code
-
-t_environment <- merge(cmpldata$de_nuts3_map, add_info)
-t_environment <- st_drop_geometry(t_environment)
-t_matrix <- merge(t_matrix, t_environment, by = "nuts3Code")
-
-# Log transform some variables and rename for figure.
-t_matrix$PM <- log10(t_matrix$pm_median)
-t_matrix$Population <- log10(t_matrix$pop_total)
-t_matrix$Area <- log10(t_matrix$st_area)
-t_matrix$Cases <- log10(t_matrix$cases)
-t_matrix$First <- t_matrix$difftime_first_shutdown
-t_matrix$Latitude <- t_matrix$centroid_lat
-t_matrix$Longitude <- t_matrix$centroid_lon
-
-rd <- rda(
-  t_matrix[, seq(which(colnames(t_matrix) == "t.0"), which(colnames(t_matrix) == "t.-15"))],
-  t_matrix[, c("PM", "Cases", "Population", "Area", "First", "Latitude", "Longitude")]
-)
-plot(rd, type = "points", scaling = 0)
 ```
 
 
@@ -590,7 +529,66 @@ mapview(cmpldata$de_nuts3_map, zcol = "log_cases")
 
 
 
+# Redundancy analysis of the lagged effect sizes
 
+The analysis part is based on former and additional results and aims in providing additional information regarding the dependencies of SARS-CoV2 infections. The figure shows the results of a redundancy analysis of the lagged effect sizes.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+cntry_indv <- cmpldata$de_clstr$clstr
+
+add_info <- lapply(unique(cntry_indv$nuts3Code), function(n) {
+  tmp <- cntry_indv[cntry_indv$nuts3Code == n, ]
+  tmp$date_numeric <- seq(nrow(tmp))
+
+  tmp <- data.frame(
+    nuts3Code = tmp$nuts3Code[1],
+    date_start = tmp$date[which(tmp$cases > 0)[1]],
+    date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+    daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+    cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+    cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-04-01")]
+  )
+  return(tmp)
+})
+
+add_info <- do.call("rbind", add_info)
+add_info$difftime_start_max <- difftime(add_info$date_max, add_info$date_start, units = "days")
+add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-17"), units = "days")
+add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-17"), units = "days")
+
+# summary(as.numeric(add_info$difftime_start_max))
+# summary(as.numeric(add_info$first_shutdown))
+# summary(as.numeric(add_info$max_shutdown))
+# summary(add_info$daily_max)
+#
+# hist(as.numeric(add_info$difftime_start_max))
+# hist(as.numeric(add_info$first_shutdown))
+# hist(as.numeric(add_info$max_shutdown))
+
+t_matrix <- reshape(gam_lag[, c("nuts3Code", "t", "lag")], idvar = "nuts3Code", timevar = "lag", direction = "wide")
+rownames(t_matrix) <- t_matrix$nuts3Code
+
+t_environment <- merge(cmpldata$de_nuts3_map, add_info)
+t_environment <- st_drop_geometry(t_environment)
+t_matrix <- merge(t_matrix, t_environment, by = "nuts3Code")
+
+# Log transform some variables and rename for figure.
+t_matrix$PM <- log10(t_matrix$pm_median)
+t_matrix$Population <- log10(t_matrix$pop_total)
+t_matrix$Area <- log10(t_matrix$st_area)
+t_matrix$Cases <- log10(t_matrix$cases)
+t_matrix$First <- t_matrix$difftime_first_shutdown
+t_matrix$Latitude <- t_matrix$centroid_lat
+t_matrix$Longitude <- t_matrix$centroid_lon
+
+rd <- rda(
+  t_matrix[, seq(which(colnames(t_matrix) == "t.0"), which(colnames(t_matrix) == "t.-15"))],
+  t_matrix[, c("PM", "Cases", "Population", "Area", "First", "Latitude", "Longitude")]
+)
+plot(rd, type = "points", scaling = 0)
+
+```
 
 
 

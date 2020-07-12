@@ -25,9 +25,9 @@ project_folders <- c(
 
 libs <- c(
   "biwavelet", "caret", "cowplot", "data.table", "dtwclust",
-  "ggfortify", "ggplot2", "ggspatial", "htmltools", "lme4",
-  "mapview", "MASS", "mgcv", "plotly", "rnaturalearth", "sf",
-  "stringr", "tidygeocoder", "WaveletComp", "wavelets",
+  "forecast", "ggfortify", "ggplot2", "ggspatial", "htmltools",
+  "lme4", "mapview", "MASS", "mgcv", "plotly", "rnaturalearth",
+  "sf", "stringr", "tidygeocoder", "WaveletComp", "wavelets",
   "htmlTable", "jsonlite", "rnaturalearthhires", "sf",
   "tidyverse", "vegan", "doParallel", "forcats", "tidyquant",
   "tidyr", "timetk"

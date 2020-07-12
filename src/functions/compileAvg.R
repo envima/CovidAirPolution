@@ -8,7 +8,9 @@ compileAvg <- function(data) {
     data,
     "[", c(
       "date", "pm_mean", "pm_median", "cases", "deaths",
-      "new_cases", "new_deaths"
+      "new_cases", "new_deaths",
+      "pm_mean_estm", "pm_mean_rplced",
+      "pm_median_estm", "pm_median_rplced"
       # "cases_glm_time", "cases_glm_time_residuals",
       # "new_cases_glm_time", "new_cases_glm_time_residuals",
       # "deaths_glm_time", "deaths_glm_time_residuals",
@@ -22,7 +24,13 @@ compileAvg <- function(data) {
 
   avg <- st_set_geometry(avg, NULL)
 
+  tmp_pm_mean_rplced <- aggregate(pm_mean_rplced ~ date, data = avg, FUN = sum)
+  tmp_pm_median_rplced <- aggregate(pm_median_rplced ~ date, data = avg, FUN = sum)
+  
   avg <- aggregate(. ~ date, data = avg, FUN = mean)
+  avg$pm_mean_rplced <- tmp_pm_mean_rplced
+  avg$pm_median_rplced <- tmp_pm_median_rplced
+  
   avg$weekday <- weekdays(avg$date)
   avg$date_day <- paste(avg$date, substr(avg$weekday, 1, 1))
   # avg$weekday_c <- compileDetrendedTimeSeries(
