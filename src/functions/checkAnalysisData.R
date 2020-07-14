@@ -3,7 +3,7 @@
 #' Exclude datasets that do not cover the analysis time range and compute an
 #' outlier detection and replacement value estimate.
 
-checkAnalysisData <- function(data, start_date, end_date) {
+checkAnalysisData <- function(data, start_date, end_date, pm) {
   date_length <- round(difftime(end_date, start_date, units = c("days")))
 
   valid_data <- data
@@ -39,7 +39,7 @@ checkAnalysisData <- function(data, start_date, end_date) {
 
   print(names(data)[!(names(data) %in% names(valid_data))])
 
-  saveRDS(names(data)[!(names(data) %in% names(valid_data))], file.path(envrmt$path_tmp, "non_valid.rds"))
+  saveRDS(names(data)[!(names(data) %in% names(valid_data))], file.path(envrmt$path_analysis, paste0("non_valid_", pm, ".rds")))
 
   # Outlier detection and estimate.
   valid_data_oc <- lapply(valid_data, function(d) {

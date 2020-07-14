@@ -20,6 +20,7 @@ project_folders <- c(
   "data/report-data-platform-16133-94427-misc/",
   "data/report-data-platform-16229-259611-lombardy",
   "data/tmp/",
+  "data/analysis/",
   "data/figures/"
 )
 
