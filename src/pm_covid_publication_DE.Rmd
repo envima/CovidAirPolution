@@ -22,21 +22,31 @@ if (Sys.info()[["nodename"]] == "PC19616") {
 }
 
 compile_data <- FALSE
-compile_models <- TRUE
+compile_models <- FALSE
 start_date <- as.POSIXct("2020-02-15")
 end_date <- as.POSIXct("2020-04-20")
-pm <- "PM10" # "PM2.5"
-lag_var <- "pm_median"
+
+lag_vars_set <- c(
+  "pm_median", "pm_median_estm", "pm_median_estm_best",
+  "pm_mean", "pm_mean_estm", "pm_mean_estm_best"
+)
+lag_vars_set_lut <- (c(
+  "median", "median, outlier removed w/o dust event", "median, outlier removed",
+  "mean", "mean, outlier removed w/o dust event", "mean, outlier removed"
+))
+names(lag_vars_set_lut) <- c(
+  "pm_median", "pm_median_estm", "pm_median_estm_best",
+  "pm_mean", "pm_mean_estm", "pm_mean_estm_best"
+)
+
+pm <- "PM2.5" # "PM2.5"
+lag_var <- "pm_median_estm_best"
+
 Sys.setlocale("LC_TIME", "English")
 
 
-
-# Compile comprehensive analysis data or load preprocessed dataset.
-if (pm == "PM2.5") {
-  cmpldata_file <- "germany_extended_025.RDS"
-} else {
-  cmpldata_file <- "germany_extended_100.RDS"
-}
+# Compile comprehensive analysis data or load precomputed dataset.
+cmpldata_file <- paste0(pm, "_germany_extended.RDS")
 
 if (compile_data) {
   cmpldata <- compileDataDE(start_date = start_date, end_date = end_date, pm = pm)
@@ -44,6 +54,7 @@ if (compile_data) {
 } else {
   cmpldata <- readRDS(file.path(envrmt$path_analysis, cmpldata_file))
 }
+
 
 # Metadata: The following districts have been excluded within the preprocessing
 # of cmpldata due to unsufficient temporal coverage.
@@ -59,35 +70,37 @@ if (compile_data) {
 
 # Countrywide temporal development of PM values and SARS-CoV2 infections
 
-This analysis part is based on countrywide averaged data. A GAM model is computed to predict the daily new cases explained by time. The two figures show the mean daily PM and covid cases dynamics as well as the daily new cases and residuals if time is used as explanatory variable for SARS-CoV2 infections.
+This analysis part is based on countrywide averaged data. A GAM model is computed to predict the daily new cases explained by time. The figure shows the mean daily PM and covid cases dynamics as well as the daily new cases if time is used as explanatory variable for SARS-CoV2 infections.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 cntry_avg <- cmpldata$de_avg
 
 cntry_avg_gam <- cntry_avg[cntry_avg$date >= as.POSIXct(start_date) & cntry_avg$date <= as.POSIXct(end_date), ]
-
 gam_model <- gam(new_cases ~ s(seq(length(date))) + weekday, family = quasipoisson, data = cntry_avg_gam)
-
 cntry_avg_gam$predicted <- predict(gam_model, cntry_avg_gam, type = "response")
 cntry_avg_gam$residuals <- residuals(gam_model, type = "response")
 
-
-ggplot(cntry_indv[cntry_indv$nuts3Code != 5162,], aes(x = date, y = pm_median, group = nuts3Code)) + geom_line()
+cntry_indv <- cmpldata$de_clstr$clstr
 
 figure_cntry_avg <- ggplot() +
-  geom_line(data = cntry_avg_gam, aes(x = date, y = pm_median, color = "Daily median PM10")) +
-  geom_point(data = cntry_avg_gam, aes(x = date, y = pm_median, color = "Daily median PM10")) +
+  geom_line(data = cntry_indv, aes(x = date, y = get(lag_var), group = nuts3Code, color = "All regions")) +
+  geom_line(data = cntry_avg_gam, aes(x = date, y = get(lag_var), color = "Daily median PM")) +
+  geom_point(data = cntry_avg_gam, aes(x = date, y = get(lag_var), color = "Daily median PM")) +
   geom_line(data = cntry_avg_gam, aes(x = date, y = new_cases, color = "Daily new cases")) +
   geom_point(data = cntry_avg_gam, aes(x = date, y = new_cases, color = "Daily new cases")) +
   geom_line(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
   geom_point(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
   geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype = "dotted", color = "black") +
   geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype = "dotted", color = "black") +
-  labs(x = "Date and day of week", y = bquote("Infections, PM10 [" ~ µm / m^3 ~ "]")) +
+  labs(x = "Date and day of week", y = bquote("Infections, " ~ .(pm) ~ " [" ~ µm / m^3 ~ "]")) +
   theme_bw() +
   scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") +
-  scale_color_manual(values = c("#b2df8a", "#1f78b4", "#a6cee3")) +
+  scale_color_manual(
+    values = c("#4f4f4f", "#b2df8a", "#1f78b4", "#a6cee3"),
+    labels = c(paste0("Daily median ", pm), paste0("Daily averaged median ", pm), "Daily new cases", 
+               "Daily new cases, explained by time")
+  ) +
   theme(
     text = element_text(size = 10), axis.title = element_text(size = 10),
     legend.position = c(0.2, 0.7), axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2),
@@ -95,31 +108,6 @@ figure_cntry_avg <- ggplot() +
     panel.grid.major = element_blank(), panel.grid.minor = element_blank()
   )
 figure_cntry_avg
-
-figure_cntry_avg_res <- ggplot() +
-  geom_line(data = cntry_avg_gam, aes(x = date, y = residuals, color = "Residuals")) +
-  geom_point(data = cntry_avg_gam, aes(x = date, y = residuals, color = "Residuals")) +
-  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype = "dotted", color = "black") +
-  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype = "dotted", color = "black") +
-  geom_text(aes(
-    x = as.POSIXct("2020-03-14"),
-    label = "Start of contact restrictions \n", y = -0.6
-  ), colour = "black", angle = 90, size = 2) +
-  geom_text(aes(
-    x = as.POSIXct("2020-03-17"),
-    label = "Start of shut down \n", y = -0.65
-  ), colour = "black", angle = 90, size = 2) +
-  labs(x = "Date and day of week", y = "Residuals") +
-  theme_bw() +
-  scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") +
-  scale_color_manual(values = c("#d95f02")) +
-  theme(
-    text = element_text(size = 10), axis.title = element_text(size = 10),
-    legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2),
-    legend.title = element_blank(), panel.background = element_blank(),
-    panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-  )
-figure_cntry_avg_res
 ```
 
 
@@ -132,52 +120,63 @@ This analysis part is based on individual rural district data. A GAM model is co
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
+# Compile model(s) or load precomputed ones.
 cntry_indv <- cmpldata$de_clstr$clstr
 
 if (compile_models) {
-  gam_lag <- compileLaggedGAM(
-    data = cntry_indv, lag_var = lag_var,
-    frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
-    nlags = 15,
-    subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
-  )
-  saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0("gam_lag_", lag_var, "_", pm, ".rds")))
+  gam_lag <- lapply(lag_vars_set, function(lag_var) {
+    gam_lag <- compileLaggedGAM(
+      data = cntry_indv, lag_var = lag_var,
+      frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
+      nlags = 15,
+      subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
+    )
+    saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_", lag_var, "_.rds")))
+  })
+  names(gam_lag) <- lag_vars_set
+  saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_lag_vars_set.rds")))
+  return(gam_lag)
 } else {
-  gam_lag <- readRDS(file.path(envrmt$path_analysis, paste0("gam_lag_", lag_var, "_", pm, ".rds")))
+  gam_lag_set <- readRDS(file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_lag_vars_set.rds")))
 }
 
 
-tstat <- lapply(seq(0, -15), function(i) {
-  tmp <- t.test(gam_lag$t[gam_lag$lag == i])
-  data.frame(
-    lag = i,
-    t = tmp$statistic,
-    p = tmp$p.value,
-    estimate = tmp$estimate,
-    conf_min = tmp$conf.int[1],
-    conf_max = tmp$conf.int[2]
-  )
+# Make figure (set).
+figure_gam_lag_set <- lapply(names(gam_lag_set), function(n) {
+  gam_lag <- gam_lag_set[[n]]
+
+  tstat <- lapply(seq(0, -15), function(i) {
+    tmp <- t.test(gam_lag$t[gam_lag$lag == i])
+    data.frame(
+      lag = i,
+      t = tmp$statistic,
+      p = tmp$p.value,
+      estimate = tmp$estimate,
+      conf_min = tmp$conf.int[1],
+      conf_max = tmp$conf.int[2]
+    )
+  })
+  tstat <- do.call("rbind", tstat)
+
+  gam_lag$fillcol <- FALSE
+  gam_lag$fillcol[gam_lag$lag %in% tstat[tstat$p < 0.1, "lag"]] <- TRUE
+
+  figure_gam_effectsize <- ggplot(data = gam_lag, aes(x = as.factor(lag), y = t, fill = fillcol, alpha = fillcol)) +
+    geom_boxplot() +
+    theme_bw() +
+    geom_hline(yintercept = c(0), linetype = "dashed", color = "black") +
+    labs(x = "Time lag [days]", y = paste0("Effect size, ", pm, " ", lag_vars_set_lut[n])) +
+    theme(
+      text = element_text(size = 10), axis.title = element_text(size = 10),
+      panel.background = element_blank(), panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ) +
+    scale_fill_manual(values = c("grey", "darkgreen")) +
+    scale_alpha_manual(values = c(0.2, 0.6)) +
+    theme(legend.position = "none")
+  return(figure_gam_effectsize)
 })
-tstat <- do.call("rbind", tstat)
-# tstat[tstat$p < 0.1, ]
-
-gam_lag$fillcol <- FALSE
-gam_lag$fillcol[gam_lag$lag %in% tstat[tstat$p < 0.1, "lag"]] <- TRUE
-
-figure_effectsize <- ggplot(data = gam_lag, aes(x = as.factor(lag), y = t, fill = fillcol, alpha = fillcol)) +
-  geom_boxplot() +
-  theme_bw() +
-  geom_hline(yintercept = c(0), linetype = "dashed", color = "black") +
-  labs(x = "Time lag [days]", y = "Effect size") +
-  theme(
-    text = element_text(size = 10), axis.title = element_text(size = 10),
-    panel.background = element_blank(), panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  ) +
-  scale_fill_manual(values = c("grey", "darkgreen")) +
-  scale_alpha_manual(values = c(0.2, 0.6)) +
-  theme(legend.position = "none")
-figure_effectsize
+names(figure_gam_lag_set) <- names(gam_lag_set)
 ```
 
 
@@ -190,71 +189,80 @@ This analysis part is based on individual rural district data. A mixed effect GA
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
+# Compile model(s) or load precomputed ones.
 cntry_indv <- cmpldata$de_clstr$clstr
 
-# gamm: frml = "new_cases ~ s(date_seq) + weekday + pm_median_lag + offset(pop_total_log10)"
-# gam: frml = 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")'
-mlm <- "gamm"
-if (mlm == "gamm") {
-  frml <- "new_cases ~ s(date_seq) + weekday + pm_median_lag"
-} else if (mlm == "gam") {
-  frml <- 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")'
-}
+# frml = "new_cases ~ s(date_seq) + weekday + pm_median_lag + offset(pop_total_log10)"
+frml <- "new_cases ~ s(date_seq) + weekday + pm_median_lag"
 
 if (compile_models) {
-  gam_lag_mixed <- compileLaggedMixedModel(
-    data = cntry_indv, lag_var = lag_var,
-    frml = 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")',
-    nlags = 15,
-    subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30), model = mlm
-  )
-  saveRDS(gam_lag_mixed, file.path(envrmt$path_analysis, paste0("gam_lag_mixed_", mlm, "_", lag_var, "_", pm, ".rds")))
+  gam_lag_mixed <- lapply(lag_vars_set, function(lag_var) {
+    gam_lag_mixed <- compileLaggedMixedModel(
+      data = cntry_indv, lag_var = lag_var,
+      frml = 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")',
+      nlags = 15,
+      subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30), model = mlm
+    )
+    saveRDS(gam_lag_mixed, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_mixed_", mlm, "_", lag_var, ".rds")))
+  })
+  names(gam_lag_mixed) <- lag_vars_set
+  saveRDS(gam_lag_mixed, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_mixed_lag_vars_set.rds")))
+  return(gam_lag_mixed)
 } else {
-  gam_lag_mixed <- readRDS(file.path(envrmt$path_analysis, paste0("gam_lag_mixed_", mlm, "_", lag_var, "_", pm, ".rds")))
+  gam_lag_mixed_set <- readRDS(file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_mixed_lag_vars_set.rds")))
 }
 
-gam_lag_mixed$fillcol <- FALSE
-gam_lag_mixed$fillcol[gam_lag_mixed$p_lme < 0.1] <- TRUE
 
-figure_effectsize_mixed <- ggplot(
-  data = gam_lag_mixed,
-  aes(x = as.factor(lag), y = t_lme, color = fillcol, fill = fillcol, alpha = fillcol)
-) +
-  geom_point(size = 3) +
-  theme_bw() +
-  geom_hline(yintercept = c(0), linetype = "dashed", color = "black") +
-  labs(x = "Time lag [days]", y = "Effect size") +
-  theme(
-    text = element_text(size = 10), axis.title = element_text(size = 10),
-    panel.background = element_blank(), panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  ) +
-  scale_fill_manual(values = c("black", "red")) +
-  scale_color_manual(values = c("black", "red")) +
-  scale_alpha_manual(values = c(1, 1)) +
-  theme(legend.position = "none")
-figure_effectsize_mixed
+# Make figure (set).
+figure_gam_lag_mixed_set <- lapply(names(gam_lag_mixed_set), function(n) {
+  gam_lag_mixed <- gam_lag_mixed_set[[n]]
 
-figure_estimate_mixed <- ggplot(
-  data = gam_lag_mixed,
-  aes(x = as.factor(lag), y = pm_lme_estimate, color = fillcol, fill = fillcol, alpha = fillcol)
-) +
-  geom_point() +
-  geom_line() +
-  geom_errorbar(aes(ymin = pm_lme_estimate - pm_lme_std_error, ymax = pm_lme_estimate + pm_lme_std_error)) +
-  theme_bw() +
-  geom_hline(yintercept = c(0), linetype = "dashed", color = "black") +
-  labs(x = "Time lag [days]", y = "Estimate") +
-  theme(
-    text = element_text(size = 10), axis.title = element_text(size = 10),
-    panel.background = element_blank(), panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
+  gam_lag_mixed$fillcol <- FALSE
+  gam_lag_mixed$fillcol[gam_lag_mixed$p_lme < 0.1] <- TRUE
+
+  figure_effectsize_mixed <- ggplot(
+    data = gam_lag_mixed,
+    aes(x = as.factor(lag), y = t_lme, color = fillcol, fill = fillcol, alpha = fillcol)
   ) +
-  scale_fill_manual(values = c("black", "red")) +
-  scale_color_manual(values = c("black", "red")) +
-  scale_alpha_manual(values = c(1, 1)) +
-  theme(legend.position = "none")
-figure_estimate_mixed
+    geom_point(size = 3) +
+    theme_bw() +
+    geom_hline(yintercept = c(0), linetype = "dashed", color = "black") +
+    labs(x = "Time lag [days]", y = paste0("Effect size, ", pm, " ", lag_vars_set_lut[n])) +
+    theme(
+      text = element_text(size = 10), axis.title = element_text(size = 10),
+      panel.background = element_blank(), panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ) +
+    scale_fill_manual(values = c("black", "red")) +
+    scale_color_manual(values = c("black", "red")) +
+    scale_alpha_manual(values = c(1, 1)) +
+    theme(legend.position = "none")
+  figure_effectsize_mixed
+
+  figure_estimate_mixed <- ggplot(
+    data = gam_lag_mixed,
+    aes(x = as.factor(lag), y = pm_lme_estimate, color = fillcol, fill = fillcol, alpha = fillcol)
+  ) +
+    geom_point() +
+    geom_line() +
+    geom_errorbar(aes(ymin = pm_lme_estimate - pm_lme_std_error, ymax = pm_lme_estimate + pm_lme_std_error)) +
+    theme_bw() +
+    geom_hline(yintercept = c(0), linetype = "dashed", color = "black") +
+    labs(x = "Time lag [days]", y = paste0("Estimate, ", pm, " ", lag_vars_set_lut[n])) +
+    theme(
+      text = element_text(size = 10), axis.title = element_text(size = 10),
+      panel.background = element_blank(), panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ) +
+    scale_fill_manual(values = c("black", "red")) +
+    scale_color_manual(values = c("black", "red")) +
+    scale_alpha_manual(values = c(1, 1)) +
+    theme(legend.position = "none")
+  figure_estimate_mixed
+
+  return(list(effect = figure_effectsize_mixed, estimate_mixed = figure_estimate_mixed))
+})
+names(figure_gam_lag_mixed_set) <- names(gam_lag_mixed_set)
 ```
 
 
@@ -267,9 +275,31 @@ This analysis part is based on individual rural district data that is averaged o
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-tmp <- cmpldata$de_clstr$clstr[cmpldata$de_clstr$clstr$date <= as.POSIXct("2020-04-01"), ]
+cntry_indv <- cmpldata$de_clstr$clstr
 
-cntry_agg <- aggregate(tmp$pm_median, by = list(tmp$nuts3Code), FUN = mean)
+add_info <- lapply(unique(cntry_indv$nuts3Code), function(n) {
+  tmp <- cntry_indv[cntry_indv$nuts3Code == n, ]
+  tmp$date_numeric <- seq(nrow(tmp))
+
+  tmp <- data.frame(
+    nuts3Code = tmp$nuts3Code[1],
+    date_start = tmp$date[which(tmp$cases > 0)[1]],
+    date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+    daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+    cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
+    cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-04-01")]
+  )
+  return(tmp)
+})
+
+add_info <- do.call("rbind", add_info)
+add_info$difftime_start_max <- difftime(add_info$date_max, add_info$date_start, units = "days")
+add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-17"), units = "days")
+add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-17"), units = "days")
+
+tmp <- cntry_indv[cntry_indv$date <= as.POSIXct("2020-04-01"), ]
+
+cntry_agg <- aggregate(st_drop_geometry(tmp[lag_var]), by = list(tmp$nuts3Code), FUN = mean)
 colnames(cntry_agg) <- c("nuts3Code", "PM_tavrg")
 
 tmp <- tmp[tmp$date == as.POSIXct("2020-04-01"), ]
@@ -281,11 +311,14 @@ cntry_agg$PM_tavrg_log10 <- log10(cntry_agg$PM_tavrg)
 cntry_agg$pop_total_log10 <- log10(cntry_agg$pop_total)
 cntry_agg$st_area_log10 <- log10(cntry_agg$st_area)
 
-# Test of the long-term correlation between PM and SARS-CoV2 infections
-tavrg <- cntry_agg[, c("cases_log10", "centroid_lat", "centroid_lon", "pop_total_log10", "st_area_log10", "difftime_first_shutdown", "PM_tavrg_log10")]
 
-# lm_tavrg <- lm(cases_log10 ~ PM_tavrg_log10 + centroid_lat + centroid_lon +
-#       pop_total_log10 + st_area_log10 + difftime_first_shutdown, data = tavrg)
+# Test of the long-term correlation between PM and SARS-CoV2 infections
+tavrg <- cntry_agg[, c("cases_log10", "centroid_lat", "centroid_lon", "pop_total_log10", "st_area_log10", 
+                       "difftime_first_shutdown", "PM_tavrg_log10")]
+
+lm_tavrg <- lm(cases_log10 ~ PM_tavrg_log10 + centroid_lat + centroid_lon +
+  pop_total_log10 + st_area_log10 + difftime_first_shutdown, data = tavrg)
+summary(lm_tavrg)
 
 lm_tavrg <- lm(cases_log10 ~ 1, data = tavrg)
 lm_tavrg_stpAIC <- stepAIC(lm_tavrg,
@@ -395,7 +428,6 @@ map_pm_median <- ggplot(data = background_map) +
     style = north_arrow_minimal
   )
 map_pm_median
-
 ```
 
 
@@ -433,7 +465,7 @@ plot(rd, type = "points", scaling = 0)
 figure_rda <- recordPlot()
 invisible(dev.off())
 
-figure_2_1 <- plot_grid(figure_cumulative_effect, 
+figure_2_1 <- plot_grid(figure_cumulative_effect,
   labels = c("a"), label_size = 10, ncol = 1
 )
 
@@ -462,7 +494,6 @@ ggsave(file.path(envrmt$path_figures, "figure_2_alternative.png"),
   plot = figure_2_alternative,
   width = 216, height = 279, units = "mm", dpi = 300
 )
-
 ```
 
 
@@ -522,6 +553,34 @@ print(paste("PM values:               ", pm))
 
 cmpldata$de_nuts3_map$log_cases <- log10(cmpldata$de_nuts3_map$cases)
 mapview(cmpldata$de_nuts3_map, zcol = "log_cases")
+
+
+
+
+figure_cntry_avg_res <- ggplot() +
+  geom_line(data = cntry_avg_gam, aes(x = date, y = residuals, color = "Residuals")) +
+  geom_point(data = cntry_avg_gam, aes(x = date, y = residuals, color = "Residuals")) +
+  geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype = "dotted", color = "black") +
+  geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype = "dotted", color = "black") +
+  geom_text(aes(
+    x = as.POSIXct("2020-03-14"),
+    label = "Start of contact restrictions \n", y = -0.6
+  ), colour = "black", angle = 90, size = 2) +
+  geom_text(aes(
+    x = as.POSIXct("2020-03-17"),
+    label = "Start of shut down \n", y = -0.65
+  ), colour = "black", angle = 90, size = 2) +
+  labs(x = "Date and day of week", y = "Residuals") +
+  theme_bw() +
+  scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") +
+  scale_color_manual(values = c("#d95f02")) +
+  theme(
+    text = element_text(size = 10), axis.title = element_text(size = 10),
+    legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2),
+    legend.title = element_blank(), panel.background = element_blank(),
+    panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+  )
+figure_cntry_avg_res
 ```
 
 
@@ -535,28 +594,6 @@ mapview(cmpldata$de_nuts3_map, zcol = "log_cases")
 The analysis part is based on former and additional results and aims in providing additional information regarding the dependencies of SARS-CoV2 infections. The figure shows the results of a redundancy analysis of the lagged effect sizes.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-
-cntry_indv <- cmpldata$de_clstr$clstr
-
-add_info <- lapply(unique(cntry_indv$nuts3Code), function(n) {
-  tmp <- cntry_indv[cntry_indv$nuts3Code == n, ]
-  tmp$date_numeric <- seq(nrow(tmp))
-
-  tmp <- data.frame(
-    nuts3Code = tmp$nuts3Code[1],
-    date_start = tmp$date[which(tmp$cases > 0)[1]],
-    date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-    daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-    cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-    cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-04-01")]
-  )
-  return(tmp)
-})
-
-add_info <- do.call("rbind", add_info)
-add_info$difftime_start_max <- difftime(add_info$date_max, add_info$date_start, units = "days")
-add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-17"), units = "days")
-add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-17"), units = "days")
 
 # summary(as.numeric(add_info$difftime_start_max))
 # summary(as.numeric(add_info$first_shutdown))
@@ -588,7 +625,6 @@ rd <- rda(
   t_matrix[, c("PM", "Cases", "Population", "Area", "First", "Latitude", "Longitude")]
 )
 plot(rd, type = "points", scaling = 0)
-
 ```
 
 

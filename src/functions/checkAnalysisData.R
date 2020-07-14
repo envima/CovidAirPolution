@@ -39,16 +39,14 @@ checkAnalysisData <- function(data, start_date, end_date, pm) {
 
   print(names(data)[!(names(data) %in% names(valid_data))])
 
-  saveRDS(names(data)[!(names(data) %in% names(valid_data))], file.path(envrmt$path_analysis, paste0("non_valid_", pm, ".rds")))
+  saveRDS(names(data)[!(names(data) %in% names(valid_data))], file.path(envrmt$path_analysis, paste0(pm, "_non_valid.rds")))
 
-  # Outlier detection and estimate.
+  # Outlier detection and estimate (and additional metadata providing the pm size).
   valid_data_oc <- lapply(valid_data, function(d) {
-    inds <- seq(as.Date(d$date[1]), as.Date(d$date[nrow(d)]), by = "day")
-
-    d_ts_pm_mean <- ts(d$pm_mean, start = c(2020, as.numeric(format(inds[1], "%j"))), frequency = 365)
+    d_ts_pm_mean <- ts(d$pm_mean, start = c(2020, as.numeric(format(d$date[1], "%j"))), frequency = 365)
     d_ts_pm_mean_outliers <- tsoutliers(d_ts_pm_mean)
 
-    d_ts_pm_median <- ts(d$pm_median, start = c(2020, as.numeric(format(inds[1], "%j"))), frequency = 365)
+    d_ts_pm_median <- ts(d$pm_median, start = c(2020, as.numeric(format(d$date[1], "%j"))), frequency = 365)
     d_ts_pm_median_outliers <- tsoutliers(d_ts_pm_median)
 
     d$pm_mean_estm <- d$pm_mean
@@ -66,6 +64,17 @@ checkAnalysisData <- function(data, start_date, end_date, pm) {
       d$pm_median_estm[d_ts_pm_median_outliers$index] <- d_ts_pm_median_outliers$replacements
       d$pm_median_rplced[d_ts_pm_median_outliers$index] <- TRUE
     }
+
+    d$pm_mean_estm_best <- d$pm_mean_estm
+    d$pm_mean_estm_best[d$date >= as.POSIXct("2020-03-27") & d$date <= as.POSIXct("2020-03-28")] <-
+      d$pm_mean[d$date >= as.POSIXct("2020-03-27") & d$date <= as.POSIXct("2020-03-28")]
+
+    d$pm_median_estm_best <- d$pm_median_estm
+    d$pm_median_estm_best[d$date >= as.POSIXct("2020-03-27") & d$date <= as.POSIXct("2020-03-28")] <-
+      d$pm_median[d$date >= as.POSIXct("2020-03-27") & d$date <= as.POSIXct("2020-03-28")]
+
+    d$pm_size <- pm
+
     return(d)
   })
   return(valid_data_oc)

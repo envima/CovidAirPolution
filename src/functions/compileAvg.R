@@ -10,7 +10,8 @@ compileAvg <- function(data) {
       "date", "pm_mean", "pm_median", "cases", "deaths",
       "new_cases", "new_deaths",
       "pm_mean_estm", "pm_mean_rplced",
-      "pm_median_estm", "pm_median_rplced"
+      "pm_median_estm", "pm_median_rplced",
+      "pm_mean_estm_best", "pm_median_estm_best"
       # "cases_glm_time", "cases_glm_time_residuals",
       # "new_cases_glm_time", "new_cases_glm_time_residuals",
       # "deaths_glm_time", "deaths_glm_time_residuals",
@@ -33,6 +34,8 @@ compileAvg <- function(data) {
   
   avg$weekday <- weekdays(avg$date)
   avg$date_day <- paste(avg$date, substr(avg$weekday, 1, 1))
+  avg$pm_size <- rep(data[[1]]$pm_size[1], nrow(avg))
+  
   # avg$weekday_c <- compileDetrendedTimeSeries(
   #   data = avg$weekday,
   #   comp = "weekday_c"
