@@ -34,6 +34,7 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
         
         df = data.frame(
           nuts3Code = rep(n, nrow(tmp_data)),
+          lag_var = rep(lag_var, nrow(tmp_data)),
           cases = tmp_data$cases,
           new_cases = tmp_data$new_cases,
           pop_total = tmp_data$pop_total,
@@ -78,6 +79,7 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
       test_lme <- summary(gamm_mixed$lme)
       results = data.frame(
         lag = l,
+        lag_var = lag_var,
         t_gam = test_gam$p.t["pm_median_lag"],
         p_gam = test_gam$p.pv["pm_median_lag"],
         pm_gam_estimate = test_gam$p.table["pm_median_lag", "Estimate"],
@@ -103,6 +105,7 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
         test <- summary(gam_mixed)
         results = data.frame(
           lag = l,
+          lag_var = lag_var,
           t = test$p.t["pm_median_lag"],
           p = test$p.pv["pm_median_lag"]
         )

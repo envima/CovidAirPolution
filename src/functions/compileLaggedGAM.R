@@ -39,6 +39,7 @@ compileLaggedGAM <- function(data, frml, lag_var = "pm_median", nlags = 14,
         test <- summary(tmp_gam)
         data.frame(
           nuts3Code = n,
+          lag_var = lag_var,
           cluster = tmp$cluster_covid[1],
           cluster_pm = tmp$cluster_pm[1],
           pm_median_mean = mean(tmp$pm_median),
