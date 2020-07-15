@@ -288,24 +288,54 @@ figure_cumulative_effect <- lapply(pm_vars, function(pm) {
   lm_tavrg_stpAIC_smry <- summary(lm_tavrg_stpAIC)
   saveRDS(lm_tavrg_stpAIC_smry, file.path(envrmt$path_figures, "lm_tavrg_stpAIC_smry.rds"))
 
-  tavrg_long <- gather(tavrg, key = "var", value = "value", -cases_log10)
-  tavrg_long$var <- factor(tavrg_long$var,
-    levels = c(
-      "PM_tavrg_log10", "centroid_lat", "centroid_lon",
-      "pop_total_log10", "st_area_log10",
-      "difftime_first_shutdown"
-    ),
-    labels = c(
-      paste0("log10(", tmp$pm_size[1], ")"), "Latitude", "Longitude",
-      "log10(Population)", "log10(Area)",
-      "Time difference first case and shutdown"
-    )
-  )
+  # tavrg_fig <- cntry_agg[, c(
+  #   "cases", "centroid_lat", "centroid_lon", "pop_total", "st_area",
+  #   "difftime_first_shutdown", "PM_tavrg"
+  # )]
+  
+  tavrg_fig <- cntry_agg[, c(
+    "cases_log10", "centroid_lat", "centroid_lon", "pop_total_log10", "st_area_log10",
+    "difftime_first_shutdown", "PM_tavrg_log10"
+  )]
+  
+  
+  
+  # tavrg_long <- gather(tavrg_fig, key = "var", value = "value", -cases)
+  
+  tavrg_long <- gather(tavrg_fig, key = "var", value = "value", -cases_log10)
+  
+  # tavrg_long$var <- factor(tavrg_long$var,
+  #   levels = c(
+  #     "PM_tavrg", "centroid_lat", "centroid_lon",
+  #     "pop_total", "st_area",
+  #     "difftime_first_shutdown"
+  #   ),
+  #   labels = c(
+  #     tmp$pm_size[1], "Latitude", "Longitude",
+  #     "Population", "Area",
+  #     "Time difference first case and shutdown"
+  #   )
+  # )
 
+  tavrg_long$var <- factor(tavrg_long$var,
+                           levels = c(
+                             "PM_tavrg_log10", "centroid_lat", "centroid_lon",
+                             "pop_total_log10", "st_area_log10",
+                             "difftime_first_shutdown"
+                           ),
+                           labels = c(
+                             paste0("log10(", tmp$pm_size[1], ")"), "Latitude", "Longitude",
+                             "log10(Population)", "log10(Area)",
+                             "Time difference first case and shutdown"
+                           )
+  )
+  
   figure_cumulative_effect <- ggplot(tavrg_long, aes(x = value, y = cases_log10)) +
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) +
     labs(x = "", y = bquote(log[10] ~ "(Cumulative SARS-CoV-2 infections)")) +
+    # scale_x_continuous(trans='log10') +
+    # scale_y_continuous(trans='log10') +
     facet_wrap(~var, scales = "free") +
     theme_bw()
   return(figure_cumulative_effect)
