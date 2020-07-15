@@ -361,7 +361,7 @@ map_pm_mean <- lapply(pm_vars, function(pm) {
   layer <- st_transform(cmpldata[[pm]]$de_nuts3_map, crs = "+init=epsg:25832")
   map_pm_mean <- ggplot(data = background_map) +
     geom_sf() +
-    geom_sf(data = layer, aes(fill = pm_mean)) +
+    geom_sf(data = layer, aes(fill = pm_mean_estm_best)) +
     scale_fill_viridis_c(trans = "log10") +
     theme(
       text = element_text(size = 10), axis.title = element_text(size = 10),
