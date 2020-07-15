@@ -26,19 +26,19 @@ for(pm in pm_vars){
   cmpldata <- readRDS(file.path(envrmt$path_analysis, cmpldata_file))
   cntry_indv <- cmpldata$de_clstr$clstr
   
-  Individual district models with date, weekday and PM as explanatroy variables.
-  gam_lag <- lapply(lag_vars_set, function(lag_var){
-    gam_lag <- compileLaggedGAM(
-      data = cntry_indv, lag_var = lag_var,
-      frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
-      nlags = 15,
-      subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
-    )
-    saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_", lag_var, ".rds")))
-    return(gam_lag)
-  })
-  names(gam_lag) <- lag_vars_set
-  saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_vars_set.rds")))
+  # Individual district models with date, weekday and PM as explanatroy variables.
+  # gam_lag <- lapply(lag_vars_set, function(lag_var){
+  #   gam_lag <- compileLaggedGAM(
+  #     data = cntry_indv, lag_var = lag_var,
+  #     frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
+  #     nlags = 15,
+  #     subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
+  #   )
+  #   saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_", lag_var, ".rds")))
+  #   return(gam_lag)
+  # })
+  # names(gam_lag) <- lag_vars_set
+  # saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_vars_set.rds")))
 
   
   # Country wide mixed effect model with date, weekday and PM as explanatroy variables and district as random effect.

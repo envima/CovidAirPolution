@@ -12,12 +12,16 @@ compileMapDE <- function(data) {
     )
     tmp$pm_mean <- mean(n$pm_mean[n$date >= as.POSIXct("2020-02-15") &
       n$date <= as.POSIXct("2020-04-01")])
-    tmp$pm_median <- mean(n$pm_median[n$date >= as.POSIXct("2020-02-15") &
-      n$date <= as.POSIXct("2020-04-01")])
     tmp$pm_mean_estm <- mean(n$pm_mean_estm[n$date >= as.POSIXct("2020-02-15") &
                                     n$date <= as.POSIXct("2020-04-01")])
+    tmp$pm_mean_estm_best <- mean(n$pm_mean_estm_best[n$date >= as.POSIXct("2020-02-15") &
+                                              n$date <= as.POSIXct("2020-04-01")])
+    tmp$pm_median <- mean(n$pm_median[n$date >= as.POSIXct("2020-02-15") &
+                                        n$date <= as.POSIXct("2020-04-01")])
     tmp$pm_median_estm <- mean(n$pm_median_estm[n$date >= as.POSIXct("2020-02-15") &
                                         n$date <= as.POSIXct("2020-04-01")])
+    tmp$pm_median_estm_best <- mean(n$pm_median_estm_best[n$date >= as.POSIXct("2020-02-15") &
+                                                  n$date <= as.POSIXct("2020-04-01")])
     tmp$pm_mean_rplced <- sum((n$pm_mean_rplced))
     tmp$pm_median_rplced <- sum((n$pm_median_rplced))
     return(tmp)
