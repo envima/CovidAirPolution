@@ -90,6 +90,14 @@ ggsave(file.path(envrmt$path_figures, "figure_2.png"),
 
 
 
+# Extended Data Table 1: Country wide reported SARS-CoV-2 infections and PM10 concentrations.
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+lm_tavrg_smry
+lm_tavrg_stpAIC_smry
+
+
+```
 
 
 
