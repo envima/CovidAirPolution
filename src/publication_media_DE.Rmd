@@ -68,12 +68,13 @@ Fig. 2: (a) Relationship between log10-transformed cumulative infections on Apri
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-figure_2_1 <- plot_grid(figure_cumulative_effect$PM10,
-                        labels = c("a"), label_size = 10, ncol = 1
+figure_2_1 <- plot_grid(figure_cumulative_effect$PM10$cumulative_effect_log,
+                        figure_cumulative_effect$PM10$cumulative_effect,
+                        labels = c("a", "b"), label_size = 10, ncol = 1
 )
 
 figure_2_2 <- plot_grid(figure_gam_lag_set$PM10$pm_mean_estm_best, figure_gam_lag_mixed_set$PM10$pm_mean_estm_best$estimate_mixed,
-                        labels = c("b", "c"), label_size = 10, ncol = 2
+                        labels = c("c", "d"), label_size = 10, ncol = 2
 )
 
 figure_2 <- plot_grid(figure_2_1, figure_2_2,
