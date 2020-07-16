@@ -356,7 +356,7 @@ figure_cumulative_effect <- lapply(pm_vars, function(pm) {
   ) +
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) +
-    labs(x = "", y = "") +
+    labs(x = "", y = "Cumulative SARS-CoV-2 infections") +
     scale_x_continuous(trans = "log10") +
     scale_y_continuous(trans = "log10") +
     facet_wrap(~var, scales = "free") +
@@ -369,7 +369,7 @@ figure_cumulative_effect <- lapply(pm_vars, function(pm) {
   ) +
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) +
-    labs(x = "", y = "") +
+    labs(x = "", y = "Cumulative SARS-CoV-2 infections") +
     scale_y_continuous(trans = "log10") +
     facet_wrap(~var, scales = "free") +
     theme_bw() +
