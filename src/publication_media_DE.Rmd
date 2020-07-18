@@ -138,16 +138,29 @@ ggsave(file.path(envrmt$path_figures, "figure_sup_2.png"),
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-figure_sup_3 <- plot_grid(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5, 
+figure_sup_3_1 <- plot_grid(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5, 
                             cor_figure_corr_PM10_PM2.5$figure_PM10_outliers, 
                             cor_figure_corr_PM10_PM2.5$figure_PM2.5_outliers, 
                             labels = c("a", "b", "c"), label_size = 12, ncol = 3)
 
-ggsave(file.path(envrmt$path_figures, "figure_sup_3.png"),
-       plot = figure_sup_3,
-       width = 347, height = 150, units = "mm", dpi = 300
+figure_sup_3_2 <-  plot_grid(figure_gam_lag_set$PM10$pm_mean, figure_gam_lag_mixed_set$PM10$pm_mean$estimate_mixed,
+                        labels = c("d", "e"), label_size = 10, ncol = 2
 )
 
+figure_sup_3_3 <-  plot_grid(figure_gam_lag_set$PM2.5$pm_mean, figure_gam_lag_mixed_set$PM2.5$pm_mean$estimate_mixed,
+                        labels = c("f", "g"), label_size = 10, ncol = 2
+)
+
+figure_sup_3 <- plot_grid(figure_sup_3_1, figure_sup_3_2, figure_sup_3_3, labels = NULL, ncol = 1)
+
+ggsave(file.path(envrmt$path_figures, "figure_sup_3.png"),
+       plot = figure_sup_3,
+       width = 347, height = 450, units = "mm", dpi = 300
+)
+
+cor_figure_corr_PM10_PM2.5$n_PM10_nuts3_regions
+cor_figure_corr_PM10_PM2.5$n_PM2.5_nuts3_regions
+cor_figure_corr_PM10_PM2.5$n_PM10_PM2.5_nuts3_regions_overlap
 ```
 
 
