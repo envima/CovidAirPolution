@@ -227,7 +227,7 @@ saveRDS(figure_gam_lag_mixed_set, file.path(envrmt$path_figures, "figure_gam_lag
 
 
 # Longer-term correlation of PM and SARS-CoV2 infections
-figure_cumulative_effect <- lapply(pm_vars, function(pm) {
+model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
   cntry_indv <- cmpldata[[pm]]$de_clstr$clstr
 
   add_info <- lapply(unique(cntry_indv$nuts3Code), function(n) {
@@ -274,7 +274,6 @@ figure_cumulative_effect <- lapply(pm_vars, function(pm) {
   lm_tavrg <- lm(cases_log10 ~ PM_tavrg_log10 + centroid_lat + centroid_lon +
     pop_total_log10 + st_area_log10 + difftime_first_shutdown, data = tavrg)
   lm_tavrg_smry <- summary(lm_tavrg)
-  saveRDS(lm_tavrg_smry, file.path(envrmt$path_figures, "lm_tavrg_smry.rds"))
 
   lm_tavrg <- lm(cases_log10 ~ 1, data = tavrg)
   lm_tavrg_stpAIC <- stepAIC(lm_tavrg,
@@ -286,7 +285,6 @@ figure_cumulative_effect <- lapply(pm_vars, function(pm) {
     )
   )
   lm_tavrg_stpAIC_smry <- summary(lm_tavrg_stpAIC)
-  saveRDS(lm_tavrg_stpAIC_smry, file.path(envrmt$path_figures, "lm_tavrg_stpAIC_smry.rds"))
 
   tavrg_fig <- cntry_agg[, c(
     "cases", "PM_tavrg", "pop_total", "st_area",
@@ -375,10 +373,11 @@ figure_cumulative_effect <- lapply(pm_vars, function(pm) {
     theme_bw() +
     facet_wrap(~var, scales = "free")
 
-  return(list(cumulative_effect_log = figure_cumulative_effect_log, cumulative_effect = figure_cumulative_effect))
+  return(list(lm_tavrg_smry = lm_tavrg_smry, lm_tavrg_stpAIC_smry = lm_tavrg_stpAIC_smry, 
+              cumulative_effect_log = figure_cumulative_effect_log, cumulative_effect = figure_cumulative_effect))
 })
-names(figure_cumulative_effect) <- pm_vars
-saveRDS(figure_cumulative_effect, file.path(envrmt$path_figures, "figure_cumulative_effect.rds"))
+names(model_figure_cumulative_effect) <- pm_vars
+saveRDS(model_figure_cumulative_effect, file.path(envrmt$path_figures, "model_figure_cumulative_effect.rds"))
 
 
 
@@ -455,3 +454,85 @@ map_pm_mean <- lapply(pm_vars, function(pm) {
 })
 names(map_pm_mean) <- pm_vars
 saveRDS(map_pm_mean, file.path(envrmt$path_figures, "map_pm_mean.rds"))
+
+
+
+# Correlation between PM10 and PM2.5 and influence of outlier 
+cntry_indv_PM10 <- st_drop_geometry(cmpldata$PM10$de_clstr$clstr[, c("date", "nuts3Code", "pm_mean", "pm_mean_estm", "pm_mean_estm_best", "cases")])
+colnames(cntry_indv_PM10) <- c("date", "nuts3Code", paste0(c("pm_mean", "pm_mean_estm", "pm_mean_estm_best", "cases"), "_PM10"))
+cntry_indv_PM2.5 <- st_drop_geometry(cmpldata$PM2.5$de_clstr$clstr[, c("date", "nuts3Code", "pm_mean", "pm_mean_estm", "pm_mean_estm_best", "cases")])
+colnames(cntry_indv_PM2.5) <- c("date", "nuts3Code", paste0(c("pm_mean", "pm_mean_estm", "pm_mean_estm_best", "cases"), "_PM2.5"))
+cntry_indv_ovrlp <- merge(cntry_indv_PM10, cntry_indv_PM2.5, by = c("nuts3Code", "date"))
+cntry_indv_ovrlp$pm_mean_diff_PM10 <- cntry_indv_ovrlp$pm_mean_PM10 - cntry_indv_ovrlp$pm_mean_estm_best_PM10
+cntry_indv_ovrlp$pm_mean_diff_PM2.5 <- cntry_indv_ovrlp$pm_mean_PM2.5 - cntry_indv_ovrlp$pm_mean_estm_best_PM2.5
+
+cntry_indv_ovrlp_cor <- cor(cntry_indv_ovrlp$pm_mean_estm_best_PM10, cntry_indv_ovrlp$pm_mean_estm_best_PM2.5)
+
+# max(cntry_indv_ovrlp$pm_mean_estm_best_PM10, cntry_indv_ovrlp$pm_mean_estm_best_PM2.5)
+
+figure_corr_PM10_PM2.5 <- ggplot(data = cntry_indv_ovrlp, aes(x = pm_mean_estm_best_PM2.5, y = pm_mean_estm_best_PM10)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x = bquote(~ "PM2.5 [" ~ µm / m^3 ~ "]"), y = bquote(~ "PM10 [" ~ µm / m^3 ~ "]")) +
+  coord_equal() +
+  theme_bw() +
+  xlim(0, 75) + 
+  ylim(0, 75) +
+  theme(
+    text = element_text(size = 10), axis.title = element_text(size = 10), legend.text = element_text(size = 10),
+    legend.position = c(0.2, 0.7), axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2),
+    legend.title = element_blank(), panel.background = element_blank(),
+    panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+  )
+
+
+# max(cntry_indv_ovrlp$pm_mean_PM10, cntry_indv_ovrlp$pm_mean_estm_best_PM10)
+
+figure_PM10_outliers <- ggplot(data = cntry_indv_ovrlp, aes(x = pm_mean_PM10, y = pm_mean_estm_best_PM10)) +
+  geom_point(alpha = 0.2) +
+  labs(x = bquote(~ "PM10 [" ~ µm / m^3 ~ "]"), y = bquote(~ "PM10, outliers corrected [" ~ µm / m^3 ~ "]")) +
+  coord_equal() +
+  theme_bw() +
+  xlim(0, 75) + 
+  ylim(0, 75) +
+  theme(
+    text = element_text(size = 10), axis.title = element_text(size = 10), legend.text = element_text(size = 10),
+    legend.position = c(0.2, 0.7), axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2),
+    legend.title = element_blank(), panel.background = element_blank(),
+    panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+  )
+
+figure_PM10_outliers_nbrs <- sum(cntry_indv_ovrlp$pm_mean_diff_PM10 != 0)
+
+
+# max(cntry_indv_ovrlp$pm_mean_PM2.5, cntry_indv_ovrlp$pm_mean_PM2.5)
+
+figure_PM2.5_outliers <- ggplot(data = cntry_indv_ovrlp, aes(x = pm_mean_PM2.5, y = pm_mean_estm_best_PM2.5)) +
+  geom_point(alpha = 0.2) +
+  labs(x = bquote(~ "PM2.5 [" ~ µm / m^3 ~ "]"), y = bquote(~ "PM2.5, outliers corrected [" ~ µm / m^3 ~ "]")) +
+  coord_equal() +
+  theme_bw() +
+  xlim(0, 75) + 
+  ylim(0, 75) +
+  theme(
+    text = element_text(size = 10), axis.title = element_text(size = 10), legend.text = element_text(size = 10),
+    legend.position = c(0.2, 0.7), axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2),
+    legend.title = element_blank(), panel.background = element_blank(),
+    panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+  )
+
+figure_PM2.5_outliers_nbrs <- sum(cntry_indv_ovrlp$pm_mean_diff_PM2.5 != 0)
+
+cor_figure_corr_PM10_PM2.5 = list(figure_corr_PM10_PM2.5 = figure_corr_PM10_PM2.5, 
+                                  cntry_indv_ovrlp_cor = cntry_indv_ovrlp_cor, 
+                                  figure_PM10_outliers = figure_PM10_outliers,
+                                  figure_PM10_outliers_nbrs = figure_PM10_outliers_nbrs,
+                                  figure_PM2.5_outliers = figure_PM2.5_outliers,
+                                  figure_PM2.5_outliers_nbrs = figure_PM2.5_outliers_nbrs,
+                                  n_PM10_nuts3_regions = length(unique(cntry_indv_PM10$nuts3Code)),
+                                  n_PM2.5_nuts3_regions = length(unique(cntry_indv_PM2.5$nuts3Code)))
+
+saveRDS(cor_figure_corr_PM10_PM2.5, file.path(envrmt$path_figures, "cor_figure_corr_PM10_PM2.5.rds"))
+
+
+
