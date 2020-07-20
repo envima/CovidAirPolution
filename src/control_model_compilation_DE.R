@@ -44,7 +44,6 @@ for(pm in pm_vars){
   # Country wide mixed effect model with date, weekday and PM as explanatroy variables and district as random effect.
   cntry_indv <- cmpldata$de_clstr$clstr
 
-  mlm <- "gamm"
   frml <- "new_cases ~ s(date_seq) + weekday + pm_median_lag"
 
   gamm_lag_mixed <- lapply(lag_vars_set, function(lag_var) {
@@ -52,7 +51,7 @@ for(pm in pm_vars){
       data = cntry_indv, lag_var = lag_var,
       frml = frml,
       nlags = 15,
-      subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30), model = mlm
+      subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
     )
     saveRDS(gamm_lag_mixed, file.path(envrmt$path_analysis, paste0(pm, "_gamm_lag_mixed_", lag_var, ".rds")))
     return(gamm_lag_mixed)

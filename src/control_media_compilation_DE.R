@@ -179,7 +179,7 @@ figure_gam_lag_mixed_set <- lapply(pm_vars, function(pm) {
 
   # Make figure (set).
   figure_gam_lag_mixed_set <- lapply(names(gam_lag_mixed_set), function(n) {
-    gam_lag_mixed <- gam_lag_mixed_set[[n]]
+    gam_lag_mixed <- gam_lag_mixed_set[[n]]$results
 
     gam_lag_mixed$fillcol <- FALSE
     gam_lag_mixed$fillcol[gam_lag_mixed$p_lme < 0.1] <- TRUE

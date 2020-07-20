@@ -3,8 +3,7 @@
 compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 14,
                              subset_var = "cases", subset_thv = 1,
                              individual = "start", ndays = c(-14, 32),
-                             obsprd_start = NULL, obsprd_end = NULL,
-                             model = "gam") {
+                             obsprd_start = NULL, obsprd_end = NULL) {
   
   data <- st_drop_geometry(data)
   
@@ -62,7 +61,6 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
     
     frml <- as.formula(frml)
     
-    if(model == "gamm"){
       set.seed(01042020)
       gamm_mixed <- gamm(frml,
                          random = list(nuts3CodeFactor=~1),
@@ -89,32 +87,13 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
         pm_lme_estimate = test_lme$tTable["Xpm_median_lag", "Value"],
         pm_lme_std_error = test_lme$tTable["Xpm_median_lag", "Std.Error"]
       )
-      
-      } else if(model == "gam"){
-        set.seed(01042020)
-        gam_mixed <- gam(frml,
-                         data = tmp,method = "REML",
-                         family = quasipoisson(link = "log"))
-        # gam_mixed <- gam(frml,
-        #                  offset = log10(pop_total_log10),
-        #                  data = tmp,method = "REML",
-        #                  family = quasipoisson(link = "log"))
-        # summary(gam_mixed)
-        # anova(gam_mixed)
-        
-        test <- summary(gam_mixed)
-        results = data.frame(
-          lag = l,
-          lag_var = lag_var,
-          t = test$p.t["pm_median_lag"],
-          p = test$p.pv["pm_median_lag"]
-        )
-      }
 
-    return(results)
+    return(list(results = results, gamm_mixed = gamm_mixed))
     
   })
-  model_lag <- do.call("rbind", model_lag)
-
-  return(model_lag)
+  results = do.call("rbind", sapply(model_lag, `[`, 1))
+  models = lapply(model_lag, `[`, 2)
+  names(models) = paste0(lag_var, "_lag_", abs(unique(data_lag$lag)))
+  
+  gamm_results = list(results = results, models = models)
 }
