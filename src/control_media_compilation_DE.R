@@ -347,9 +347,10 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
     facet_wrap(~var, scales = "free") +
     theme_bw() +
     facet_wrap(~var, scales = "free")
-
+  
   return(list(lm_tavrg_smry = lm_tavrg_smry, lm_tavrg_stpAIC_smry = lm_tavrg_stpAIC_smry, 
-              cumulative_effect_log = figure_cumulative_effect_log, cumulative_effect = figure_cumulative_effect))
+              cumulative_effect_log = figure_cumulative_effect_log, cumulative_effect = figure_cumulative_effect,
+              add_info = add_info))
 })
 names(model_figure_cumulative_effect) <- pm_vars
 saveRDS(model_figure_cumulative_effect, file.path(envrmt$path_figures, "model_figure_cumulative_effect.rds"))

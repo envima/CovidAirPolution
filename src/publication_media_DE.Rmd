@@ -10,7 +10,6 @@ output:
   pdf_document: default
 ---
 
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
 # Set up working environment and load graphics.
@@ -30,8 +29,38 @@ map_pm_mean <- readRDS(file.path(envrmt$path_figures, "map_pm_mean.rds"))
 lm_tavrg_smry <- readRDS(file.path(envrmt$path_figures, "lm_tavrg_smry.rds"))
 lm_tavrg_stpAIC_smry <- readRDS(file.path(envrmt$path_figures, "lm_tavrg_stpAIC_smry.rds"))
 cor_figure_corr_PM10_PM2.5 <- readRDS(file.path(envrmt$path_figures, "cor_figure_corr_PM10_PM2.5.rds"))
+excluded_data_PM10 <- readRDS(file.path(envrmt$path_analysis, "PM10_non_valid.rds"))
+excluded_data_PM2.5 <- readRDS(file.path(envrmt$path_analysis, "PM2.5_non_valid.rds"))
 
 lag_var <- "pm_mean_estm_best"
+
+```
+
+
+
+# Statistical information included in the manuscript.
+
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+mean(model_figure_cumulative_effect$PM10$add_info$difftime_start_max)
+quantile(model_figure_cumulative_effect$PM10$add_info$difftime_start_max)
+sum(model_figure_cumulative_effect$PM10$add_info$daily_max >= 10)
+
+mean(model_figure_cumulative_effect$PM2.5$add_info$difftime_start_max)
+quantile(model_figure_cumulative_effect$PM2.5$add_info$difftime_start_max)
+sum(model_figure_cumulative_effect$PM2.5$add_info$daily_max >= 10)
+
+length(excluded_data_PM10)
+cor_figure_corr_PM10_PM2.5$n_PM10_nuts3_regions
+cor_figure_corr_PM10_PM2.5$figure_PM10_outliers_nbrs
+
+length(excluded_data_PM2.5)
+cor_figure_corr_PM10_PM2.5$n_PM2.5_nuts3_regions
+cor_figure_corr_PM10_PM2.5$figure_PM2.5_outliers_nbrs
+
+cor_figure_corr_PM10_PM2.5$n_PM10_PM2.5_nuts3_regions_overlap
+cor_figure_corr_PM10_PM2.5$cntry_indv_ovrlp_cor
+
 ```
 
 
@@ -158,9 +187,6 @@ ggsave(file.path(envrmt$path_figures, "figure_sup_3.png"),
        width = 347, height = 450, units = "mm", dpi = 300
 )
 
-cor_figure_corr_PM10_PM2.5$n_PM10_nuts3_regions
-cor_figure_corr_PM10_PM2.5$n_PM2.5_nuts3_regions
-cor_figure_corr_PM10_PM2.5$n_PM10_PM2.5_nuts3_regions_overlap
 ```
 
 
