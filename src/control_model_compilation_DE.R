@@ -45,13 +45,12 @@ for(pm in pm_vars){
   cntry_indv <- cmpldata$de_clstr$clstr
 
   mlm <- "gamm"
-  # frml = "new_cases ~ s(date_seq) + weekday + pm_median_lag + offset(pop_total_log10)"
   frml <- "new_cases ~ s(date_seq) + weekday + pm_median_lag"
 
   gamm_lag_mixed <- lapply(lag_vars_set, function(lag_var) {
     gamm_lag_mixed <- compileLaggedMixedModel(
       data = cntry_indv, lag_var = lag_var,
-      frml = 'new_cases ~ s(date_seq) + weekday + pm_median_lag + s(nuts3CodeFactor, bs="re")',
+      frml = frml,
       nlags = 15,
       subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30), model = mlm
     )
