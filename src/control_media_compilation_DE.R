@@ -139,13 +139,13 @@ figure_gam_lag_set <- lapply(pm_vars, function(pm) {
 
     gam_lag$fillcol <- FALSE
     gam_lag$fillcol[gam_lag$lag %in% tstat[tstat$p < 0.1, "lag"]] <- TRUE
-    
-    if(n == "pm_mean" | n == "pm_median"){
-      ylabel_effect = paste0("Effect size of ", cntry_indv$pm_size[1], ", raw data")
-    } else if (n == "pm_mean_estm" | n == "pm_median_estm"){
-      ylabel_effect = paste0("Effect size of ", cntry_indv$pm_size[1], ", estimate")
+
+    if (n == "pm_mean" | n == "pm_median") {
+      ylabel_effect <- paste0("Effect size of ", cntry_indv$pm_size[1], ", raw data")
+    } else if (n == "pm_mean_estm" | n == "pm_median_estm") {
+      ylabel_effect <- paste0("Effect size of ", cntry_indv$pm_size[1], ", estimate")
     } else {
-      ylabel_effect = paste0("Effect size of ", cntry_indv$pm_size[1])
+      ylabel_effect <- paste0("Effect size of ", cntry_indv$pm_size[1])
     }
 
     figure_gam_effectsize <- ggplot(data = gam_lag, aes(x = as.factor(lag), y = t, fill = fillcol, alpha = fillcol)) +
@@ -183,16 +183,16 @@ figure_gam_lag_mixed_set <- lapply(pm_vars, function(pm) {
 
     gam_lag_mixed$fillcol <- FALSE
     gam_lag_mixed$fillcol[gam_lag_mixed$p_lme < 0.1] <- TRUE
-    
-    if(n == "pm_mean" | n == "pm_median"){
-      ylabel_effect = paste0("Effect size of ", cntry_indv$pm_size[1], ", raw data")
-      ylabel_estimate = paste0("Estimate of ", cntry_indv$pm_size[1], ", raw data")
-    } else if (n == "pm_mean_estm" | n == "pm_median_estm"){
-      ylabel_effect = paste0("Effect size of ", cntry_indv$pm_size[1], ", estimate")
-      ylabel_estimate = paste0("Estimate of ", cntry_indv$pm_size[1], ", estimate")
+
+    if (n == "pm_mean" | n == "pm_median") {
+      ylabel_effect <- paste0("Effect size of ", cntry_indv$pm_size[1], ", raw data")
+      ylabel_estimate <- paste0("Estimate of ", cntry_indv$pm_size[1], ", raw data")
+    } else if (n == "pm_mean_estm" | n == "pm_median_estm") {
+      ylabel_effect <- paste0("Effect size of ", cntry_indv$pm_size[1], ", estimate")
+      ylabel_estimate <- paste0("Estimate of ", cntry_indv$pm_size[1], ", estimate")
     } else {
-      ylabel_effect = paste0("Effect size of ", cntry_indv$pm_size[1])
-      ylabel_estimate = paste0("Estimate of ", cntry_indv$pm_size[1])
+      ylabel_effect <- paste0("Effect size of ", cntry_indv$pm_size[1])
+      ylabel_estimate <- paste0("Estimate of ", cntry_indv$pm_size[1])
     }
 
     figure_effectsize_mixed <- ggplot(
@@ -347,10 +347,12 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
     facet_wrap(~var, scales = "free") +
     theme_bw() +
     facet_wrap(~var, scales = "free")
-  
-  return(list(lm_tavrg_smry = lm_tavrg_smry, lm_tavrg_stpAIC_smry = lm_tavrg_stpAIC_smry, 
-              cumulative_effect_log = figure_cumulative_effect_log, cumulative_effect = figure_cumulative_effect,
-              add_info = add_info))
+
+  return(list(
+    lm_tavrg_smry = lm_tavrg_smry, lm_tavrg_stpAIC_smry = lm_tavrg_stpAIC_smry,
+    cumulative_effect_log = figure_cumulative_effect_log, cumulative_effect = figure_cumulative_effect,
+    add_info = add_info
+  ))
 })
 names(model_figure_cumulative_effect) <- pm_vars
 saveRDS(model_figure_cumulative_effect, file.path(envrmt$path_figures, "model_figure_cumulative_effect.rds"))
@@ -433,7 +435,7 @@ saveRDS(map_pm_mean, file.path(envrmt$path_figures, "map_pm_mean.rds"))
 
 
 
-# Correlation between PM10 and PM2.5 and influence of outlier 
+# Correlation between PM10 and PM2.5 and influence of outlier
 cntry_indv_PM10 <- st_drop_geometry(cmpldata$PM10$de_clstr$clstr[, c("date", "nuts3Code", "pm_mean", "pm_mean_estm", "pm_mean_estm_best", "cases")])
 colnames(cntry_indv_PM10) <- c("date", "nuts3Code", paste0(c("pm_mean", "pm_mean_estm", "pm_mean_estm_best", "cases"), "_PM10"))
 cntry_indv_PM2.5 <- st_drop_geometry(cmpldata$PM2.5$de_clstr$clstr[, c("date", "nuts3Code", "pm_mean", "pm_mean_estm", "pm_mean_estm_best", "cases")])
@@ -448,11 +450,11 @@ cntry_indv_ovrlp_cor <- cor(cntry_indv_ovrlp$pm_mean_estm_best_PM10, cntry_indv_
 
 figure_corr_PM10_PM2.5 <- ggplot(data = cntry_indv_ovrlp, aes(x = pm_mean_estm_best_PM2.5, y = pm_mean_estm_best_PM10)) +
   geom_point(alpha = 0.2) +
-  geom_smooth(method = "lm", se = FALSE) + 
-  labs(x = bquote(~ "PM2.5 [" ~ µm / m^3 ~ "]"), y = bquote(~ "PM10 [" ~ µm / m^3 ~ "]")) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = bquote(~"PM2.5 [" ~ µm / m^3 ~ "]"), y = bquote(~"PM10 [" ~ µm / m^3 ~ "]")) +
   coord_equal() +
   theme_bw() +
-  xlim(0, 75) + 
+  xlim(0, 75) +
   ylim(0, 75) +
   theme(
     text = element_text(size = 10), axis.title = element_text(size = 10), legend.text = element_text(size = 10),
@@ -466,10 +468,10 @@ figure_corr_PM10_PM2.5 <- ggplot(data = cntry_indv_ovrlp, aes(x = pm_mean_estm_b
 
 figure_PM10_outliers <- ggplot(data = cntry_indv_PM10, aes(x = pm_mean_PM10, y = pm_mean_estm_best_PM10)) +
   geom_point(alpha = 0.2) +
-  labs(x = bquote(~ "PM10, raw data [" ~ µm / m^3 ~ "]"), y = bquote(~ "PM10 [" ~ µm / m^3 ~ "]")) +
+  labs(x = bquote(~"PM10, raw data [" ~ µm / m^3 ~ "]"), y = bquote(~"PM10 [" ~ µm / m^3 ~ "]")) +
   coord_equal() +
   theme_bw() +
-  xlim(0, 75) + 
+  xlim(0, 75) +
   ylim(0, 75) +
   theme(
     text = element_text(size = 10), axis.title = element_text(size = 10), legend.text = element_text(size = 10),
@@ -485,10 +487,10 @@ figure_PM10_outliers_nbrs <- sum(cntry_indv_PM10$pm_mean_PM10 - cntry_indv_PM10$
 
 figure_PM2.5_outliers <- ggplot(data = cntry_indv_PM2.5, aes(x = pm_mean_PM2.5, y = pm_mean_estm_best_PM2.5)) +
   geom_point(alpha = 0.2) +
-  labs(x = bquote(~ "PM2.5, raw data [" ~ µm / m^3 ~ "]"), y = bquote(~ "PM2.5 [" ~ µm / m^3 ~ "]")) +
+  labs(x = bquote(~"PM2.5, raw data [" ~ µm / m^3 ~ "]"), y = bquote(~"PM2.5 [" ~ µm / m^3 ~ "]")) +
   coord_equal() +
   theme_bw() +
-  xlim(0, 75) + 
+  xlim(0, 75) +
   ylim(0, 75) +
   theme(
     text = element_text(size = 10), axis.title = element_text(size = 10), legend.text = element_text(size = 10),
@@ -499,14 +501,16 @@ figure_PM2.5_outliers <- ggplot(data = cntry_indv_PM2.5, aes(x = pm_mean_PM2.5, 
 
 figure_PM2.5_outliers_nbrs <- sum(cntry_indv_PM2.5$pm_mean_PM2.5 - cntry_indv_PM2.5$pm_mean_estm_best_PM2.5 != 0)
 
-cor_figure_corr_PM10_PM2.5 = list(figure_corr_PM10_PM2.5 = figure_corr_PM10_PM2.5, 
-                                  cntry_indv_ovrlp_cor = cntry_indv_ovrlp_cor, 
-                                  figure_PM10_outliers = figure_PM10_outliers,
-                                  figure_PM10_outliers_nbrs = figure_PM10_outliers_nbrs,
-                                  figure_PM2.5_outliers = figure_PM2.5_outliers,
-                                  figure_PM2.5_outliers_nbrs = figure_PM2.5_outliers_nbrs,
-                                  n_PM10_nuts3_regions = length(unique(cntry_indv_PM10$nuts3Code)),
-                                  n_PM2.5_nuts3_regions = length(unique(cntry_indv_PM2.5$nuts3Code)),
-                                  n_PM10_PM2.5_nuts3_regions_overlap = length(unique(cntry_indv_ovrlp$nuts3Code)))
+cor_figure_corr_PM10_PM2.5 <- list(
+  figure_corr_PM10_PM2.5 = figure_corr_PM10_PM2.5,
+  cntry_indv_ovrlp_cor = cntry_indv_ovrlp_cor,
+  figure_PM10_outliers = figure_PM10_outliers,
+  figure_PM10_outliers_nbrs = figure_PM10_outliers_nbrs,
+  figure_PM2.5_outliers = figure_PM2.5_outliers,
+  figure_PM2.5_outliers_nbrs = figure_PM2.5_outliers_nbrs,
+  n_PM10_nuts3_regions = length(unique(cntry_indv_PM10$nuts3Code)),
+  n_PM2.5_nuts3_regions = length(unique(cntry_indv_PM2.5$nuts3Code)),
+  n_PM10_PM2.5_nuts3_regions_overlap = length(unique(cntry_indv_ovrlp$nuts3Code))
+)
 
 saveRDS(cor_figure_corr_PM10_PM2.5, file.path(envrmt$path_figures, "cor_figure_corr_PM10_PM2.5.rds"))

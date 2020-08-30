@@ -33,7 +33,6 @@ excluded_data_PM10 <- readRDS(file.path(envrmt$path_analysis, "PM10_non_valid.rd
 excluded_data_PM2.5 <- readRDS(file.path(envrmt$path_analysis, "PM2.5_non_valid.rds"))
 
 lag_var <- "pm_mean_estm_best"
-
 ```
 
 
@@ -61,6 +60,28 @@ cor_figure_corr_PM10_PM2.5$figure_PM2.5_outliers_nbrs
 cor_figure_corr_PM10_PM2.5$n_PM10_PM2.5_nuts3_regions_overlap
 cor_figure_corr_PM10_PM2.5$cntry_indv_ovrlp_cor
 
+
+sum(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$pm_mean_estm_best_PM10 > 50)
+sort(unique(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$date[
+  cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$pm_mean_estm_best_PM10 > 50
+]))
+length(sort(unique(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$nuts3Code[
+  cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.$data$pm_mean_estm_best_PM10 > 50
+])))
+table(sort(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$nuts3Code[
+  cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$pm_mean_estm_best_PM10 > 50
+]))
+
+sum(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$pm_mean_estm_best_PM2.5 > 25)
+sort(unique(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$date[
+  cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$pm_mean_estm_best_PM2.5 > 25
+]))
+length(sort(unique(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$nuts3Code[
+  cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$pm_mean_estm_best_PM2.5 > 25
+])))
+table(sort(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$nuts3Code[
+  cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5$data$pm_mean_estm_best_PM2.5 > 25
+]))
 ```
 
 
@@ -69,19 +90,19 @@ cor_figure_corr_PM10_PM2.5$cntry_indv_ovrlp_cor
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-figure_1_1 <- plot_grid(figure_cntry_avg$PM10$cntry_avg, 
-                        figure_cntry_avg$PM10$cntry_avg_pm, 
-                        figure_cntry_avg$PM10$cntry_avg_covid, 
-                        labels = c("a", "b", "c"), label_size = 12, ncol = 1)
+figure_1_1 <- plot_grid(figure_cntry_avg$PM10$cntry_avg,
+  figure_cntry_avg$PM10$cntry_avg_pm,
+  figure_cntry_avg$PM10$cntry_avg_covid,
+  labels = c("a", "b", "c"), label_size = 12, ncol = 1
+)
 
 figure_1_2 <- plot_grid(map_covid_infections$PM10, map_pm_mean$PM10, labels = c("d", "e"), label_size = 12, ncol = 2)
 
 figure_1 <- plot_grid(figure_1_1, figure_1_2, labels = NULL, ncol = 1)
 ggsave(file.path(envrmt$path_figures, "figure_1.png"),
-       plot = figure_1,
-       width = 347, height = 450, units = "mm", dpi = 300
+  plot = figure_1,
+  width = 347, height = 450, units = "mm", dpi = 300
 )
-
 ```
 
 
@@ -91,20 +112,19 @@ ggsave(file.path(envrmt$path_figures, "figure_1.png"),
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 figure_2_1 <- plot_grid(model_figure_cumulative_effect$PM10$cumulative_effect_log,
-                        model_figure_cumulative_effect$PM10$cumulative_effect,
-                        labels = c("a", "b"), label_size = 10, ncol = 1
+  model_figure_cumulative_effect$PM10$cumulative_effect,
+  labels = c("a", "b"), label_size = 10, ncol = 1
 )
 
 figure_2_2 <- plot_grid(figure_gam_lag_set$PM10$pm_mean_estm_best, figure_gam_lag_mixed_set$PM10$pm_mean_estm_best$estimate_mixed,
-                        labels = c("c", "d"), label_size = 10, ncol = 2
+  labels = c("c", "d"), label_size = 10, ncol = 2
 )
 
 figure_2 <- plot_grid(figure_2_1, figure_2_2, labels = NULL, ncol = 1)
 ggsave(file.path(envrmt$path_figures, "figure_2.png"),
-       plot = figure_2,
-       width = 347, height = 450, units = "mm", dpi = 300
+  plot = figure_2,
+  width = 347, height = 450, units = "mm", dpi = 300
 )
-
 ```
 
 
@@ -122,19 +142,19 @@ model_figure_cumulative_effect$PM10$lm_tavrg_smry
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-figure_sup_1_1 <- plot_grid(figure_cntry_avg$PM2.5$cntry_avg, 
-                        figure_cntry_avg$PM2.5$cntry_avg_pm, 
-                        figure_cntry_avg$PM2.5$cntry_avg_covid, 
-                        labels = c("a", "b", "c"), label_size = 12, ncol = 1)
+figure_sup_1_1 <- plot_grid(figure_cntry_avg$PM2.5$cntry_avg,
+  figure_cntry_avg$PM2.5$cntry_avg_pm,
+  figure_cntry_avg$PM2.5$cntry_avg_covid,
+  labels = c("a", "b", "c"), label_size = 12, ncol = 1
+)
 
 figure_sup_1_2 <- plot_grid(map_covid_infections$PM2.5, map_pm_mean$PM2.5, labels = c("d", "e"), label_size = 12, ncol = 2)
 
 figure_sup_1 <- plot_grid(figure_sup_1_1, figure_sup_1_2, labels = NULL, ncol = 1)
 ggsave(file.path(envrmt$path_figure, "figure_sup_1.png"),
-       plot = figure_sup_1,
-       width = 347, height = 450, units = "mm", dpi = 300
+  plot = figure_sup_1,
+  width = 347, height = 450, units = "mm", dpi = 300
 )
-
 ```
 
 
@@ -145,20 +165,19 @@ ggsave(file.path(envrmt$path_figure, "figure_sup_1.png"),
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 figure_sup_2_1 <- plot_grid(model_figure_cumulative_effect$PM2.5$cumulative_effect_log,
-                        model_figure_cumulative_effect$PM2.5$cumulative_effect,
-                        labels = c("a", "b"), label_size = 10, ncol = 1
+  model_figure_cumulative_effect$PM2.5$cumulative_effect,
+  labels = c("a", "b"), label_size = 10, ncol = 1
 )
 
 figure_sup_2_2 <- plot_grid(figure_gam_lag_set$PM2.5$pm_mean_estm_best, figure_gam_lag_mixed_set$PM2.5$pm_mean_estm_best$estimate_mixed,
-                        labels = c("c", "d"), label_size = 10, ncol = 2
+  labels = c("c", "d"), label_size = 10, ncol = 2
 )
 
 figure_sup_2 <- plot_grid(figure_sup_2_1, figure_sup_2_2, labels = NULL, ncol = 1)
 ggsave(file.path(envrmt$path_figures, "figure_sup_2.png"),
-       plot = figure_sup_2,
-       width = 347, height = 450, units = "mm", dpi = 300
+  plot = figure_sup_2,
+  width = 347, height = 450, units = "mm", dpi = 300
 )
-
 ```
 
 
@@ -167,26 +186,26 @@ ggsave(file.path(envrmt$path_figures, "figure_sup_2.png"),
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
-figure_sup_3_1 <- plot_grid(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5, 
-                            cor_figure_corr_PM10_PM2.5$figure_PM10_outliers, 
-                            cor_figure_corr_PM10_PM2.5$figure_PM2.5_outliers, 
-                            labels = c("a", "b", "c"), label_size = 12, ncol = 3)
-
-figure_sup_3_2 <-  plot_grid(figure_gam_lag_set$PM10$pm_mean, figure_gam_lag_mixed_set$PM10$pm_mean$estimate_mixed,
-                        labels = c("d", "e"), label_size = 10, ncol = 2
+figure_sup_3_1 <- plot_grid(cor_figure_corr_PM10_PM2.5$figure_corr_PM10_PM2.5,
+  cor_figure_corr_PM10_PM2.5$figure_PM10_outliers,
+  cor_figure_corr_PM10_PM2.5$figure_PM2.5_outliers,
+  labels = c("a", "b", "c"), label_size = 12, ncol = 3
 )
 
-figure_sup_3_3 <-  plot_grid(figure_gam_lag_set$PM2.5$pm_mean, figure_gam_lag_mixed_set$PM2.5$pm_mean$estimate_mixed,
-                        labels = c("f", "g"), label_size = 10, ncol = 2
+figure_sup_3_2 <- plot_grid(figure_gam_lag_set$PM10$pm_mean, figure_gam_lag_mixed_set$PM10$pm_mean$estimate_mixed,
+  labels = c("d", "e"), label_size = 10, ncol = 2
+)
+
+figure_sup_3_3 <- plot_grid(figure_gam_lag_set$PM2.5$pm_mean, figure_gam_lag_mixed_set$PM2.5$pm_mean$estimate_mixed,
+  labels = c("f", "g"), label_size = 10, ncol = 2
 )
 
 figure_sup_3 <- plot_grid(figure_sup_3_1, figure_sup_3_2, figure_sup_3_3, labels = NULL, ncol = 1)
 
 ggsave(file.path(envrmt$path_figures, "figure_sup_3.png"),
-       plot = figure_sup_3,
-       width = 347, height = 450, units = "mm", dpi = 300
+  plot = figure_sup_3,
+  width = 347, height = 450, units = "mm", dpi = 300
 )
-
 ```
 
 
@@ -217,4 +236,3 @@ model_figure_cumulative_effect$PM2.5$lm_tavrg_smry
 model_figure_cumulative_effect$PM2.5$lm_tavrg_stpAIC_smry
 
 ```
-
