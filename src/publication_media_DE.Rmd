@@ -133,7 +133,7 @@ ggsave(file.path(envrmt$path_figures, "figure_2.png"),
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 model_figure_cumulative_effect$PM10$lm_tavrg_smry
-
+signif(model_figure_cumulative_effect$PM10$lm_tavrg_smry$coefficients, 3)
 ```
 
 
@@ -215,7 +215,7 @@ ggsave(file.path(envrmt$path_figures, "figure_sup_3.png"),
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 model_figure_cumulative_effect$PM10$lm_tavrg_stpAIC_smry
-
+signif(model_figure_cumulative_effect$PM10$lm_tavrg_stpAIC_smry$coefficients, 3)
 ```
 
 
@@ -224,7 +224,7 @@ model_figure_cumulative_effect$PM10$lm_tavrg_stpAIC_smry
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 model_figure_cumulative_effect$PM2.5$lm_tavrg_smry
-
+signif(model_figure_cumulative_effect$PM2.5$lm_tavrg_smry$coefficients, 3)
 ```
 
 
@@ -234,5 +234,6 @@ model_figure_cumulative_effect$PM2.5$lm_tavrg_smry
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 model_figure_cumulative_effect$PM2.5$lm_tavrg_stpAIC_smry
+signif(model_figure_cumulative_effect$PM2.5$lm_tavrg_stpAIC_smry$coefficients, 3)
 
 ```
