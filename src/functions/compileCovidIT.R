@@ -1,6 +1,6 @@
 # Get COVID-19 data for Italy
 
-getCovidIT = function(){
+compileCovidIT = function(){
   
   download.file(url = "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-province/dpc-covid19-ita-province.csv",
                 destfile=file.path(envrmt$`path_COVID-19`, "dpc-covid19-ita-province.csv"))
