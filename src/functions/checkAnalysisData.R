@@ -39,7 +39,10 @@ checkAnalysisData <- function(data, start_date, end_date, pm) {
 
   print(names(data)[!(names(data) %in% names(valid_data))])
 
-  saveRDS(names(data)[!(names(data) %in% names(valid_data))], file.path(envrmt$path_analysis, paste0(pm, "_non_valid.rds")))
+  saveRDS(names(data)[!(names(data) %in% names(valid_data))], file.path(envrmt$path_analysis, paste0(format(
+    Sys.time(),
+    "%Y-%m-%d"
+  ), pm, "_non_valid.rds")))
 
   # Outlier detection and estimate (and additional metadata providing the pm size).
   valid_data_oc <- lapply(valid_data, function(d) {

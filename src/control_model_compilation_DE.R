@@ -22,7 +22,7 @@ Sys.setlocale("LC_TIME", "English")
 
 
 for(pm in pm_vars){
-  cmpldata_file <- paste0(pm, "_germany_extended.RDS")
+  cmpldata_file <- paste0("germany_", pm, "_extended.RDS")
   cmpldata <- readRDS(file.path(envrmt$path_analysis, cmpldata_file))
   cntry_indv <- cmpldata$de_clstr$clstr
   
@@ -34,11 +34,11 @@ for(pm in pm_vars){
       nlags = 15,
       subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
     )
-    saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_", lag_var, ".rds")))
+    saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0("germany_", pm, "_gam_lag_", lag_var, ".rds")))
     return(gam_lag)
   })
   names(gam_lag) <- lag_vars_set
-  saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_vars_set.rds")))
+  saveRDS(gam_lag, file.path(envrmt$path_analysis, paste0("germany_", pm, "_gam_lag_vars_set.rds")))
 
   
   # Country wide mixed effect model with date, weekday and PM as explanatroy variables and district as random effect.
@@ -53,9 +53,9 @@ for(pm in pm_vars){
       nlags = 15,
       subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
     )
-    saveRDS(gamm_lag_mixed, file.path(envrmt$path_analysis, paste0(pm, "_gamm_lag_mixed_", lag_var, ".rds")))
+    saveRDS(gamm_lag_mixed, file.path(envrmt$path_analysis, paste0("germany_", pm, "_gamm_lag_mixed_", lag_var, ".rds")))
     return(gamm_lag_mixed)
   })
   names(gamm_lag_mixed) <- lag_vars_set
-  saveRDS(gamm_lag_mixed, file.path(envrmt$path_analysis, paste0(pm, "_gamm_lag_mixed_vars_set.rds")))
+  saveRDS(gamm_lag_mixed, file.path(envrmt$path_analysis, paste0("germany_", pm, "_gamm_lag_mixed_vars_set.rds")))
 }

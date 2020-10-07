@@ -18,7 +18,7 @@ Sys.setlocale("LC_TIME", "English")
 
 # Compile comprehensive analysis data or load precomputed dataset.
 for(pm in pm_vars){
-  cmpldata_file <- paste0(pm, "_germany_extended.RDS")
+  cmpldata_file <- paste0("germany_", pm, "_extended.RDS")
   
   cmpldata <- compileDataDE(start_date = start_date, end_date = end_date, pm = pm)
   saveRDS(cmpldata, file.path(envrmt$path_analysis, cmpldata_file))

@@ -27,7 +27,7 @@ lag_var <- "pm_mean_estm_best"
 Sys.setlocale("LC_TIME", "English")
 
 cmpldata <- lapply(pm_vars, function(pm) {
-  cmpldata_file <- paste0(pm, "_germany_extended.RDS")
+  cmpldata_file <- paste0("germany_", pm, "_extended.RDS")
   return(readRDS(file.path(envrmt$path_analysis, cmpldata_file)))
 })
 names(cmpldata) <- pm_vars
@@ -110,14 +110,14 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
   ))
 })
 names(figure_cntry_avg) <- pm_vars
-saveRDS(figure_cntry_avg, file.path(envrmt$path_figures, "figure_cntry_avg.rds"))
+saveRDS(figure_cntry_avg, file.path(envrmt$path_figures, "germany_figure_cntry_avg.rds"))
 
 
 
 # Correlation of PM and SARS-CoV2 infections individually by district
 figure_gam_lag_set <- lapply(pm_vars, function(pm) {
   cntry_indv <- cmpldata[[pm]]$de_clstr$clstr
-  gam_lag_set <- readRDS(file.path(envrmt$path_analysis, paste0(pm, "_gam_lag_vars_set.rds")))
+  gam_lag_set <- readRDS(file.path(envrmt$path_analysis, paste0("germany_", pm, "_gam_lag_vars_set.rds")))
 
 
   # Make figure (set).
@@ -167,14 +167,14 @@ figure_gam_lag_set <- lapply(pm_vars, function(pm) {
   return(figure_gam_lag_set)
 })
 names(figure_gam_lag_set) <- pm_vars
-saveRDS(figure_gam_lag_set, file.path(envrmt$path_figures, "figure_gam_lag_set.rds"))
+saveRDS(figure_gam_lag_set, file.path(envrmt$path_figures, "germany_figure_gam_lag_set.rds"))
 
 
 
 # Correlation of PM and SARS-CoV2 infections with district as random effect
 figure_gam_lag_mixed_set <- lapply(pm_vars, function(pm) {
   cntry_indv <- cmpldata[[pm]]$de_clstr$clstr
-  gam_lag_mixed_set <- readRDS(file.path(envrmt$path_analysis, paste0(pm, "_gamm_lag_mixed_vars_set.rds")))
+  gam_lag_mixed_set <- readRDS(file.path(envrmt$path_analysis, paste0("germany_", pm, "_gamm_lag_mixed_vars_set.rds")))
 
 
   # Make figure (set).
@@ -241,7 +241,7 @@ figure_gam_lag_mixed_set <- lapply(pm_vars, function(pm) {
   return(figure_gam_lag_mixed_set)
 })
 names(figure_gam_lag_mixed_set) <- pm_vars
-saveRDS(figure_gam_lag_mixed_set, file.path(envrmt$path_figures, "figure_gam_lag_mixed_set.rds"))
+saveRDS(figure_gam_lag_mixed_set, file.path(envrmt$path_figures, "germany_figure_gam_lag_mixed_set.rds"))
 
 
 
@@ -355,7 +355,7 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
   ))
 })
 names(model_figure_cumulative_effect) <- pm_vars
-saveRDS(model_figure_cumulative_effect, file.path(envrmt$path_figures, "model_figure_cumulative_effect.rds"))
+saveRDS(model_figure_cumulative_effect, file.path(envrmt$path_figures, "germany_model_figure_cumulative_effect.rds"))
 
 
 
@@ -394,7 +394,7 @@ map_covid_infections <- lapply(pm_vars, function(pm) {
   return(map_covid_infections)
 })
 names(map_covid_infections) <- pm_vars
-saveRDS(map_covid_infections, file.path(envrmt$path_figures, "map_covid_infections.rds"))
+saveRDS(map_covid_infections, file.path(envrmt$path_figures, "germany_map_covid_infections.rds"))
 
 
 # Long-term PM mean between 2020-02-15 and 2020-04-01
@@ -431,7 +431,7 @@ map_pm_mean <- lapply(pm_vars, function(pm) {
   return(map_pm_mean)
 })
 names(map_pm_mean) <- pm_vars
-saveRDS(map_pm_mean, file.path(envrmt$path_figures, "map_pm_mean.rds"))
+saveRDS(map_pm_mean, file.path(envrmt$path_figures, "germany_map_pm_mean.rds"))
 
 
 
@@ -513,4 +513,4 @@ cor_figure_corr_PM10_PM2.5 <- list(
   n_PM10_PM2.5_nuts3_regions_overlap = length(unique(cntry_indv_ovrlp$nuts3Code))
 )
 
-saveRDS(cor_figure_corr_PM10_PM2.5, file.path(envrmt$path_figures, "cor_figure_corr_PM10_PM2.5.rds"))
+saveRDS(cor_figure_corr_PM10_PM2.5, file.path(envrmt$path_figures, "germany_cor_figure_corr_PM10_PM2.5.rds"))
