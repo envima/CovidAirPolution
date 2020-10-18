@@ -27,7 +27,12 @@ for(pm in pm_vars){
 
 # Metadata: The following districts have been excluded within the preprocessing
 # of cmpldata due to unsufficient temporal coverage.
-# "LK Böblingen", "LK Breisgau-Hochschwarzwald", "LK Erzgebirgskreis", "LK Esslingen",
-# "LK Ludwigsburg", "LK Mansfeld-Südharz", "LK Nordfriesland", "LK Oberhavel",
-# "LK Schwarzwald-Baar-Kreis", "LK Uelzen", "SK Freiburg i.Breisgau", "SK Heidelberg",
-# "SK Heilbronn", "SK Pforzheim".
+# Check initially failed:
+# [1] "LK Böblingen"                "LK Breisgau-Hochschwarzwald" "LK Erzgebirgskreis"          
+#     "LK Esslingen"                "LK Ludwigsburg"             
+# [6] "LK Mansfeld-Südharz"         "LK Nordfriesland"            "LK Oberhavel"                
+#     "LK Schwarzwald-Baar-Kreis"   "LK Uelzen"                  
+# [11] "SK Freiburg i.Breisgau"      "SK Heidelberg"               "SK Heilbronn"                
+# "SK Pforzheim"    
+# Check failed after NA interpolation of max. two consecutive NAs
+# [1] "LK Erzgebirgskreis"  "LK Mansfeld-Südharz"

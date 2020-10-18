@@ -140,7 +140,7 @@ compileDataDE <- function(start_date = as.POSIXct("2020-01-15"),
   names(de_nuts3_mean) <- nuts3_names
 
   # Subset analysis regions to complete ones, check for outliers and estimate replacement values.
-  de_nuts3_mean <- checkAnalysisData(de_nuts3_mean, start_date, end_date, pm)
+  de_nuts3_mean <- checkAnalysisData(de_nuts3_mean, start_date, end_date, pm, country = country)
   
   # Compile data for overview maps.
   de_nuts3_map <- compileMapDE(de_nuts3_mean)

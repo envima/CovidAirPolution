@@ -37,18 +37,29 @@ checkAnalysisData <- function(data, start_date, end_date, pm, country) {
 
   valid_data <- valid_data[which((!names(valid_data) == "incomplete"))]
 
-  non_valid_data_names <- (names(data)[!(names(data) %in% names(valid_data))])
+  non_valid_data_names_org <- (names(data)[!(names(data) %in% names(valid_data))])
   
-  print(non_valid_data_names)
+  print(non_valid_data_names_org)
   
   
   all_days <- data.frame(date = seq.Date(as.Date(start_date), as.Date(end_date), by = "day"))
   all_days$date <- as.POSIXct(substr(all_days$date, 1, 10), format="%Y-%m-%d", origin = "CET")
   
-  for (n in non_valid_data_names){
+  for (n in non_valid_data_names_org){
+    print(n)
     act <- data[[n]]
     act_all_days <- merge(all_days, act, by = "date", all.x = TRUE)
 
+    if(is.na(act_all_days$pm_mean)[1]){
+      act_all_days$pm_mean[1] <- act_all_days$pm_mean[2]
+      act_all_days$pm_median[1] <- act_all_days$pm_median[2]
+    }
+    
+    if(is.na(act_all_days$pm_mean)[length(act_all_days$pm_mean)]){
+      act_all_days$pm_mean[length(act_all_days$pm_mean)] <- act_all_days$pm_mean[length(act_all_days$pm_mean)-1]
+      act_all_days$pm_median[length(act_all_days$pm_median)] <- act_all_days$pm_median[length(act_all_days$pm_median)-1]
+    }
+    
     act_all_days$pm_mean <- na.approx(act_all_days$pm_mean, maxgap = 2) 
     act_all_days$pm_median <- na.approx(act_all_days$pm_median, maxgap = 2) 
     
@@ -63,13 +74,13 @@ checkAnalysisData <- function(data, start_date, end_date, pm, country) {
     
   }
   
-  
   non_valid_data_names <- (names(data)[!(names(data) %in% names(valid_data))])
   
   print(non_valid_data_names)
   
 
-  saveRDS(non_valid_data_names, file.path(envrmt$path_analysis, paste0(
+  saveRDS(list(non_valid_data_names_org = non_valid_data_names_org, 
+               non_valid_data_names = non_valid_data_names), file.path(envrmt$path_analysis, paste0(
     country, "_", pm, "_non_valid.rds"
   )))
 
