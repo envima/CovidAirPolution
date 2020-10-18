@@ -48,6 +48,7 @@ checkAnalysisData <- function(data, start_date, end_date, pm, country) {
   for (n in non_valid_data_names_org){
     print(n)
     act <- data[[n]]
+    act <- act[!duplicated(act$date),]
     act_all_days <- merge(all_days, act, by = "date", all.x = TRUE)
 
     if(is.na(act_all_days$pm_mean)[1]){

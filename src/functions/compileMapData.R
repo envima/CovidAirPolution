@@ -7,6 +7,7 @@
 # Compile map datasets for Germany ---------------------------------------------
 compileMapDE <- function(data) {
   map <- lapply(data, function(n) {
+    print(n)
     tmp <- cbind(n[n$date == as.POSIXct("2020-04-01"), ],
       nuts3Area = st_area(n[1, c("nuts3Name", "nuts3Code")])
     )
