@@ -32,3 +32,5 @@ for(pm in pm_vars){
 # [13] "Monza e della Brianza" "Parma"                 "Pavia"                 "Piacenza"              "Pistoia"               "Pordenone"            
 # [19] "Prato"                 "Ravenna"               "Reggio nell'Emilia"    "Sondrio"               "Trieste"               "Udine"                
 # [25] "Varese" 
+
+# Trieste
