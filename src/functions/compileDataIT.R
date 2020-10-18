@@ -3,7 +3,7 @@
 compileDataIT <- function(city = FALSE,
                           start_date = as.POSIXct("2020-02-25"),
                           end_date = as.POSIXct("2020-04-01"),
-                          pm = "PM2.5") {
+                          pm = "PM2.5", country = "italy") {
   if (pm == "PM2.5") {
     param <- "pm25"
   } else {
@@ -144,8 +144,7 @@ compileDataIT <- function(city = FALSE,
   names(it_nuts3_mean) <- nuts3_names
 
   # Subset analysis regions to complete ones, check for outliers and estimate replacement values.
-  bu <- it_nuts3_mean
-  it_nuts3_mean <- checkAnalysisData(it_nuts3_mean, start_date, end_date, pm)
+  it_nuts3_mean <- checkAnalysisData(it_nuts3_mean, start_date, end_date, pm, country = country)
 
 
   # Compile data for overview maps

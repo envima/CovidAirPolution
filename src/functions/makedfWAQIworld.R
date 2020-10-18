@@ -2,14 +2,14 @@
 
 makedfWAQIworld = function(flist, country="IT", param="pm"){
 
-  pm =  read.csv(flist,skip = 4,header = TRUE, sep = ",", dec = ".",nrows = 10000000)
+  ww =  read.csv(flist,skip = 4,header = TRUE, sep = ",", dec = ".")
   
   
-  pm = pm[pm$Country == country & pm$Specie==param,]
+  ww = ww[ww$Country == country & ww$Specie==param,]
   
-     aq = lapply(unique(pm$City), function(x){
+     aq = lapply(unique(ww$City), function(x){
        #latlon = as.tibble(geo_osm(x))
-       act = pm[pm$City == x ,]
+       act = ww[ww$City == x ,]
        act$lat= as.numeric(geo_osm(as.character(x))[1])
        act$lon= as.numeric(geo_osm(as.character(x))[2])
        act$date = as.POSIXct(act$Date, origin = "CET")

@@ -6,7 +6,7 @@
 
 compileDataDE <- function(start_date = as.POSIXct("2020-01-15"),
                           end_date = as.POSIXct("2020-04-20"),
-                          pm = "PM2.5") {
+                          pm = "PM2.5", country = "germany") {
   if (pm == "PM2.5") {
     pattern <- "DE2020PM2_1SMW_20200421"
   } else {

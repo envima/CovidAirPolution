@@ -1,4 +1,4 @@
-#' Control compilation of COVID and PM gam and gam mixed effect models for Germany.
+#' Control compilation of COVID and PM gam and gam mixed effect models for Italy.
 
 # Set up working environment and defaults.
 library(envimaR)
@@ -53,6 +53,8 @@ for(pm in pm_vars){
   for(l in unique(cntry_indv$nuts3Code)){
     cntry_indv$new_cases[cntry_indv$nuts3Code == l & cntry_indv$new_cases < 0] <- 0
   }
+
+  cntry_indv$pop_total <- NA
   
   frml <- "new_cases ~ s(date_seq) + weekday + pm_median_lag"
 

@@ -3,7 +3,7 @@
 #' Exclude datasets that do not cover the analysis time range and compute an
 #' outlier detection and replacement value estimate.
 
-checkAnalysisData <- function(data, start_date, end_date, pm) {
+checkAnalysisData <- function(data, start_date, end_date, pm, country) {
   date_length <- round(difftime(end_date, start_date, units = c("days")))
 
   valid_data <- data
@@ -37,12 +37,41 @@ checkAnalysisData <- function(data, start_date, end_date, pm) {
 
   valid_data <- valid_data[which((!names(valid_data) == "incomplete"))]
 
-  print(names(data)[!(names(data) %in% names(valid_data))])
+  non_valid_data_names <- (names(data)[!(names(data) %in% names(valid_data))])
+  
+  print(non_valid_data_names)
+  
+  
+  all_days <- data.frame(date = seq.Date(as.Date(start_date), as.Date(end_date), by = "day"))
+  all_days$date <- as.POSIXct(substr(all_days$date, 1, 10), format="%Y-%m-%d", origin = "CET")
+  
+  for (n in non_valid_data_names){
+    act <- data[[n]]
+    act_all_days <- merge(all_days, act, by = "date", all.x = TRUE)
 
-  saveRDS(names(data)[!(names(data) %in% names(valid_data))], file.path(envrmt$path_analysis, paste0(format(
-    Sys.time(),
-    "%Y-%m-%d"
-  ), pm, "_non_valid.rds")))
+    act_all_days$pm_mean <- na.approx(act_all_days$pm_mean, maxgap = 2) 
+    act_all_days$pm_median <- na.approx(act_all_days$pm_median, maxgap = 2) 
+    
+    if(!any(is.na(act_all_days$pm_mean))){
+      tmp <- act_all_days$data
+      act_all_days <- na.locf(act_all_days, fromLast = TRUE)
+      act_all_days$data <- tmp
+      act_all_days$weekday <- weekdays(act_all_days$date)
+      act_all_days$date_day <- paste(act_all_days$date, substr(weekdays(act_all_days$date), 1, 1))
+      valid_data[[n]] <- st_sf(act_all_days)
+    }
+    
+  }
+  
+  
+  non_valid_data_names <- (names(data)[!(names(data) %in% names(valid_data))])
+  
+  print(non_valid_data_names)
+  
+
+  saveRDS(non_valid_data_names, file.path(envrmt$path_analysis, paste0(
+    country, "_", pm, "_non_valid.rds"
+  )))
 
   # Outlier detection and estimate (and additional metadata providing the pm size).
   valid_data_oc <- lapply(valid_data, function(d) {

@@ -143,14 +143,14 @@ compileDTWClustersIT <- function(data) {
   
   # Compute DTW clusters.
   new_cases_dtw_cluster <- tsclust(new_cases,
-                                   type = "partitional", k = 6,
+                                   type = "partitional", k = 2,
                                    distance = "dtw_basic", centroid = "pam",
                                    seed = 01042020, trace = TRUE,
                                    args = tsclust_args(dist = list(window.size = 10))
   )
   
   pm_dtw_cluster <- tsclust(pm_median_estm,
-                            type = "partitional", k = 6,
+                            type = "partitional", k = 2,
                             distance = "dtw_basic", centroid = "pam",
                             seed = 01042020, trace = TRUE,
                             args = tsclust_args(dist = list(window.size = 10))
