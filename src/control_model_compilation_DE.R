@@ -14,7 +14,7 @@ end_date <- as.POSIXct("2020-04-20")
 pm_vars <- c("PM2.5", "PM10")
 
 lag_vars_set <- c(
-  "pm_median", "pm_median_estm", "pm_median_estm_best",
+  # "pm_median", "pm_median_estm", "pm_median_estm_best",
   "pm_mean", "pm_mean_estm", "pm_mean_estm_best"
 )
 
@@ -22,12 +22,14 @@ Sys.setlocale("LC_TIME", "English")
 
 
 for(pm in pm_vars){
+  print(pm)
   cmpldata_file <- paste0("germany_", pm, "_extended.RDS")
   cmpldata <- readRDS(file.path(envrmt$path_analysis, cmpldata_file))
   cntry_indv <- cmpldata$de_clstr$clstr
   
   # Individual district models with date, weekday and PM as explanatroy variables.
   gam_lag <- lapply(lag_vars_set, function(lag_var){
+    print(lag_var)
     gam_lag <- compileLaggedGAM(
       data = cntry_indv, lag_var = lag_var,
       frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
@@ -47,6 +49,7 @@ for(pm in pm_vars){
   frml <- "new_cases ~ s(date_seq) + weekday + pm_median_lag"
 
   gamm_lag_mixed <- lapply(lag_vars_set, function(lag_var) {
+    print(lag_var)
     gamm_lag_mixed <- compileLaggedMixedModel(
       data = cntry_indv, lag_var = lag_var,
       frml = frml,

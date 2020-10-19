@@ -41,12 +41,11 @@ checkAnalysisData <- function(data, start_date, end_date, pm, country) {
   
   print(non_valid_data_names_org)
   
-  
+  # Check initial non valid datasets if they can be used after interpolating max. gaps of two NA values.
   all_days <- data.frame(date = seq.Date(as.Date(start_date), as.Date(end_date), by = "day"))
   all_days$date <- as.POSIXct(substr(all_days$date, 1, 10), format="%Y-%m-%d", origin = "CET")
   
   for (n in non_valid_data_names_org){
-    print(n)
     act <- data[[n]]
     act <- act[!duplicated(act$date),]
     act_all_days <- merge(all_days, act, by = "date", all.x = TRUE)
