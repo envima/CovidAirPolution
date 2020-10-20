@@ -14,7 +14,7 @@ end_date <- as.POSIXct("2020-04-20")
 pm_vars <- c("PM2.5", "PM10")
 
 lag_vars_set <- c(
-  "pm_median", "pm_median_estm", "pm_median_estm_best",
+  # "pm_median", "pm_median_estm", "pm_median_estm_best",
   "pm_mean", "pm_mean_estm", "pm_mean_estm_best"
 )
 
