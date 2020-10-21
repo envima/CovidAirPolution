@@ -14,7 +14,7 @@ compilePopulationIT <- function() {
                       header = TRUE, sep = ";", dec = ","
   )
   
-  pdata <- pdata[pdata$EtÃ. == "Totale", c("Provincia", "Totale.Maschi", "Totale.Femmine")]
+  pdata <- pdata[pdata[, 3] == "Totale", c("Provincia", "Totale.Maschi", "Totale.Femmine")]
   pdata$pop.total <- pdata$Totale.Maschi + pdata$Totale.Femmine
   names(pdata) <- c("nuts3Name", "pop_male", "pop_female", "pop_total")
 

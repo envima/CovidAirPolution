@@ -86,8 +86,8 @@ compileDataIT <- function(city = FALSE,
 
   it_nuts3 <- do.call(rbind, it_nuts3)
   # it_nuts3 <- st_transform(it_nuts3, crs = 25832)
-  it_nuts3$area <- st_area(it_nuts3)
-  it_nuts3$pop_dens <- it_nuts3$pop_total / (it_nuts3$area / 1e+06)
+  it_nuts3$st_area <- st_area(it_nuts3)
+  it_nuts3$pop_dens <- it_nuts3$pop_total / (it_nuts3$st_area / 1e+06)
   # it_nuts3 <- st_transform(it_nuts3, crs = 4326)
 
 

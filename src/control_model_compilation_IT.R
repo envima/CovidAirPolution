@@ -8,7 +8,7 @@ if (Sys.info()[["nodename"]] == "PC19616") {
   source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")
 }
 
-start_date <- as.POSIXct("2020-02-15")
+start_date <- as.POSIXct("2020-02-08")
 end_date <- as.POSIXct("2020-04-20")
 
 pm_vars <- c("PM2.5", "PM10")

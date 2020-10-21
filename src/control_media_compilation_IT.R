@@ -8,7 +8,7 @@ if (Sys.info()[["nodename"]] == "PC19616") {
   source("~/project/cov/CovidAirPolution/src/functions/000_setup.R")
 }
 
-start_date <- as.POSIXct("2020-02-15")
+start_date <- as.POSIXct("2020-02-08")
 end_date <- as.POSIXct("2020-04-15")
 
 pm_vars <- c("PM2.5", "PM10")
@@ -18,7 +18,7 @@ lag_vars_set_lut <- (c(
   "mean", "mean, outlier removed w/o dust event", "mean, outlier removed"
 ))
 names(lag_vars_set_lut) <- c(
-  "pm_median", "pm_median_estm", "pm_median_estm_best",
+  # "pm_median", "pm_median_estm", "pm_median_estm_best",
   "pm_mean", "pm_mean_estm", "pm_mean_estm_best"
 )
 
@@ -53,8 +53,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
     geom_point(data = cntry_avg_gam, aes(x = date, y = new_cases, color = "Daily new cases")) +
     geom_line(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
     geom_point(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
-    geom_vline(xintercept = as.POSIXct("2020-02-21"), linetype = "dotted", color = "black") +
-    geom_vline(xintercept = as.POSIXct("2020-03-11"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-08"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = paste0("Infections, ", cntry_indv$pm_size[1])) +
     theme_bw() +
@@ -75,8 +74,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
 
   figure_cntry_avg_pm <- ggplot() +
     geom_line(data = cntry_indv, aes(x = date, y = get(lag_var), group = nuts3Code, color = "All regions")) +
-    geom_vline(xintercept = as.POSIXct("2020-02-21"), linetype = "dotted", color = "black") +
-    geom_vline(xintercept = as.POSIXct("2020-03-11"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-08"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = bquote(~ .(cntry_indv$pm_size[1]) ~ " [" ~ µm / m^3 ~ "]")) +
     theme_bw() +
@@ -94,8 +92,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
 
   figure_cntry_avg_covid <- ggplot() +
     geom_line(data = cntry_indv, aes(x = date, y = new_cases, group = nuts3Code, color = "All regions")) +
-    geom_vline(xintercept = as.POSIXct("2020-02-21"), linetype = "dotted", color = "black") +
-    geom_vline(xintercept = as.POSIXct("2020-03-11"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-08"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = "Infections") +
     theme_bw() +
@@ -269,8 +266,8 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
 
   add_info <- do.call("rbind", add_info)
   add_info$difftime_start_max <- difftime(add_info$date_max, add_info$date_start, units = "days")
-  add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-17"), units = "days")
-  add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-17"), units = "days")
+  add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-08"), units = "days")
+  add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-08"), units = "days")
 
   tmp <- cntry_indv[cntry_indv$date <= as.POSIXct("2020-04-01"), ]
 
@@ -283,18 +280,18 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
 
   cntry_agg$cases_log10 <- log10(cntry_agg$cases)
   cntry_agg$PM_tavrg_log10 <- log10(cntry_agg$PM_tavrg)
-  # cntry_agg$pop_total_log10 <- log10(cntry_agg$pop_total)
-  # cntry_agg$st_area_log10 <- log10(cntry_agg$st_area)
+  cntry_agg$pop_total_log10 <- log10(cntry_agg$pop_total)
+  cntry_agg$st_area_log10 <- log10(cntry_agg$st_area)
 
 
   # Test of the long-term correlation between PM and SARS-CoV2 infections
   tavrg <- cntry_agg[, c(
-    "cases_log10", "centroid_lat", "centroid_lon", # "pop_total_log10", "st_area_log10",
+    "cases_log10", "centroid_lat", "centroid_lon", "pop_total_log10", "st_area_log10",
     "difftime_first_shutdown", "PM_tavrg_log10"
   )]
 
   lm_tavrg <- lm(cases_log10 ~ PM_tavrg_log10 + centroid_lat + centroid_lon +
-    # pop_total_log10 + st_area_log10 + 
+      pop_total_log10 + st_area_log10 + 
       difftime_first_shutdown, data = tavrg)
   lm_tavrg_smry <- summary(lm_tavrg)
 
@@ -304,14 +301,14 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
     scope = list(
       lower = lm_tavrg,
       upper = ~ PM_tavrg_log10 + centroid_lat + centroid_lon +
-        # pop_total_log10 + st_area_log10 + 
+        pop_total_log10 + st_area_log10 + 
         difftime_first_shutdown
     )
   )
   lm_tavrg_stpAIC_smry <- summary(lm_tavrg_stpAIC)
 
   tavrg_fig <- cntry_agg[, c(
-    "cases", "PM_tavrg", # "pop_total", "st_area",
+    "cases", "PM_tavrg", "pop_total", "st_area",
     "difftime_first_shutdown", "centroid_lat", "centroid_lon"
   )]
 
@@ -319,17 +316,17 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
 
   tavrg_long$var <- factor(tavrg_long$var,
     levels = c(
-      "PM_tavrg", # "pop_total", "st_area",
+      "PM_tavrg", "pop_total", "st_area",
       "difftime_first_shutdown", "centroid_lat", "centroid_lon"
     ),
     labels = c(
-      tmp$pm_size[1], # "Population", "Area",
+      tmp$pm_size[1], "Population", "Area",
       "Time difference first case and shutdown", "Latitude", "Longitude"
     )
   )
 
   figure_cumulative_effect_log <- ggplot(
-    tavrg_long[tavrg_long$var %in% c("PM2.5", "PM10"), ], #c("Population", "Area", "PM2.5", "PM10"), ],
+    tavrg_long[tavrg_long$var %in% c("Population", "Area", "PM2.5", "PM10"), ],
     aes(x = value, y = cases)
   ) +
     geom_point() +
@@ -340,7 +337,7 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
     facet_wrap(~var, scales = "free") +
     theme_bw() +
     facet_wrap(~var, scales = "free")
-
+  
   figure_cumulative_effect <- ggplot(
     tavrg_long[!tavrg_long$var %in% c("Population", "Area", "PM2.5", "PM10"), ],
     aes(x = value, y = cases)
