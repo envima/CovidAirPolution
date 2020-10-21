@@ -53,8 +53,9 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
     geom_point(data = cntry_avg_gam, aes(x = date, y = new_cases, color = "Daily new cases")) +
     geom_line(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
     geom_point(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
-    geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype = "dotted", color = "black") +
-    geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-02-21"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-11"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = paste0("Infections, ", cntry_indv$pm_size[1])) +
     theme_bw() +
     scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") +
@@ -74,8 +75,9 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
 
   figure_cntry_avg_pm <- ggplot() +
     geom_line(data = cntry_indv, aes(x = date, y = get(lag_var), group = nuts3Code, color = "All regions")) +
-    geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype = "dotted", color = "black") +
-    geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-02-21"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-11"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = bquote(~ .(cntry_indv$pm_size[1]) ~ " [" ~ µm / m^3 ~ "]")) +
     theme_bw() +
     scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") +
@@ -92,8 +94,9 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
 
   figure_cntry_avg_covid <- ggplot() +
     geom_line(data = cntry_indv, aes(x = date, y = new_cases, group = nuts3Code, color = "All regions")) +
-    geom_vline(xintercept = as.POSIXct("2020-03-14"), linetype = "dotted", color = "black") +
-    geom_vline(xintercept = as.POSIXct("2020-03-17"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-02-21"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-11"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = "Infections") +
     theme_bw() +
     scale_x_datetime(date_labels = "%d.%m, %a", date_breaks = "2 day", date_minor_breaks = "1 day") +
