@@ -399,7 +399,7 @@ names(map_covid_infections) <- pm_vars
 saveRDS(map_covid_infections, file.path(envrmt$path_figures, "italy_map_covid_infections.rds"))
 
 
-# Long-term PM mean between 2020-02-15 and 2020-04-01
+# Long-term PM mean between 2020-02-08 and 2020-04-01
 map_pm_mean <- lapply(pm_vars, function(pm) {
   background_map <- st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
     crs = "+init=epsg:25832"
