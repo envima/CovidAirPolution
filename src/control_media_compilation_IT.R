@@ -53,7 +53,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
     geom_point(data = cntry_avg_gam, aes(x = date, y = new_cases, color = "Daily new cases")) +
     geom_line(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
     geom_point(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
-    geom_vline(xintercept = as.POSIXct("2020-03-08"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-09"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = paste0("Infections, ", cntry_indv$pm_size[1])) +
     theme_bw() +
@@ -74,7 +74,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
 
   figure_cntry_avg_pm <- ggplot() +
     geom_line(data = cntry_indv, aes(x = date, y = get(lag_var), group = nuts3Code, color = "All regions")) +
-    geom_vline(xintercept = as.POSIXct("2020-03-08"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-09"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = bquote(~ .(cntry_indv$pm_size[1]) ~ " [" ~ µm / m^3 ~ "]")) +
     theme_bw() +
@@ -92,7 +92,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
 
   figure_cntry_avg_covid <- ggplot() +
     geom_line(data = cntry_indv, aes(x = date, y = new_cases, group = nuts3Code, color = "All regions")) +
-    geom_vline(xintercept = as.POSIXct("2020-03-08"), linetype = "dotted", color = "black") +
+    geom_vline(xintercept = as.POSIXct("2020-03-09"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = "Infections") +
     theme_bw() +
@@ -259,22 +259,22 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
       date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
       daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
       cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-      cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-04-01")]
+      cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-03-24")]
     )
     return(tmp)
   })
 
   add_info <- do.call("rbind", add_info)
   add_info$difftime_start_max <- difftime(add_info$date_max, add_info$date_start, units = "days")
-  add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-08"), units = "days")
-  add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-08"), units = "days")
+  add_info$difftime_first_shutdown <- difftime(add_info$date_start, as.POSIXct("2020-03-09"), units = "days")
+  add_info$difftime_max_shutdown <- difftime(add_info$date_max, as.POSIXct("2020-03-09"), units = "days")
 
-  tmp <- cntry_indv[cntry_indv$date <= as.POSIXct("2020-04-01"), ]
+  tmp <- cntry_indv[cntry_indv$date <= as.POSIXct("2020-03-24"), ]
 
   cntry_agg <- aggregate(st_drop_geometry(tmp[lag_var]), by = list(tmp$nuts3Code), FUN = mean)
   colnames(cntry_agg) <- c("nuts3Code", "PM_tavrg")
 
-  tmp <- tmp[tmp$date == as.POSIXct("2020-04-01"), ]
+  tmp <- tmp[tmp$date == as.POSIXct("2020-03-24"), ]
   cntry_agg <- merge(cntry_agg, tmp)
   cntry_agg <- merge(cntry_agg, add_info)
 
@@ -362,7 +362,7 @@ saveRDS(model_figure_cumulative_effect, file.path(envrmt$path_figures, "italy_mo
 
 
 # Maps
-# SARS-CoV2 infections on 2020-04-01
+# SARS-CoV2 infections on 2020-03-24
 map_covid_infections <- lapply(pm_vars, function(pm) {
   background_map <- st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
     crs = "+init=epsg:25832"
@@ -399,7 +399,7 @@ names(map_covid_infections) <- pm_vars
 saveRDS(map_covid_infections, file.path(envrmt$path_figures, "italy_map_covid_infections.rds"))
 
 
-# Long-term PM mean between 2020-02-08 and 2020-04-01
+# Long-term PM mean between 2020-02-08 and 2020-03-24
 map_pm_mean <- lapply(pm_vars, function(pm) {
   background_map <- st_transform(ne_countries(scale = "large", continent = "europe", returnclass = "sf"),
     crs = "+init=epsg:25832"
