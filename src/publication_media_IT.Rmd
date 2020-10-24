@@ -71,17 +71,15 @@ length(sort(unique(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 50])))
 
 # Number of days with exceeding WHO PM10 threshold value by district
 table(sort(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 50]))
+min(table(sort(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 50])))
 max(table(sort(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 50])))
 
 # Total study days exceeding WHO PM10 threshold value
 sum(cntry_indv$pm_mean_estm_best > 50)
-sum(cntry_indv$pm_mean_estm_best > 50) / nrow(cntry_indv) * 100
+signif(sum(cntry_indv$pm_mean_estm_best > 50) / nrow(cntry_indv) * 100, 2)
 
 # Unique days exceeding WHO PM10 threshold value
 sort(unique(cntry_indv$date[cntry_indv$pm_mean_estm_best > 50]))
-
-# Districts with at least 10 new infections per day once during the study (PM10 sample)
-length(unique(cntry_indv$nuts3Code[cntry_indv$new_cases >= 10]))
 
 
 # Districts exceeding WHO PM2.5 threshold value
@@ -90,26 +88,20 @@ length(sort(unique(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 25])))
 
 # Number of days with exceeding WHO PM2.5 threshold value by district
 table(sort(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 25]))
+min(table(sort(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 25])))
 max(table(sort(cntry_indv$nuts3Code[cntry_indv$pm_mean_estm_best > 25])))
 
 # Total study days exceeding WHO PM2.5 threshold value
 sum(cntry_indv$pm_mean_estm_best > 25)
-sum(cntry_indv$pm_mean_estm_best > 25) / nrow(cntry_indv) * 100
+signif(sum(cntry_indv$pm_mean_estm_best > 25) / nrow(cntry_indv) * 100, 2)
 
-# Unique days exceeding WHO PM2.5 threshold value
+# Unique days exceeding WHO PM10 threshold value
 sort(unique(cntry_indv$date[cntry_indv$pm_mean_estm_best > 25]))
-
-# Districts with at least 10 new infections per day once during the study (PM2.5 sample)
-length(unique(cntry_indv$nuts3Code[cntry_indv$new_cases >= 10]))
-
-for(i in unique(cntry_indv$nuts3Code)){
-  print(cntry_indv$date[cntry_indv$nuts3Code == i])
-}
 ```
 
 
 
-# Fig. 1: Country wide reported SARS-CoV-2 infections and PM10 concentrations.
+# Supplementary Figure: Country wide reported SARS-CoV-2 infections and PM10 concentrations.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
@@ -130,7 +122,7 @@ ggsave(file.path(envrmt$path_figures, "figure_s4_italy_PM10.png"),
 
 
 
-# Fig. 2: Country wide reported SARS-CoV-2 infections and PM10 concentrations.
+# Supplementary Figure: Country wide SARS-CoV-2 infection models for PM10.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
@@ -149,19 +141,11 @@ ggsave(file.path(envrmt$path_figures, "figure_s5_italy_PM10.png"),
   width = 347, height = 450, units = "mm", dpi = 300
 )
 ```
+`
 
 
 
-# Extended Data Table 1: Analysis of the number of infections on April 1st 2020 with regard to PM10 concentrations.
-```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
-
-it_model_figure_cumulative_effect$PM10$lm_tavrg_smry
-signif(it_model_figure_cumulative_effect$PM10$lm_tavrg_smry$coefficients, 3)
-```
-
-
-
-# Supplementary Fig. 1: Country wide reported SARS-CoV-2 infections and PM2.5 concentrations.
+# Supplementary Figure: Country wide reported SARS-CoV-2 infections and PM2.5 concentrations.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
@@ -183,7 +167,7 @@ ggsave(file.path(envrmt$path_figure, "figure_s6_italy_PM25.png"),
 
 
 
-# Supplementary Fig. 2: Country wide reported SARS-CoV-2 infections and PM10 concentrations.
+# Supplementary Figure: Country wide SARS-CoV-2 infection models for PM2.5.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
@@ -205,7 +189,7 @@ ggsave(file.path(envrmt$path_figures, "figure_s7_italy_PM25.png"),
 
 
 
-# Supplementary Fig. 3: Correlation between PM10 and PM2.5.
+# Supplementary Figure: Correlation between PM10 and PM2.5.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
@@ -233,30 +217,46 @@ ggsave(file.path(envrmt$path_figures, "figure_s8_italy_mixed.png"),
 
 
 
-# Supplementary Table 1: Final model from the analysis of the number of infections on April 1st 2020 with regard to PM10 concentrations.
+
+# Table S5: Analysis of the number of infections on April 1st 2020 with regard to PM10 concentrations.
+```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
+
+it_model_figure_cumulative_effect$PM10$lm_tavrg_smry
+signif(it_model_figure_cumulative_effect$PM10$lm_tavrg_smry$coefficients, 3)
+signif(it_model_figure_cumulative_effect$PM10$lm_tavrg_smry$adj.r.squared, 2)
+```
+
+
+
+
+# Table S6: Final model from the analysis of the number of infections on April 1st 2020 with regard to PM10 concentrations.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 it_model_figure_cumulative_effect$PM10$lm_tavrg_stpAIC_smry
 signif(it_model_figure_cumulative_effect$PM10$lm_tavrg_stpAIC_smry$coefficients, 3)
+signif(it_model_figure_cumulative_effect$PM10$lm_tavrg_stpAIC_smry$adj.r.squared, 2)
 ```
 
 
 
-# Supplementary Table 2: Analysis of the number of infections on April 1st 2020 with regard to PM2.5 concentrations.
+
+# Table S7: Analysis of the number of infections on April 1st 2020 with regard to PM2.5 concentrations.
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 it_model_figure_cumulative_effect$PM2.5$lm_tavrg_smry
 signif(it_model_figure_cumulative_effect$PM2.5$lm_tavrg_smry$coefficients, 3)
+signif(it_model_figure_cumulative_effect$PM2.5$lm_tavrg_smry$adj.r.squared, 2)
 ```
 
 
 
-# Supplementary Table 3: Final model from the analysis of the number of infections on April 1st 2020 with regard to PM2.5 concentrations.
+# Table S8: Final model from the analysis of the number of infections on April 1st 2020 with regard to PM2.5 concentrations.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results = FALSE}
 
 it_model_figure_cumulative_effect$PM2.5$lm_tavrg_stpAIC_smry
 signif(it_model_figure_cumulative_effect$PM2.5$lm_tavrg_stpAIC_smry$coefficients, 3)
+signif(it_model_figure_cumulative_effect$PM2.5$lm_tavrg_stpAIC_smry$adj.r.squared, 2)
 
 ```

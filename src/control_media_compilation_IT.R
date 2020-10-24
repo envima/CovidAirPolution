@@ -37,6 +37,12 @@ names(cmpldata) <- pm_vars
 # Countrywide temporal development of PM values and SARS-CoV2 infections
 figure_cntry_avg <- lapply(pm_vars, function(pm) {
   cntry_avg <- cmpldata[[pm]]$it_avg
+  
+  if(pm == "PM2.5"){
+    pm_thv <- 25
+  } else {
+    pm_thv <- 50
+  }
 
   cntry_avg_gam <- cntry_avg[cntry_avg$date >= as.POSIXct(start_date) & cntry_avg$date <= as.POSIXct(end_date), ]
   gam_model <- gam(new_cases ~ s(seq(length(date))) + weekday, family = quasipoisson, data = cntry_avg_gam)
@@ -53,6 +59,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
     geom_point(data = cntry_avg_gam, aes(x = date, y = new_cases, color = "Daily new cases")) +
     geom_line(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
     geom_point(data = cntry_avg_gam, aes(x = date, y = predicted, color = "Daily new cases, explained by time")) +
+    geom_hline(yintercept = pm_thv, linetype = "dotted", color = "red") +
     geom_vline(xintercept = as.POSIXct("2020-03-09"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = paste0("Infections, ", cntry_indv$pm_size[1])) +
@@ -74,6 +81,7 @@ figure_cntry_avg <- lapply(pm_vars, function(pm) {
 
   figure_cntry_avg_pm <- ggplot() +
     geom_line(data = cntry_indv, aes(x = date, y = get(lag_var), group = nuts3Code, color = "All regions")) +
+    geom_hline(yintercept = pm_thv, linetype = "dotted", color = "red") +
     geom_vline(xintercept = as.POSIXct("2020-03-09"), linetype = "dotted", color = "black") +
     geom_vline(xintercept = as.POSIXct("2020-03-21"), linetype = "dotted", color = "black") +
     labs(x = "Date and day of week", y = bquote(~ .(cntry_indv$pm_size[1]) ~ " [" ~ µm / m^3 ~ "]")) +
