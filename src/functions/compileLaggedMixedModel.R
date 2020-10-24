@@ -27,7 +27,7 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
         tmp <- data[data$nuts3Code == n, ]
 
         tmp <- tmp %>%
-          mutate(pm_median_lag = dplyr::lag(get(lag_var), n = (l), default = NA))
+          mutate(pm_lag = dplyr::lag(get(lag_var), n = (l), default = NA))
         
         tmp_data = tmp[tmp$date >= obsprd_start & tmp$date <= obsprd_end, ]
         
@@ -39,7 +39,7 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
           pop_total = tmp_data$pop_total,
           date_seq = seq(length(tmp_data$date)),
           weekday = tmp_data$weekday,
-          pm_median_lag = tmp_data$pm_median_lag,
+          pm_lag = tmp_data$pm_lag,
           lag = -l
         )
         return(df)
@@ -57,7 +57,7 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
     
     tmp$nuts3CodeFactor = as.factor(tmp$nuts3Code)
     tmp$pop_total_log10 = log10(tmp$pop_total)
-    tmp$pm_median_lag_log10 = log10(tmp$pm_median_lag)
+    tmp$pm_lag_log10 = log10(tmp$pm_lag)
     
     frml <- as.formula(frml)
     
@@ -78,14 +78,14 @@ compileLaggedMixedModel <- function(data, lag_var = "pm_median", frml, nlags = 1
       results = data.frame(
         lag = l,
         lag_var = lag_var,
-        t_gam = test_gam$p.t["pm_median_lag"],
-        p_gam = test_gam$p.pv["pm_median_lag"],
-        pm_gam_estimate = test_gam$p.table["pm_median_lag", "Estimate"],
-        pm_gam_std_error = test_gam$p.table["pm_median_lag", "Std. Error"],
-        t_lme = test_lme$tTable["Xpm_median_lag", "t-value"],
-        p_lme = test_lme$tTable["Xpm_median_lag", "p-value"],
-        pm_lme_estimate = test_lme$tTable["Xpm_median_lag", "Value"],
-        pm_lme_std_error = test_lme$tTable["Xpm_median_lag", "Std.Error"]
+        t_gam = test_gam$p.t["pm_lag"],
+        p_gam = test_gam$p.pv["pm_lag"],
+        pm_gam_estimate = test_gam$p.table["pm_lag", "Estimate"],
+        pm_gam_std_error = test_gam$p.table["pm_lag", "Std. Error"],
+        t_lme = test_lme$tTable["Xpm_lag", "t-value"],
+        p_lme = test_lme$tTable["Xpm_lag", "p-value"],
+        pm_lme_estimate = test_lme$tTable["Xpm_lag", "Value"],
+        pm_lme_std_error = test_lme$tTable["Xpm_lag", "Std.Error"]
       )
 
     return(list(results = results, gamm_mixed = gamm_mixed))

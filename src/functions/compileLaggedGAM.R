@@ -27,7 +27,7 @@ compileLaggedGAM <- function(data, frml, lag_var = "pm_median", nlags = 14,
         tmp <- data[data$nuts3Code == n, ]
 
         tmp <- tmp %>%
-          mutate(pm_median_lag = dplyr::lag(get(lag_var), n = (l), default = NA))
+          mutate(pm_lag = dplyr::lag(get(lag_var), n = (l), default = NA))
 
         frml <- as.formula(frml)
         set.seed(01042020)
@@ -44,8 +44,8 @@ compileLaggedGAM <- function(data, frml, lag_var = "pm_median", nlags = 14,
           cluster_pm = tmp$cluster_pm[1],
           pm_median_mean = mean(tmp$pm_median),
           lag = -l,
-          t = test$p.t["pm_median_lag"],
-          p = test$p.pv["pm_median_lag"],
+          t = test$p.t["pm_lag"],
+          p = test$p.pv["pm_lag"],
           obsprd_start = obsprd_start,
           obsprd_end = obsprd_end
         )

@@ -107,7 +107,6 @@ length(unique(cntry_indv$nuts3Code[cntry_indv$new_cases >= 10]))
 for(i in unique(cntry_indv$nuts3Code)){
   print(cntry_indv$date[cntry_indv$nuts3Code == i])
 }
-
 ```
 
 

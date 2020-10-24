@@ -32,7 +32,7 @@ for(pm in pm_vars){
     print(lag_var)
     gam_lag <- compileLaggedGAM(
       data = cntry_indv, lag_var = lag_var,
-      frml = "new_cases ~ s(seq(length(date))) + weekday + pm_median_lag",
+      frml = "new_cases ~ s(seq(length(date))) + weekday + pm_lag",
       nlags = 15,
       subset_var = "new_cases", subset_thv = 10, individual = "start", ndays = c(0, 30)
     )
@@ -46,7 +46,7 @@ for(pm in pm_vars){
   # Country wide mixed effect model with date, weekday and PM as explanatroy variables and district as random effect.
   cntry_indv <- cmpldata$de_clstr$clstr
 
-  frml <- "new_cases ~ s(date_seq) + weekday + pm_median_lag"
+  frml <- "new_cases ~ s(date_seq) + weekday + pm_lag"
 
   gamm_lag_mixed <- lapply(lag_vars_set, function(lag_var) {
     print(lag_var)
