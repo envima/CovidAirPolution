@@ -153,7 +153,7 @@ compileDataIT <- function(city = FALSE,
 
 
   # Compile data for overview maps
-  it_nuts3_map <- compileMapDE(it_nuts3_mean)
+  it_nuts3_map <- compileMapIT(it_nuts3_mean)
 
 
   # Compile data averaged over country.

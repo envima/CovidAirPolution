@@ -259,7 +259,7 @@ model_figure_cumulative_effect <- lapply(pm_vars, function(pm) {
       date_max = tmp$date[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
       daily_max = tmp$new_cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
       cases_at_max = tmp$cases[tail(which(tmp$new_cases == max(tmp$new_cases)), n = 1)],
-      cases_on_0401 = tmp$cases[tmp$date == as.POSIXct("2020-03-24")]
+      cases_on_0324 = tmp$cases[tmp$date == as.POSIXct("2020-03-24")]
     )
     return(tmp)
   })
@@ -376,7 +376,7 @@ map_covid_infections <- lapply(pm_vars, function(pm) {
       text = element_text(size = 10), axis.title = element_text(size = 10),
       legend.position = "bottom"
     ) +
-    labs(fill = "Cumulative infections on 01.04.2020") +
+    labs(fill = "Cumulative infections on 24.03.2020") +
     coord_sf(
       xlim = c(
         (st_bbox(layer)["xmin"] - 10000),
@@ -413,7 +413,7 @@ map_pm_mean <- lapply(pm_vars, function(pm) {
       text = element_text(size = 10), axis.title = element_text(size = 10),
       legend.position = "bottom"
     ) +
-    labs(fill = paste0("Mean ", cmpldata[[pm]]$it_nuts3_map$pm_size[1], " 15.02.2020 to 01.04.2020")) +
+    labs(fill = paste0("Mean ", cmpldata[[pm]]$it_nuts3_map$pm_size[1], " 08.02.2020 to 24.03.2020")) +
     coord_sf(
       xlim = c(
         (st_bbox(layer)["xmin"] - 10000),
